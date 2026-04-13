@@ -14,9 +14,11 @@
     "build": "npm run build -w frontend",
     "postinstall": "npm run build"
   },
-  "devDependencies": {
+  "dependencies": {
     "@emnapi/core": "1.9.2",
     "@emnapi/runtime": "1.9.2"
+  },
+  "devDependencies": {
   },
   "keywords": [],
   "author": "",

@@ -11,16 +11,11 @@ exports.sendReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Prepare template variables
-    // Mapping for HXb5b62575e6e4ff6129ad7c8efe1f983e:
-    // 1: Rider Name
-    // 2: Return Date (formatted)
-    const variables = {
-      "1": rider.name,
-      "2": new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-    };
+    // Prepare session message body (requires user to send 'hi' first)
+    const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nPlease complete your weekly payment to ensure uninterrupted service.\n\nThank you for riding with us! ⚡`;
 
-    await sendPaymentReminder(rider.whatsappNumber, variables);
+    await sendPaymentReminder(rider.whatsappNumber, { body });
 
     res.status(200).json({
       success: true,

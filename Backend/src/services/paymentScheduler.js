@@ -15,13 +15,11 @@ const initPaymentScheduler = () => {
       const activeRiders = await Rider.find({ riderStatus: 'active' });
 
       for (const rider of activeRiders) {
-        const variables = {
-          "1": rider.name,
-          "2": new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-        };
+        const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nPlease use the app to pay or reach out if you have any questions!`;
 
         try {
-          await sendPaymentReminder(rider.whatsappNumber, variables);
+          await sendPaymentReminder(rider.whatsappNumber, { body });
           console.log(`✅ Automated reminder sent to ${rider.name}`);
         } catch (err) {
           console.error(`❌ Failed to send automated reminder to ${rider.name}:`, err.message);

@@ -206,6 +206,7 @@ export default function Riders() {
                 <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Deploy Date</th>
                 <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Return Date</th>
                 <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Status</th>
+                <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Payment</th>
                 <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em] text-center">Actions</th>
               </tr>
             </thead>
@@ -259,6 +260,15 @@ export default function Riders() {
                         : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
                       }`}>
                         {rider.riderStatus}
+                      </span>
+                    </td>
+                    <td className="p-6">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                        rider.paymentStatus === 'paid' 
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                        : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+                      }`}>
+                        {rider.paymentStatus || 'unpaid'}
                       </span>
                     </td>
                     <td className="p-6">

@@ -8,11 +8,13 @@ exports.getDashboardStats = async (req, res) => {
     const totalRiders = await Rider.countDocuments();
     const activeRiders = await Rider.countDocuments({ riderStatus: 'active' });
     
-    // 2. Revenue (Sum of actualRent from all invoices)
-    const revenueAgg = await Invoice.aggregate([
-      { $group: { _id: null, total: { $sum: "$actualRent" } } }
-    ]);
-    const totalRevenue = revenueAgg.length > 0 ? revenueAgg[0].total : 0;
+    // 2. Payment Stats
+    const totalPaidRiders = await Rider.countDocuments({ paymentStatus: 'paid' });
+    const totalUnpaidRiders = await Rider.countDocuments({ paymentStatus: 'unpaid' });
+    
+    const weeklyRate = 2000;
+    const totalRevenue = totalPaidRiders * weeklyRate;
+    const pendingDues = totalUnpaidRiders * weeklyRate;
 
     // 3. 7-Day Rider Registration Trend
     const sevenDaysAgo = new Date();

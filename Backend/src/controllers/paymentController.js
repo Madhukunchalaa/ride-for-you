@@ -50,9 +50,8 @@ exports.verifyPayment = async (req, res) => {
 
     if (expectedSignature === razorpay_signature) {
       // Payment is verified
-      // Update rider status or last payment date
       await Rider.findByIdAndUpdate(riderId, {
-        riderStatus: 'active', // or update a specific payment field
+        paymentStatus: 'paid',
         updatedAt: Date.now()
       });
 

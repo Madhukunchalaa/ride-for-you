@@ -29,6 +29,11 @@ const riderSchema = new mongoose.Schema(
     returnDate: {
       type: Date,
       required: [true, 'Return date is required']
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['paid', 'unpaid'],
+      default: 'unpaid'
     }
   },
   { timestamps: true }

@@ -54,7 +54,7 @@ export default function Dashboard() {
   const stats = [
     { label: 'Total Riders', value: data?.stats?.totalRiders || 0, icon: Users, color: 'text-primary-400', bg: 'bg-primary-600/10' },
     { label: 'Active Fleet', value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
-    { label: 'Pending Dues', value: '₹4,320', icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' }, // Static for now as per image
+    { label: 'Pending Dues', value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
     { label: 'Total Revenue', value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
   ];
 

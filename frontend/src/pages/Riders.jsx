@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -14,6 +14,52 @@ export default function Riders() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // ... existing form state and fetch functions ...
+
+  // --- Razorpay Payment Logic ---
+  const handlePayment = async (rider) => {
+    try {
+      // 1. Create order on backend
+      const { data: orderResponse } = await api.post('/payments/create-order', {
+        riderId: rider._id,
+        amount: 2000 // Placeholder amount, adjust as needed
+      });
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_ScmuqfIedXSwGE',
+        amount: orderResponse.order.amount,
+        currency: "INR",
+        name: "Ride For You",
+        description: `Weekly Rental - ${rider.vehicleNumber}`,
+        order_id: orderResponse.order.id,
+        handler: async (response) => {
+          // 2. Verify payment on backend
+          try {
+            await api.post('/payments/verify', {
+              ...response,
+              riderId: rider._id
+            });
+            toast.success("Payment successful and verified!");
+            // fetchRiders(); 
+            window.location.reload(); // Quick refresh to show updated status
+          } catch (err) {
+            toast.error("Payment verification failed.");
+          }
+        },
+        prefill: {
+          name: rider.name,
+          contact: rider.whatsappNumber,
+        },
+        theme: {
+          color: "#0ea5e9", // primary-500
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      toast.error("Error initiating payment: " + (err.response?.data?.message || err.message));
+    }
+  };
 
   const handleSendReminder = async (riderId) => {
     try {

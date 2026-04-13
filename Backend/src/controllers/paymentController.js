@@ -67,9 +67,11 @@ exports.createPaymentLink = async (req, res) => {
   try {
     const { riderId, amount } = req.body;
     const rider = await Rider.findById(riderId);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
     
+    const amountVal = amount || 2000;
     const paymentLink = await razorpay.paymentLink.create({
-      amount: (amount || 2000) * 100,
+      amount: amountVal * 100,
       currency: "INR",
       accept_partial: false,
       description: `Weekly Rental - ${rider.vehicleNumber}`,
@@ -77,42 +79,42 @@ exports.createPaymentLink = async (req, res) => {
         name: rider.name,
         contact: rider.whatsappNumber,
       },
-      notify: {
-        sms: false,
-        email: false
-      },
-      reminder_enable: true,
+      notify: { sms: false, email: false },
       notes: { riderId: riderId.toString() },
-      callback_url: `http://localhost:5173/riders`, // Local for now
+      callback_url: `http://localhost:5173/riders`,
       callback_method: "get"
     });
 
-    res.status(200).json({ success: true, url: paymentLink.short_url });
+    // Save ID
+    rider.paymentLinkId = paymentLink.id;
+    await rider.save();
+
+    res.status(200).json({ success: true, url: paymentLink.short_url, id: paymentLink.id });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @POST /api/payments/webhook
-// @desc Handle Razorpay Webhooks for automatic database updates
-exports.webhookHandler = async (req, res) => {
-  const secret = 'your_webhook_secret'; // In real app, verify this!
-  const event = req.body.event;
+  console.log('🔔 Razorpay Webhook Received Full Payload:', JSON.stringify(req.body, null, 2));
 
-  console.log('🔔 Razorpay Webhook Received:', event);
+  if (event === 'payment_link.paid') {
+    const payload = req.body.payload.payment_link.entity;
+    const riderId = payload.notes.riderId;
+    const linkId = payload.id;
+    const amount = payload.amount / 100;
 
-  if (event === 'payment_link.paid' || event === 'qr_code.paid') {
-    const entity = event === 'qr_code.paid' 
-      ? req.body.payload.qr_code.entity 
-      : req.body.payload.payment_link.entity;
-    
-    const riderId = entity.notes.riderId;
-
-    await Rider.findByIdAndUpdate(riderId, {
+    const rider = await Rider.findByIdAndUpdate(riderId, {
       paymentStatus: 'paid',
       updatedAt: Date.now()
     });
-    console.log(`✅ Rider ${riderId} marked as PAID via Webhook (${event})`);
+
+    if (rider) {
+      console.log(`✅ Success: Rider ${rider.name} paid ₹${amount} (Link ID: ${linkId})`);
+      
+      // Send WhatsApp Confirmation
+      const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+      await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
+    }
   }
 
   res.status(200).send('OK');

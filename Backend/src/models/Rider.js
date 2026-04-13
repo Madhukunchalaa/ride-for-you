@@ -34,6 +34,9 @@ const riderSchema = new mongoose.Schema(
       type: String,
       enum: ['paid', 'unpaid'],
       default: 'unpaid'
+    },
+    paymentLinkId: {
+      type: String
     }
   },
   { timestamps: true }

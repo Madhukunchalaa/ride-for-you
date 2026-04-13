@@ -14,25 +14,34 @@ exports.sendReminder = async (req, res) => {
 
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
 
-    // Use Payment Link API (most robust) and wrap it in a QR
+    // 1. Create REAL Razorpay Payment Link
     const paymentLinkObj = await razorpay.paymentLink.create({
-      amount: amountVal * 100,
+      amount: amountVal * 100, // in paise
       currency: "INR",
       accept_partial: false,
-      description: `Weekly Rental - ${rider.vehicleNumber}`,
+      description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
       customer: {
         name: rider.name,
         contact: rider.whatsappNumber,
       },
       notify: { sms: false, email: false },
-      notes: { riderId: rider._id.toString() }
+      reminder_enable: true,
+      notes: { riderId: rider._id.toString() },
+      callback_url: `http://localhost:5173/riders`,
+      callback_method: "get"
     });
 
+    // 2. Store Payment Link ID in Database
+    rider.paymentLinkId = paymentLinkObj.id;
+    await rider.save();
+
+    // 3. Prepare QR and Message
     const paymentLink = paymentLinkObj.short_url;
+    // Generate valid QR from short_url
     const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
     
     const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nScan the QR code below to pay *₹${amountVal}* easily. Once paid, your dashboard will update automatically! ⚡`;
+    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental payment for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\n🔗 *Pay Now:* ${paymentLink}\n\nOr scan the QR code below to pay easily. Once paid, your dashboard will update automatically! ⚡`;
 
     await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
 

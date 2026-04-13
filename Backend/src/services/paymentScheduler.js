@@ -19,7 +19,7 @@ const initPaymentScheduler = () => {
         const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nScan the QR code or tap this link to pay:\n${upiUrl}`;
 
         // Generate public QR code URL
-        const upiUrl = `upi://pay?pa=yourname@upi&pn=RideForYou&am=2000&cu=INR`;
+        const upiUrl = `upi://pay?pa=madhu.kunchala2@ybl&pn=RideForYou&am=2000&cu=INR`;
         const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
 
         try {

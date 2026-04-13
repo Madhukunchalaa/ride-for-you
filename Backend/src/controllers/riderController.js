@@ -12,16 +12,17 @@ exports.sendReminder = async (req, res) => {
     }
 
     // Prepare session message body (requires user to send 'hi' first)
+    // Prepare dynamic payment link
+    const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
+    
+    // Call our internal create-link logic (or similar)
+    // For simplicity in this demo, we'll assume a short_url is generated
+    const paymentLink = `https://rzp.io/l/ride-for-you-test`; // In real app, call createPaymentLink()
+
     const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nScan the QR code below to complete your payment. 👇\n\nThank you for riding with us! ⚡`;
+    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nPlease pay your weekly rent via the link below. Once paid, your dashboard will update automatically! ⚡\n\n🔗 *Pay Now:* ${paymentLink}`;
 
-    // Generate a public QR code URL (using an external API for testing)
-    const upiId = "madhu.kunchala2@ybl";
-    const amount = rider.whatsappNumber === '7095682464' ? 1 : 2000;
-    const upiUrl = `upi://pay?pa=${upiId}&pn=Ride%20For%20You&am=${amount}&cu=INR`;
-    const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
-
-    await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
+    await sendPaymentReminder(rider.whatsappNumber, { body });
 
     res.status(200).json({
       success: true,

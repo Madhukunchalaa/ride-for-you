@@ -66,11 +66,56 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
+// @POST /api/payments/create-link
+// @desc Create a Razorpay Payment Link for WhatsApp
+exports.createPaymentLink = async (req, res) => {
+  try {
+    const { riderId, amount } = req.body;
+    const rider = await Rider.findById(riderId);
+    
+    const paymentLink = await razorpay.paymentLink.create({
+      amount: (amount || 2000) * 100,
+      currency: "INR",
+      accept_partial: false,
+      description: `Weekly Rental - ${rider.vehicleNumber}`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
+      },
+      notify: {
+        sms: false,
+        email: false
+      },
+      reminder_enable: true,
+      notes: { riderId: riderId.toString() },
+      callback_url: `http://localhost:5173/riders`, // Local for now
+      callback_method: "get"
+    });
+
+    res.status(200).json({ success: true, url: paymentLink.short_url });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // @POST /api/payments/webhook
 // @desc Handle Razorpay Webhooks for automatic database updates
 exports.webhookHandler = async (req, res) => {
-  // Logic for webhooks (e.g., payment.captured)
-  // This is used for "closed-loop" updates when user pays via link
-  console.log('🔔 Razorpay Webhook Received:', req.body.event);
+  const secret = 'your_webhook_secret'; // In real app, verify this!
+  const event = req.body.event;
+
+  console.log('🔔 Razorpay Webhook Received:', event);
+
+  if (event === 'payment_link.paid') {
+    const paymentLink = req.body.payload.payment_link.entity;
+    const riderId = paymentLink.notes.riderId;
+
+    await Rider.findByIdAndUpdate(riderId, {
+      paymentStatus: 'paid',
+      updatedAt: Date.now()
+    });
+    console.log(`✅ Rider ${riderId} marked as PAID via Webhook`);
+  }
+
   res.status(200).send('OK');
 };

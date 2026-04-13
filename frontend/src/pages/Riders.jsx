@@ -25,7 +25,7 @@ export default function Riders() {
       });
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_ScmuqfIedXSwGE',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_Sco5STh3MJYT2F',
         amount: orderResponse.order.amount,
         currency: "INR",
         name: "Ride For You",

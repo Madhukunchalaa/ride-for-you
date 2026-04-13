@@ -229,6 +229,13 @@ export default function Riders() {
                             <Send size={18} />
                           )}
                         </button>
+                        <button 
+                          onClick={() => handlePayment(rider)}
+                          className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-600 transition-all"
+                          title="Test Razorpay Payment"
+                        >
+                          <CreditCard size={18} />
+                        </button>
                         <button className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all">
                           <ExternalLink size={18} />
                         </button>

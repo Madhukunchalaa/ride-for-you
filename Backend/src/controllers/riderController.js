@@ -1,6 +1,7 @@
 const Rider = require('../models/Rider');
 const { sendPaymentReminder } = require('../utils/whatsapp');
 const { generateUPIQRCode } = require('../utils/qrGenerator');
+const razorpay = require('../config/razorpay');
 
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp
@@ -11,14 +12,24 @@ exports.sendReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Prepare session message body (requires user to send 'hi' first)
     // Prepare dynamic payment link
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
     
-    // Call our internal create-link logic (or similar)
-    // For simplicity in this demo, we'll assume a short_url is generated
-    const paymentLink = `https://rzp.io/l/ride-for-you-test`; // In real app, call createPaymentLink()
+    // Create REAL Razorpay Payment Link
+    const paymentLinkObj = await razorpay.paymentLink.create({
+      amount: amountVal * 100,
+      currency: "INR",
+      accept_partial: false,
+      description: `Weekly Rental - ${rider.vehicleNumber}`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
+      },
+      notify: { sms: false, email: false },
+      notes: { riderId: rider._id.toString() }
+    });
 
+    const paymentLink = paymentLinkObj.short_url;
     const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
     const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nPlease pay your weekly rent via the link below. Once paid, your dashboard will update automatically! ⚡\n\n🔗 *Pay Now:* ${paymentLink}`;
 
@@ -73,6 +84,17 @@ exports.getRiders = async (req, res) => {
       count: riders.length,
       data: riders
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateStatus = async (req, res) => {
+  try {
+    const { paymentStatus } = req.body;
+    const rider = await Rider.findByIdAndUpdate(req.params.id, { paymentStatus }, { new: true });
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+    res.status(200).json({ success: true, rider });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

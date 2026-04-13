@@ -4,7 +4,7 @@
   "description": "EV Rental Management System",
   "main": "Backend/server.js",
   "scripts": {
-    "start": "cd Backend && NODE_ENV=production node server.js",
+    "start": "node Backend/server.js",
     "dev:backend": "cd Backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm install && npm run build && cd ../Backend && npm install",

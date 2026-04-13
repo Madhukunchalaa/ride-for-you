@@ -101,15 +101,18 @@ exports.webhookHandler = async (req, res) => {
 
   console.log('🔔 Razorpay Webhook Received:', event);
 
-  if (event === 'payment_link.paid') {
-    const paymentLink = req.body.payload.payment_link.entity;
-    const riderId = paymentLink.notes.riderId;
+  if (event === 'payment_link.paid' || event === 'qr_code.paid') {
+    const entity = event === 'qr_code.paid' 
+      ? req.body.payload.qr_code.entity 
+      : req.body.payload.payment_link.entity;
+    
+    const riderId = entity.notes.riderId;
 
     await Rider.findByIdAndUpdate(riderId, {
       paymentStatus: 'paid',
       updatedAt: Date.now()
     });
-    console.log(`✅ Rider ${riderId} marked as PAID via Webhook`);
+    console.log(`✅ Rider ${riderId} marked as PAID via Webhook (${event})`);
   }
 
   res.status(200).send('OK');

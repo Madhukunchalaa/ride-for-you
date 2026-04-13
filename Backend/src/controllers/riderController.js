@@ -12,28 +12,22 @@ exports.sendReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Prepare dynamic payment link
-    const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
-    
-    // Create REAL Razorpay Payment Link
-    const paymentLinkObj = await razorpay.paymentLink.create({
-      amount: amountVal * 100,
-      currency: "INR",
-      accept_partial: false,
+    // Create REAL Razorpay UPI QR Code
+    const qrCodeObj = await razorpay.qrCode.create({
+      type: "upi_qr",
+      name: `Ride For You - ${rider.name}`,
+      usage: "single_use",
+      fixed_amount: true,
+      payment_amount: amountVal * 100,
       description: `Weekly Rental - ${rider.vehicleNumber}`,
-      customer: {
-        name: rider.name,
-        contact: rider.whatsappNumber,
-      },
-      notify: { sms: false, email: false },
       notes: { riderId: rider._id.toString() }
     });
 
-    const paymentLink = paymentLinkObj.short_url;
+    const mediaUrl = qrCodeObj.image_url;
     const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nPlease pay your weekly rent via the link below. Once paid, your dashboard will update automatically! ⚡\n\n🔗 *Pay Now:* ${paymentLink}`;
+    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nScan the QR code below to pay *₹${amountVal}* easily via any UPI app. Once paid, your dashboard will update automatically! ⚡`;
 
-    await sendPaymentReminder(rider.whatsappNumber, { body });
+    await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
 
     res.status(200).json({
       success: true,

@@ -11,15 +11,15 @@ exports.sendReminder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Prepare template variables (as per user's snippet example)
-    // For now, using placeholders for date and time
+    // Prepare template variables
+    // Mapping for HXb5b62575e6e4ff6129ad7c8efe1f983e:
+    // 1: Rider Name
+    // 2: Return Date (formatted)
     const variables = {
-      "1": new Date().toLocaleDateString(),
-      "2": new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      "1": rider.name,
+      "2": new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
     };
 
-    // Note: Generating QR code image but Twilio Content API often uses SID for media
-    // or public URLs. For now, we simulate the sending as requested.
     await sendPaymentReminder(rider.whatsappNumber, variables);
 
     res.status(200).json({

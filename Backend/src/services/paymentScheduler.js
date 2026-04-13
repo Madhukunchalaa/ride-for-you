@@ -16,8 +16,8 @@ const initPaymentScheduler = () => {
 
       for (const rider of activeRiders) {
         const variables = {
-          "1": new Date().toLocaleDateString(),
-          "2": "9:00 AM"
+          "1": rider.name,
+          "2": new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
         };
 
         try {

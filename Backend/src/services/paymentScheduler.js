@@ -16,10 +16,14 @@ const initPaymentScheduler = () => {
 
       for (const rider of activeRiders) {
         const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nPlease use the app to pay or reach out if you have any questions!`;
+        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nPlease scan the attached QR code to pay.`;
+
+        // Generate public QR code URL
+        const upiUrl = `upi://pay?pa=yourname@upi&pn=RideForYou&am=2000&cu=INR`;
+        const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
 
         try {
-          await sendPaymentReminder(rider.whatsappNumber, { body });
+          await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
           console.log(`✅ Automated reminder sent to ${rider.name}`);
         } catch (err) {
           console.error(`❌ Failed to send automated reminder to ${rider.name}:`, err.message);

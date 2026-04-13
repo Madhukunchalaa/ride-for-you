@@ -5,11 +5,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
+const { initPaymentScheduler } = require('./src/services/paymentScheduler');
 
 const app = express();
 
-// Database
+// Database & Scheduler
 connectDB();
+initPaymentScheduler();
 
 // Middleware
 app.use(helmet({

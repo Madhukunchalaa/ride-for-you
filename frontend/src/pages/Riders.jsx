@@ -1,15 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
+import toast from 'react-hot-toast';
 
 export default function Riders() {
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(null);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // ... existing form state and fetch functions ...
+
+  const handleSendReminder = async (riderId) => {
+    try {
+      setSendingReminder(riderId);
+      await api.post(`/riders/${riderId}/send-reminder`);
+      toast.success('Reminder sent successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to send reminder');
+    } finally {
+      setSendingReminder(null);
+    }
+  };
+
+  // Skip the next ~60 lines to avoid re-writing everything
 
   // Form State
   const [formData, setFormData] = useState({
@@ -198,6 +217,18 @@ export default function Riders() {
                     </td>
                     <td className="p-6">
                       <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleSendReminder(rider._id)}
+                          disabled={sendingReminder === rider._id}
+                          className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-600 transition-all disabled:opacity-50"
+                          title="Send WhatsApp Reminder"
+                        >
+                          {sendingReminder === rider._id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Send size={18} />
+                          )}
+                        </button>
                         <button className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all">
                           <ExternalLink size={18} />
                         </button>

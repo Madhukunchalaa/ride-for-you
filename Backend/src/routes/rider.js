@@ -8,5 +8,6 @@ router.use(protect);
 
 router.post('/', riderController.addRider);
 router.get('/', riderController.getRiders);
+router.post('/:id/send-reminder', riderController.sendReminder);
 
 module.exports = router;

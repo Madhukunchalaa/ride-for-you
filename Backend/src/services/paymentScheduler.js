@@ -16,7 +16,7 @@ const initPaymentScheduler = () => {
 
       for (const rider of activeRiders) {
         const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nPlease scan the attached QR code to pay.`;
+        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nScan the QR code or tap this link to pay:\n${upiUrl}`;
 
         // Generate public QR code URL
         const upiUrl = `upi://pay?pa=yourname@upi&pn=RideForYou&am=2000&cu=INR`;

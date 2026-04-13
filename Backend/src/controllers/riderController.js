@@ -13,7 +13,7 @@ exports.sendReminder = async (req, res) => {
 
     // Prepare session message body (requires user to send 'hi' first)
     const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nScan the QR code below to complete your payment. 👇\n\nThank you for riding with us! ⚡`;
+    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\nScan the QR code below to pay, or tap the link below if you are on your phone:\n\n🔗 *Tap to Pay:* ${upiUrl}\n\nThank you for riding with us! ⚡`;
 
     // Generate a public QR code URL (using an external API for testing)
     const upiId = "yourname@upi"; // Replace with real UPI ID

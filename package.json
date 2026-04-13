@@ -3,22 +3,19 @@
   "version": "1.0.0",
   "description": "EV Rental Management System",
   "main": "Backend/server.js",
-  "workspaces": [
-    "Backend",
-    "frontend"
-  ],
   "scripts": {
     "start": "node Backend/server.js",
-    "dev:backend": "npm run dev -w Backend",
-    "dev:frontend": "npm run dev -w frontend",
-    "build": "npm run build -w frontend",
-    "postinstall": "npm run build"
+    "dev:backend": "cd Backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd Backend && npm install",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run install:frontend && npm run build:frontend && npm run install:backend",
+    "install": "npm run install:frontend && npm run install:backend"
   },
   "dependencies": {
     "@emnapi/core": "1.9.2",
     "@emnapi/runtime": "1.9.2"
-  },
-  "devDependencies": {
   },
   "keywords": [],
   "author": "",

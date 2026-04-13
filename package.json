@@ -1,0 +1,16 @@
+{
+  "name": "ride-for-you",
+  "version": "1.0.0",
+  "description": "EV Rental Management System",
+  "main": "Backend/server.js",
+  "scripts": {
+    "start": "cd Backend && NODE_ENV=production node server.js",
+    "dev:backend": "cd Backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm install && npm run build && cd ../Backend && npm install",
+    "install:all": "npm install --prefix Backend && npm install --prefix frontend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

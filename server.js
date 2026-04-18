@@ -54,10 +54,7 @@ app.use('/api/payments', require('./src/routes/payment'));
 
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.resolve(__dirname, 'frontend', 'dist');
-  const rootFrontendPath = path.resolve(__dirname, '..', 'frontend', 'dist');
-  
-  const finalPath = require('fs').existsSync(frontendPath) ? frontendPath : rootFrontendPath;
+  const finalPath = path.resolve(__dirname, 'client', 'dist');
   
   console.log("📂 Serving frontend from:", finalPath);
   app.use(express.static(finalPath));

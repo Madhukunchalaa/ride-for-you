@@ -30,6 +30,20 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Simple Request Logger for Debugging 502s
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.url}`);
+  next();
+});
+
+// Prevent process crashes
+process.on('unhandledRejection', (err) => {
+  console.error('💥 Unhandled Rejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+});
+
 // API Routes
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', require('./src/routes/auth'));

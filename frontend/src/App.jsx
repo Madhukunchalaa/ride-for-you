@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Riders from './pages/Riders';
+import RiderDetails from './pages/RiderDetails';
 import Hala from './pages/Hala';
 import Payments from './pages/Payments';
 
@@ -35,6 +36,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="riders" element={<Riders />} />
+            <Route path="riders/:id" element={<RiderDetails />} />
             <Route path="hala" element={<Hala />} />
             <Route path="payments" element={<Payments />} />
           </Route>

@@ -6,6 +6,11 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       required: true // e.g., "February 2026"
     },
+    riderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Rider'
+    },
+    riderName: String,
     invoiceType: {
       type: String,
       enum: ['RENT', 'RECOVERY', 'REPAIR & DAMAGE', 'OTHERS'],

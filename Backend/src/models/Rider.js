@@ -37,6 +37,17 @@ const riderSchema = new mongoose.Schema(
     },
     paymentLinkId: {
       type: String
+    },
+    bikesUsed: [{
+      type: String // List of vehicle numbers
+    }],
+    complaints: [{
+      text: String,
+      date: { type: Date, default: Date.now }
+    }],
+    totalWeeks: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

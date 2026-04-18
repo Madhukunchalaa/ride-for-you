@@ -17,10 +17,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 import api from '../api/axios';
 
@@ -61,38 +58,37 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-dark-100 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl hover:border-primary-500/30 transition-all group overflow-hidden relative">
+          <div key={stat.label} className="bg-white dark:bg-dark-100 p-6 rounded-3xl md:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl hover:border-primary-500/30 transition-all group overflow-hidden relative">
             <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
-                <stat.icon size={28} />
+              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                <stat.icon size={24} className="md:w-7 md:h-7" />
               </div>
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
-                <p className="text-2xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">{stat.value}</p>
+                <p className="text-xl md:text-2xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">{stat.value}</p>
               </div>
             </div>
-            <div className={`absolute -right-4 -bottom-4 w-24 h-24 ${stat.bg} rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity`}></div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Revenue/Registration Trend Chart */}
-        <div className="lg:col-span-2 bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl relative overflow-hidden group">
-          <div className="flex items-center justify-between mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        {/* Fleet Growth Trend Chart */}
+        <div className="lg:col-span-2 bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-5 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl relative overflow-hidden group">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h3 className="text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Fleet Growth Trend</h3>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Rider registrations over last 7 days</p>
+              <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Fleet Growth Trend</h3>
+              <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Rider registrations (Last 7 Days)</p>
             </div>
-            <div className="bg-primary-600/10 border border-primary-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+            <div className="bg-primary-600/10 border border-primary-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
               <span className="text-[10px] text-primary-400 font-black uppercase tracking-tighter">Live Monitor</span>
             </div>
           </div>
           
-          <div className="h-[300px] w-full mt-4">
+          <div className="h-[250px] md:h-[300px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data?.riderTrend || []}>
                 <defs>
@@ -134,42 +130,96 @@ export default function Dashboard() {
           </div>
         </div>
         
-        {/* Recent Activity */}
-        <div className="bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl relative overflow-hidden">
-          <div className="flex items-center gap-3 mb-8">
+        {/* Recent Onboarding */}
+        <div className="bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl relative overflow-hidden">
+          <div className="flex items-center gap-3 mb-6 md:mb-8">
             <div className="w-10 h-10 rounded-xl bg-sky-600/10 flex items-center justify-center text-sky-400">
               <CheckCircle2 size={20} />
             </div>
-            <h3 className="text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Recent Onboarding</h3>
+            <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Recent Onboarding</h3>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {data?.recentActivity?.length > 0 ? (
               data.recentActivity.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-4 group cursor-pointer">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 group-hover:bg-primary-600/10 group-hover:text-primary-400 group-hover:border-primary-500/30 transition-all duration-300">
-                    <Users size={20} />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 group-hover:bg-primary-600/10 group-hover:text-primary-400 group-hover:border-primary-500/30 transition-all duration-300">
+                    <Users size={18} />
                   </div>
-                  <div className="flex-1 border-b border-slate-200 dark:border-slate-800/50 pb-4 group-last:border-0">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors uppercase tracking-tight">{item.name}</p>
+                  <div className="flex-1 border-b border-slate-200 dark:border-slate-800/50 pb-3 md:pb-4 group-last:border-0">
+                    <p className="text-xs md:text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors uppercase tracking-tight">{item.name}</p>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{item.vehicleNumber}</span>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-600 font-bold">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-[9px] md:text-[10px] text-slate-500 font-black uppercase tracking-widest">{item.vehicleNumber}</span>
+                      <span className="text-[8px] md:text-[9px] text-slate-400 dark:text-slate-600 font-bold">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="py-20 text-center">
+              <div className="py-10 md:py-20 text-center">
                 <AlertCircle size={40} className="text-slate-200 dark:text-slate-700 mx-auto mb-4" />
-                <p className="text-slate-400 dark:text-slate-500 text-xs font-black uppercase tracking-widest leading-loose">No recent activity<br/>to monitor</p>
+                <p className="text-slate-400 dark:text-slate-500 text-xs font-black uppercase tracking-widest leading-loose">No recent activity</p>
               </div>
             )}
           </div>
-          
-          <button className="w-full mt-8 py-3 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-all border border-slate-200 dark:border-slate-700">
+          <button className="w-full mt-6 md:mt-8 py-3 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest transition-all border border-slate-200 dark:border-slate-700">
             View All Activity
           </button>
+        </div>
+      </div>
+
+      {/* Row 3: Revenue Performance */}
+      <div className="bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-5 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl relative overflow-hidden group">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Revenue Collection</h3>
+            <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Daily income trends (Last 7 Days)</p>
+          </div>
+          <div className="bg-emerald-600/10 border border-emerald-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">INR Collected</span>
+          </div>
+        </div>
+        
+        <div className="h-[300px] w-full mt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data?.revenueTrend || []}>
+              <defs>
+                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-[#1e293b]" vertical={false} />
+              <XAxis 
+                dataKey="_id" 
+                stroke="#64748b" 
+                fontSize={10} 
+                tickLine={false} 
+                axisLine={false}
+                tickFormatter={(val) => new Date(val).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+              />
+              <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
+              <Tooltip 
+                formatter={(value) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                contentStyle={{ 
+                  backgroundColor: 'var(--surface)', 
+                  border: '1px solid var(--border)', 
+                  borderRadius: '12px', 
+                  fontSize: '12px',
+                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="amount" 
+                stroke="#10b981" 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorRev)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

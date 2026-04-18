@@ -6,12 +6,14 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
 const { initPaymentScheduler } = require('./src/services/paymentScheduler');
+const { initCronJobs } = require('./src/utils/cronJobs');
 
 const app = express();
 
 // Database & Scheduler
 connectDB();
 initPaymentScheduler();
+initCronJobs();
 
 // Middleware
 app.use(helmet({

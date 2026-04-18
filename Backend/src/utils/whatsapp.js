@@ -23,13 +23,20 @@ const sendPaymentReminder = async (to, options = {}) => {
     client = twilio(accountSid, authToken);
   }
 
-  // Ensure number is in correct format (+countryCode)
-  let formattedNumber = to.trim();
-  if (!formattedNumber.startsWith('+')) {
-    formattedNumber = `+91${formattedNumber}`;
+  // Ensure number is in correct format (+91 for India)
+  let cleaned = to.replace(/[^0-9]/g, '');
+  
+  // If number starts with 91 and has 12 digits, it already has country code
+  // If it has 10 digits, prepend 91
+  let formattedNumber = cleaned;
+  if (cleaned.length === 10) {
+    formattedNumber = '91' + cleaned;
+  } else if (cleaned.length > 10 && !cleaned.startsWith('91')) {
+    // some other country code or weird format, let it be but warn
+    console.warn('⚠️ Non-standard phone number length for India:', cleaned);
   }
 
-  const finalTo = `whatsapp:${formattedNumber}`;
+  const finalTo = `whatsapp:+${formattedNumber}`;
 
   if (!client) {
     console.log('📝 [MOCK WHATSAPP] To:', finalTo, 'Options:', options);

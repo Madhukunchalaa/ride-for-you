@@ -102,9 +102,82 @@ exports.getRiders = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { paymentStatus } = req.body;
-    const rider = await Rider.findByIdAndUpdate(req.params.id, { paymentStatus }, { new: true });
+    const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    // Auto-extend by 7 days if marking as PAID
+    if (paymentStatus === 'paid' && rider.paymentStatus === 'unpaid') {
+      const nextWeek = new Date(rider.returnDate || Date.now());
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      rider.returnDate = nextWeek;
+      rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+      
+      // Track bike usage if not already added
+      if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
+        rider.bikesUsed.push(rider.vehicleNumber);
+      }
+
+      // Create Invoice Record for Manual Payment
+      const { createInvoiceRecord } = require('../utils/invoiceHelper');
+      await createInvoiceRecord(rider, req.body.amount || 2000);
+    }
+
+    rider.paymentStatus = paymentStatus;
+    await rider.save();
+    
     res.status(200).json({ success: true, rider });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @DELETE /api/riders/:id
+exports.deleteRider = async (req, res) => {
+  try {
+    const rider = await Rider.findByIdAndDelete(req.params.id);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+    res.status(200).json({ success: true, message: 'Rider deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const Invoice = require('../models/Invoice');
+
+// @GET /api/riders/:id/details
+exports.getRiderDetails = async (req, res) => {
+  try {
+    const rider = await Rider.findById(req.params.id);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    // Fetch invoices linked to this rider
+    const invoices = await Invoice.find({ riderId: req.params.id }).sort({ createdAt: -1 });
+
+    res.status(200).json({ 
+      success: true, 
+      data: {
+        ...rider.toObject(),
+        invoices
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @POST /api/riders/:id/complaints
+exports.addComplaint = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ success: false, message: 'Complaint text is required' });
+
+    const rider = await Rider.findById(req.params.id);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    rider.complaints.push({ text });
+    await rider.save();
+
+    res.status(200).json({ success: true, message: 'Complaint added' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

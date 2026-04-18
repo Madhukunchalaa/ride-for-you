@@ -7,5 +7,6 @@ router.use(protect);
 
 router.get('/dashboard', analyticsController.getDashboardStats);
 router.get('/billing', analyticsController.getBillingStats);
+router.get('/payments', analyticsController.getPaymentAnalytics);
 
 module.exports = router;

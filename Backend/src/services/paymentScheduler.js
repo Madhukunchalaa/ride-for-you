@@ -15,12 +15,12 @@ const initPaymentScheduler = () => {
       const activeRiders = await Rider.find({ riderStatus: 'active' });
 
       for (const rider of activeRiders) {
-        const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nScan the QR code or tap this link to pay:\n${upiUrl}`;
-
         // Generate public QR code URL
         const upiUrl = `upi://pay?pa=madhu.kunchala2@ybl&pn=RideForYou&am=2000&cu=INR`;
         const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
+
+        const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const body = `💳 *Weekly Payment Reminder*\n\nHello ${rider.name},\nYour rental payment for vehicle ${rider.vehicleNumber} is due on ${returnDate}.\n\nScan the QR code or tap this link to pay:\n${upiUrl}`;
 
         try {
           await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });

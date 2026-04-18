@@ -5,15 +5,16 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
+const { seedAdmin } = require('./src/utils/seedAdmin');
 const { initPaymentScheduler } = require('./src/services/paymentScheduler');
 const { initCronJobs } = require('./src/utils/cronJobs');
 
 const app = express();
 
 // Database & Scheduler
-connectDB();
-initPaymentScheduler();
-initCronJobs();
+connectDB().then(() => {
+  seedAdmin(); // Auto-seed on startup
+});
 
 // Middleware
 app.use(helmet({
@@ -45,7 +46,15 @@ process.on('uncaughtException', (err) => {
 });
 
 // API Routes
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.json({ 
+    status: 'ok', 
+    database: dbStatus,
+    environment: process.env.NODE_ENV,
+    time: new Date().toISOString()
+  });
+});
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/riders', require('./src/routes/rider'));
 app.use('/api/invoices', require('./src/routes/invoice'));

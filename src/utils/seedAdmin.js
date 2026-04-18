@@ -1,17 +1,16 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const seedAdmin = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
+    // Check if admin already exists to avoid unnecessary deletions
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (adminExists) {
+      console.log('✅ Admin user already exists');
+      return;
+    }
 
-    // Clear existing users
-    await User.deleteMany({ role: 'admin' });
-    console.log('🗑️  Existing admins cleared');
-
-    // Create Admin
+    console.log('🌱 Seeding Admin User...');
+    
     const admin = await User.create({
       name: 'Admin',
       email: process.env.ADMIN_EMAIL || 'admin@evride.com',
@@ -19,13 +18,10 @@ const seedAdmin = async () => {
       role: 'admin'
     });
 
-    console.log(`👤 Admin Created successfully!`);
-    console.log(`Email: ${admin.email}`);
-    process.exit(0);
+    console.log(`👤 Admin Created successfully: ${admin.email}`);
   } catch (err) {
     console.error(`❌ Seeding Error: ${err.message}`);
-    process.exit(1);
   }
 };
 
-seedAdmin();
+module.exports = { seedAdmin };

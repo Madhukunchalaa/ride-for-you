@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Force relative path in production to ensure it works on any domain
-  baseURL: import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api'),
+  // Use relative path for all environments to avoid CORS/domain issues
+  baseURL: '/api',
 });
 
 // Add token to requests

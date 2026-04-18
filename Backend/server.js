@@ -38,11 +38,16 @@ app.use('/api/payments', require('./src/routes/payment'));
 
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {
-  const frontendPath = path.join(__dirname, '../frontend/dist');
-  app.use(express.static(frontendPath));
+  const frontendPath = path.resolve(__dirname, 'frontend', 'dist');
+  const rootFrontendPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+  
+  const finalPath = require('fs').existsSync(frontendPath) ? frontendPath : rootFrontendPath;
+  
+  console.log("📂 Serving frontend from:", finalPath);
+  app.use(express.static(finalPath));
 
   app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(path.join(finalPath, 'index.html'));
   });
 }
 

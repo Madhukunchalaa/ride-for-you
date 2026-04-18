@@ -5,7 +5,7 @@ const connectDB = async () => {
   
   if (!uri) {
     console.error("❌ FATAL: MONGODB_URI is undefined in environment variables!");
-    process.exit(1);
+    return; // Don't crash the server
   }
 
   try {
@@ -13,7 +13,7 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (err) {
     console.error(`❌ MongoDB Error: ${err.message}`);
-    process.exit(1);
+    // Don't exit process, allow frontend to serve
   }
 };
 

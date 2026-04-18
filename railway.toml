@@ -6,7 +6,7 @@ buildCommand = "npm run build"
 startCommand = "npm start"
 healthCheckPath = "/health"
 healthCheckTimeout = 100
-restartPolicyType = "on-failure"
+restartPolicyType = "ON_FAILURE"
 
 [services.ride-for-you]
 # This ensures Railway treats the root as a single unified service

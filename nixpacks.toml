@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ["nodePackages.npm"]
+nixPkgs = ["nodePackages_latest.nodejs_22"]
+# Railway default is often older, forcing latest v22
 
 [phases.install]
 cmds = ["npm install"]

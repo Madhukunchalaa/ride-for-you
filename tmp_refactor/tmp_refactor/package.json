@@ -1,13 +1,10 @@
 {
-  "name": "ride-for-you",
+  "name": "ev-rental-backend",
   "version": "1.0.0",
-  "description": "EV Rental Management System",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build:frontend": "cd frontend && npm install && npm run build",
-    "build": "npm run build:frontend",
     "seed": "node src/utils/seedAdmin.js"
   },
   "dependencies": {
@@ -22,14 +19,9 @@
     "node-cron": "^4.2.1",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
-    "twilio": "^5.13.1",
-    "@emnapi/core": "1.9.2",
-    "@emnapi/runtime": "1.9.2"
+    "twilio": "^5.13.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }

@@ -11,11 +11,6 @@ const { initCronJobs } = require('./src/utils/cronJobs');
 const app = express();
 
 // Database & Scheduler
-console.log("-----------------------------------------");
-console.log("🔍 PRODUCTION DIAGNOSTICS");
-console.log("📍 CWD:", process.cwd());
-console.log("🔑 ALL KEYS FOUND:", Object.keys(process.env).sort().filter(k => !k.startsWith('npm_')).join(', '));
-console.log("-----------------------------------------");
 connectDB();
 initPaymentScheduler();
 initCronJobs();

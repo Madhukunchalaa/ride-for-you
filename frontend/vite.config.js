@@ -12,4 +12,10 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    allowedHosts: [
+      'localhost',
+      'ride-for-you-production.up.railway.app',
+    ],
+  },
 })

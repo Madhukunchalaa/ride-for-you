@@ -4,6 +4,7 @@ const User = require('../models/User');
 // @POST /api/auth/login
 exports.login = async (req, res) => {
   try {
+    const { email, password } = req.body;
     console.log(`🔑 Login attempt: ${email}`);
     if (!email || !password) {
       console.log('⚠️ Missing email or password');

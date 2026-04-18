@@ -11,6 +11,8 @@ const { initCronJobs } = require('./src/utils/cronJobs');
 const app = express();
 
 // Database & Scheduler
+console.log("🔍 Checking Environment Variables...");
+console.log("Keys found:", Object.keys(process.env).filter(k => !k.startsWith('npm_')).join(', '));
 connectDB();
 initPaymentScheduler();
 initCronJobs();

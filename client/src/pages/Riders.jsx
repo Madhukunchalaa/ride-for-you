@@ -13,6 +13,7 @@ export default function Riders() {
   const [sendingReminder, setSendingReminder] = useState(null);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('active');
 
   // ... existing form state and fetch functions ...
 
@@ -87,13 +88,13 @@ export default function Riders() {
   };
 
   const handleDeleteRider = async (id) => {
-    if (confirm('Are you sure you want to delete this rider? This action cannot be undone.')) {
+    if (confirm('Are you sure you want to end this rental and archive the rider?')) {
       try {
-        await api.delete(`/riders/${id}`);
-        toast.success('Rider deleted successfully');
+        await api.patch(`/riders/${id}/status`, { riderStatus: 'inactive' });
+        toast.success('Rider archived successfully');
         fetchRiders();
       } catch (err) {
-        toast.error('Failed to delete rider');
+        toast.error('Failed to archive rider');
       }
     }
   };
@@ -177,11 +178,13 @@ export default function Riders() {
     return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  const filteredRiders = riders.filter(rider => 
-    rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rider.whatsappNumber.includes(searchTerm)
-  );
+  const filteredRiders = riders.filter(rider => {
+    const isCorrectTab = (rider.riderStatus || 'active') === activeTab;
+    const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          rider.whatsappNumber.includes(searchTerm);
+    return isCorrectTab && matchesSearch;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -203,6 +206,21 @@ export default function Riders() {
       </div>
 
       {/* Controls */}
+      <div className="flex bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4">
+        <button 
+          onClick={() => setActiveTab('active')} 
+          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Active Fleet
+        </button>
+        <button 
+          onClick={() => setActiveTab('inactive')} 
+          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Past Riders
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-3 relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary-500 transition-colors" size={20} />

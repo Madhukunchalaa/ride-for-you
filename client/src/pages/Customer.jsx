@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
+import toast from 'react-hot-toast';
 
 const Customer = () => {
     const [customers, setCustomers] = useState([]);
@@ -28,6 +29,17 @@ const Customer = () => {
         fetchCustomers();
     }, []);
 
+    const handleUpdate = async (id, field, value) => {
+        try {
+            await api.patch(`/customers/${id}`, { [field]: value });
+            setCustomers(prev => prev.map(c => c._id === id ? { ...c, [field]: value } : c));
+            toast.success('Updated successfully');
+        } catch (error) {
+            console.error("Failed to update", error);
+            toast.error('Failed to update');
+        }
+    };
+
     if (loading) {
         return <div className="p-4 text-center">Loading customers...</div>;
     }
@@ -48,6 +60,8 @@ const Customer = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requirements</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lead Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -59,11 +73,37 @@ const Customer = () => {
                                     <td className="px-6 py-4 whitespace-nowrap">{customer.phone}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{customer.city}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.message || '-'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <select 
+                                            value={customer.leadStatus || 'New'}
+                                            onChange={(e) => handleUpdate(customer._id, 'leadStatus', e.target.value)}
+                                            className="text-sm border border-gray-300 rounded-lg bg-gray-50 p-1.5 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                                        >
+                                            <option value="New">New</option>
+                                            <option value="Contacted">Contacted</option>
+                                            <option value="Interested">Interested</option>
+                                            <option value="Not Interested">Not Interested</option>
+                                            <option value="Converted">Converted</option>
+                                        </select>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap w-64">
+                                        <input 
+                                            type="text" 
+                                            defaultValue={customer.notes || ''}
+                                            onBlur={(e) => {
+                                                if (e.target.value !== customer.notes) {
+                                                    handleUpdate(customer._id, 'notes', e.target.value);
+                                                }
+                                            }}
+                                            placeholder="Click to add note..."
+                                            className="text-sm border border-gray-300 rounded-lg bg-gray-50 p-1.5 w-full focus:ring-primary-500 focus:border-primary-500 outline-none"
+                                        />
+                                    </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No customers found</td>
+                                <td colSpan="7" className="px-6 py-4 text-center text-gray-500 font-medium">No customers found</td>
                             </tr>
                         )}
                     </tbody>

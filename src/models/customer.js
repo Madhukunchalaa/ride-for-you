@@ -10,6 +10,12 @@ const customerSchema = new mongoose.Schema({
     zip: String,
     country: String,
     message: String,
+    leadStatus: {
+        type: String,
+        enum: ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted'],
+        default: 'New'
+    },
+    notes: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

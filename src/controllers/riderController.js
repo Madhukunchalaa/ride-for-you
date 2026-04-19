@@ -101,28 +101,33 @@ exports.getRiders = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   try {
-    const { paymentStatus } = req.body;
+    const { paymentStatus, riderStatus } = req.body;
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
 
-    // Auto-extend by 7 days if marking as PAID
-    if (paymentStatus === 'paid' && rider.paymentStatus === 'unpaid') {
-      const nextWeek = new Date(rider.returnDate || Date.now());
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      rider.returnDate = nextWeek;
-      rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-      
-      // Track bike usage if not already added
-      if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
-        rider.bikesUsed.push(rider.vehicleNumber);
-      }
+    // Handle payment status changes
+    if (paymentStatus) {
+      if (paymentStatus === 'paid' && rider.paymentStatus === 'unpaid') {
+        const nextWeek = new Date(rider.returnDate || Date.now());
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        rider.returnDate = nextWeek;
+        rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+        
+        if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
+          rider.bikesUsed.push(rider.vehicleNumber);
+        }
 
-      // Create Invoice Record for Manual Payment
-      const { createInvoiceRecord } = require('../utils/invoiceHelper');
-      await createInvoiceRecord(rider, req.body.amount || 2000);
+        const { createInvoiceRecord } = require('../utils/invoiceHelper');
+        await createInvoiceRecord(rider, req.body.amount || 2000);
+      }
+      rider.paymentStatus = paymentStatus;
     }
 
-    rider.paymentStatus = paymentStatus;
+    // Handle soft deletion / archiving
+    if (riderStatus) {
+      rider.riderStatus = riderStatus;
+    }
+
     await rider.save();
     
     res.status(200).json({ success: true, rider });

@@ -8,6 +8,8 @@ import Riders from './pages/Riders';
 import RiderDetails from './pages/RiderDetails';
 import Hala from './pages/Hala';
 import Payments from './pages/Payments';
+import Customer from './pages/Customer';
+import LandingPage from './pages/LandingPage';
 
 // Helper component for private routes
 const PrivateRoute = ({ children }) => {
@@ -20,7 +22,7 @@ const PrivateRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return !user ? children : <Navigate to="/dashboard" />;
+  return !user ? children : <Navigate to="/app/dashboard" />;
 };
 
 function App() {
@@ -29,16 +31,18 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           
           {/* Private Dashboard Routes */}
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="riders" element={<Riders />} />
-            <Route path="riders/:id" element={<RiderDetails />} />
-            <Route path="hala" element={<Hala />} />
-            <Route path="payments" element={<Payments />} />
+          <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
+             <Route index element={<Navigate to="/app/dashboard" replace />} />
+             <Route path="dashboard" element={<Dashboard />} />
+             <Route path="riders" element={<Riders />} />
+             <Route path="riders/:id" element={<RiderDetails />} />
+             <Route path="hala" element={<Hala />} />
+             <Route path="payments" element={<Payments />} />
+             <Route path="customers" element={<Customer />} />
           </Route>
 
           {/* Fallback */}

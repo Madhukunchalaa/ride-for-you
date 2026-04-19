@@ -12,10 +12,11 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 const menuItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/riders', label: 'Riders', icon: Users },
-  { path: '/hala', label: 'Hala Fleet', icon: Bike },
-  { path: '/payments', label: 'Payments', icon: CreditCard },
+  { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/app/riders', label: 'Riders', icon: Users },
+  { path: '/app/hala', label: 'Hala Fleet', icon: Bike },
+  { path: '/app/payments', label: 'Payments', icon: CreditCard },
+  { path: '/app/customers', label: 'Customers', icon: Users },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {

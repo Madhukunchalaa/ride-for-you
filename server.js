@@ -60,6 +60,7 @@ app.use('/api/riders', require('./src/routes/rider'));
 app.use('/api/invoices', require('./src/routes/invoice'));
 app.use('/api/analytics', require('./src/routes/analytics'));
 app.use('/api/payments', require('./src/routes/payment'));
+app.use('/api/customers', require('./src/routes/customer'));
 
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {

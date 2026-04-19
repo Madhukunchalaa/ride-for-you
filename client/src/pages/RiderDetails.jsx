@@ -226,7 +226,7 @@ export default function RiderDetails() {
       {/* Header & Back Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link 
-          to="/riders" 
+          to="/app/riders" 
           className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group w-fit"
         >
           <div className="p-2 rounded-xl bg-white dark:bg-slate-800/50 group-hover:bg-primary-500/20 group-hover:text-primary-400 transition-all border border-slate-200 dark:border-slate-800">

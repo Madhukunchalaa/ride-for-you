@@ -236,7 +236,7 @@ export default function Riders() {
                     <Users size={24} />
                   </div>
                   <div className="flex-1">
-                    <Link to={`/riders/${rider._id}`} className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight block hover:text-primary-500 transition-colors">
+                    <Link to={`/app/riders/${rider._id}`} className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight block hover:text-primary-500 transition-colors">
                       {rider.name}
                     </Link>
                     <p className="text-[10px] text-slate-500 font-bold flex items-center gap-1 mt-0.5">
@@ -278,7 +278,7 @@ export default function Riders() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Pay</span>
                   </button>
                   <Link 
-                    to={`/riders/${rider._id}`}
+                    to={`/app/riders/${rider._id}`}
                     className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90"
                   >
                     <ExternalLink size={18} />
@@ -326,7 +326,7 @@ export default function Riders() {
                           </div>
                           <div>
                             <Link 
-                              to={`/riders/${rider._id}`}
+                              to={`/app/riders/${rider._id}`}
                               className="text-slate-900 dark:text-white font-black hover:text-primary-600 dark:hover:text-primary-400 transition-colors capitalize underline-offset-4 hover:underline"
                             >
                               {rider.name}
@@ -394,7 +394,7 @@ export default function Riders() {
                             <CreditCard size={18} />
                           </button>
                           <Link 
-                            to={`/riders/${rider._id}`}
+                            to={`/app/riders/${rider._id}`}
                             className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all"
                             title="View Full Details"
                           >

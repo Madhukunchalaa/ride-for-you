@@ -186,34 +186,50 @@ const LandingPage = () => {
 
           <div className="grid md:grid-cols-3 gap-10">
             {[
-              { name: 'Ride Storm', range: '100KM', speed: '55KPH', price: '₹1,999', img: '/assets/storm.png' },
-              { name: 'Ride Fusion', range: '130KM', speed: '65KPH', price: '₹2,499', img: '/assets/fusion.png' },
-              { name: 'Ride Atlas', range: '85KM', speed: '45KPH', price: '₹2,999', img: '/assets/atlas.png' }
+              { name: '3 Months Old EV', rental: '1,920', platformFee: '1,500', total: '3,620', img: '/assets/storm.png' },
+              { name: '1-2 Months Old EV', rental: '1,920', platformFee: '2,000', total: '4,120', img: '/assets/fusion.png' },
+              { name: 'Brand New EV', rental: '1,920', platformFee: '2,500', total: '4,620', img: '/assets/atlas.png' }
             ].map((ev, i) => (
-              <div key={i} className="group relative bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/[0.08] transition-all duration-500">
-                <div className="flex justify-between items-start mb-12">
+              <div key={i} className="group relative bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/[0.08] transition-all duration-500 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-8">
                   <div>
                     <h4 className="text-2xl font-black tracking-tighter font-display text-white">{ev.name}</h4>
-                    <p className="text-primary-500 font-bold text-sm tracking-widest uppercase mt-1">{ev.price}<span className="text-slate-500">/WK</span></p>
+                    <p className="text-primary-500 font-bold tracking-widest uppercase mt-1 text-[10px]">Unlimited Swapping</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-black transition-all">
+                  <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-black transition-all flex-shrink-0">
                     <ArrowRight size={20} />
                   </div>
                 </div>
                 
-                <div className="aspect-square bg-slate-900 border border-white/5 rounded-3xl overflow-hidden mb-12 relative flex items-center justify-center shadow-inner">
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent z-10 opacity-60"></div>
-                   <img src={ev.img} alt={ev.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                <div className="aspect-[4/3] bg-slate-900 border border-white/5 rounded-3xl overflow-hidden mb-8 relative flex items-center justify-center shadow-inner">
+                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent z-10 opacity-80"></div>
+                   <img src={ev.img} alt={ev.name} className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 opacity-90 group-hover:opacity-100" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                    <div className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Max EV Range</div>
-                    <div className="text-lg font-black text-white">{ev.range}</div>
+                <div className="mt-auto space-y-4">
+                  <div className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                    <div className="flex justify-between items-center text-sm font-medium">
+                      <span className="text-slate-400">Weekly Rental <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5">7 Days</span></span>
+                      <span className="text-white font-bold">₹{ev.rental}</span>
+                    </div>
+                    <div className="h-px bg-white/5 w-full"></div>
+                    <div className="flex justify-between items-center text-sm font-medium">
+                      <span className="text-slate-400">Platform Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
+                      <span className="text-white font-bold">₹{ev.platformFee}</span>
+                    </div>
+                    <div className="h-px bg-white/5 w-full"></div>
+                    <div className="flex justify-between items-center text-sm font-medium">
+                      <span className="text-slate-400">Booking Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
+                      <span className="text-white font-bold">₹200</span>
+                    </div>
                   </div>
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                    <div className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Top Speed</div>
-                    <div className="text-lg font-black text-white">{ev.speed}</div>
+                  
+                  <div className="bg-primary-500/10 border border-primary-500/20 p-6 rounded-3xl flex justify-between items-center">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-primary-400 font-black block">Total Amount</span>
+                      <span className="text-xs text-primary-500/60 font-bold">Due Today</span>
+                    </div>
+                    <span className="text-3xl font-black tracking-tighter text-white">₹{ev.total}/-</span>
                   </div>
                 </div>
               </div>

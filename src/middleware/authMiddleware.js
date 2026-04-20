@@ -5,14 +5,25 @@ exports.protect = async (req, res, next) => {
   try {
     let token;
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
+    // Check header case-insensitively
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    
+    if (process.env.NODE_ENV !== 'production' || req.url.includes('send-reminder')) {
+      console.log(`🔒 Auth Check: ${req.method} ${req.url}`);
+      console.log('Headers Received:', JSON.stringify({
+        authorization: !!req.headers.authorization,
+        Authorization: !!req.headers.Authorization,
+        contentType: req.headers['content-type'],
+        hasToken: !!authHeader
+      }));
+    }
+
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer')) {
+      token = authHeader.split(' ')[1];
     }
 
     if (!token) {
+      console.warn('⚠️ No token found in request to:', req.url);
       return res.status(401).json({
         success: false,
         message: 'No login token found, please log in'

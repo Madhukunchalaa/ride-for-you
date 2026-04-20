@@ -28,7 +28,7 @@ exports.sendReminder = async (req, res) => {
       },
       link_notify: { send_sms: false, send_email: false },
       link_meta: {
-        return_url: "https://rideforyouev.com/app/riders",
+        return_url: "https://rideforyouev.com/",
         notify_url: "https://ride-for-you-production.up.railway.app/api/payments/webhook"
       }
     };

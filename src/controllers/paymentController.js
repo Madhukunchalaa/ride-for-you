@@ -134,16 +134,17 @@ exports.webhookHandler = async (req, res) => {
   try {
     const { type, data } = req.body;
 
-    // Cashfree payload for successful link payments has order/payment status inside 'data'
-    // Usually type is 'PAYMENT_SUCCESS_WEBHOOK' or 'PAYMENT_LINK_WEBHOOK'
-    if (data && data.order && data.order.order_status === 'PAID') {
-      // The order_id or link_id usually contains our generated uniqueLinkId (e.g. ride_65fd_1234)
-      const linkId = data.link_id || data.order.order_id; 
+    // Cashfree payload for Link payments
+    const isLinkPaid = data && data.link && (data.link.link_status === 'PAID' || data.link.link_status === 'SUCCESS');
+    const isOrderPaid = data && data.order && data.order.order_status === 'PAID';
+
+    if (isLinkPaid || isOrderPaid) {
+      const linkId = isLinkPaid ? data.link.link_id : data.order.order_id; 
       
       if (!linkId) return res.status(200).send('OK');
 
       const riderId = linkId.split('_')[1]; // ride_{riderId}_{Date.now()}
-      const amount = data.payment ? data.payment.payment_amount : data.order.order_amount;
+      const amount = isLinkPaid ? data.link.link_amount_paid : (data.payment ? data.payment.payment_amount : data.order.order_amount);
 
       const rider = await Rider.findById(riderId);
       if (rider && rider.paymentStatus === 'unpaid') {

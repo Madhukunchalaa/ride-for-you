@@ -119,9 +119,18 @@ exports.createPaymentLink = async (req, res) => {
 
     res.status(200).json({ success: true, url: paymentUrl, id: uniqueLinkId });
   } catch (err) {
-    const errorMsg = err.response ? JSON.stringify(err.response.data) : err.message;
-    console.error('Cashfree Link Error:', errorMsg);
-    res.status(500).json({ success: false, message: errorMsg });
+    const errorData = err.response ? err.response.data : null;
+    const errorMessage = errorData ? JSON.stringify(errorData) : err.message;
+    console.error('❌ Cashfree Link Error:', {
+      message: err.message,
+      data: errorData,
+      stack: err.stack
+    });
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage,
+      details: errorData 
+    });
   }
 };
 const { sendPaymentReminder } = require('../utils/whatsapp');

@@ -62,7 +62,17 @@ exports.sendReminder = async (req, res) => {
       message: `Reminder sent to ${rider.name}`
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const errorData = err.response ? err.response.data : null;
+    const errorMessage = errorData ? JSON.stringify(errorData) : err.message;
+    console.error('❌ Cashfree Link Reminder Error:', {
+      message: err.message,
+      data: errorData
+    });
+    res.status(500).json({ 
+      success: false, 
+      message: errorMessage,
+      details: errorData 
+    });
   }
 };
 

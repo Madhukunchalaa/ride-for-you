@@ -17,49 +17,23 @@ export default function Riders() {
 
   // ... existing form state and fetch functions ...
 
-  // --- Razorpay Payment Logic ---
+  // --- Cashfree Payment Logic ---
   const handlePayment = async (rider) => {
     try {
-      // 1. Create order on backend
+      toast.loading("Generating Cashfree Link...", { id: "cf-link" });
       const amount = rider.whatsappNumber === '7095682464' ? 1 : 2000;
-      const { data: orderResponse } = await api.post('/payments/create-order', {
+      const { data } = await api.post('/payments/create-link', {
         riderId: rider._id,
         amount: amount
       });
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_Sco5STh3MJYT2F',
-        amount: orderResponse.order.amount,
-        currency: "INR",
-        name: "Ride For You",
-        description: `Weekly Rental - ${rider.vehicleNumber}`,
-        order_id: orderResponse.order.id,
-        handler: async (response) => {
-          // 2. Verify payment on backend
-          try {
-            await api.post('/payments/verify', {
-              ...response,
-              riderId: rider._id
-            });
-            toast.success("Payment successful and verified!");
-            // fetchRiders(); 
-            window.location.reload(); // Quick refresh to show updated status
-          } catch (err) {
-            toast.error("Payment verification failed.");
-          }
-        },
-        prefill: {
-          name: rider.name,
-          contact: rider.whatsappNumber,
-        },
-        theme: {
-          color: "#0ea5e9", // primary-500
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (data.success && data.url) {
+        toast.dismiss("cf-link");
+        // Open the generated Payment Link in a new tab or same tab
+        window.open(data.url, '_blank');
+      }
     } catch (err) {
+      toast.dismiss("cf-link");
       toast.error("Error initiating payment: " + (err.response?.data?.message || err.message));
     }
   };
@@ -407,7 +381,7 @@ export default function Riders() {
                           <button 
                             onClick={() => handlePayment(rider)}
                             className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-600 transition-all"
-                            title="Test Razorpay Payment"
+                            title="Test Cashfree Payment"
                           >
                             <CreditCard size={18} />
                           </button>

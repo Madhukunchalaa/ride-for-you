@@ -5,6 +5,7 @@ const razorpay = require('../config/razorpay');
 
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp
+const axios = require('axios');
 exports.sendReminder = async (req, res) => {
   try {
     const rider = await Rider.findById(req.params.id);
@@ -13,30 +14,41 @@ exports.sendReminder = async (req, res) => {
     }
 
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
+    const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
-    // 1. Create REAL Razorpay Payment Link
-    const paymentLinkObj = await razorpay.paymentLink.create({
-      amount: amountVal * 100, // in paise
-      currency: "INR",
-      accept_partial: false,
-      description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
-      customer: {
-        name: rider.name,
-        contact: rider.whatsappNumber,
+    // 1. Create REAL Cashfree Payment Link
+    const payload = {
+      link_id: uniqueLinkId,
+      link_amount: amountVal,
+      link_currency: "INR",
+      link_purpose: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
+      customer_details: {
+        customer_phone: rider.whatsappNumber,
+        customer_name: rider.name
       },
-      notify: { sms: false, email: false },
-      reminder_enable: true,
-      notes: { riderId: rider._id.toString() },
-      callback_url: `http://localhost:5173/riders`,
-      callback_method: "get"
+      link_notify: { send_sms: false, send_email: false },
+      link_meta: {
+        return_url: "https://rideforyouev.com/app/riders",
+        notify_url: "https://ride-for-you-production.up.railway.app/api/payments/webhook"
+      }
+    };
+
+    const response = await axios.post('https://sandbox.cashfree.com/pg/links', payload, {
+      headers: {
+        'x-client-id': process.env.CASHFREE_APP_ID,
+        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+        'x-api-version': '2023-08-01',
+        'Content-Type': 'application/json'
+      }
     });
 
+    const paymentLink = response.data.link_url;
+
     // 2. Store Payment Link ID in Database
-    rider.paymentLinkId = paymentLinkObj.id;
+    rider.paymentLinkId = uniqueLinkId;
     await rider.save();
 
     // 3. Prepare QR and Message
-    const paymentLink = paymentLinkObj.short_url;
     // Generate valid QR from short_url
     const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
     

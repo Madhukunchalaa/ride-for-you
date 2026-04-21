@@ -152,51 +152,112 @@ const { sendPaymentReminder } = require('../utils/whatsapp');
 // @POST /api/payments/webhook
 // @desc Handle Cashfree Webhooks for automatic database updates
 exports.webhookHandler = async (req, res) => {
-  console.log('🔔 Cashfree Webhook Received Full Payload:', JSON.stringify(req.body, null, 2));
+  console.log('🔔 [WEBHOOK] Received Payload:', JSON.stringify(req.body, null, 2));
 
   try {
     const { type, data } = req.body;
-
-    // Cashfree payload for Link payments
-    const isLinkPaid = data && data.link && (data.link.link_status === 'PAID' || data.link.link_status === 'SUCCESS');
-    const isOrderPaid = data && data.order && data.order.order_status === 'PAID';
-
-    if (isLinkPaid || isOrderPaid) {
-      const linkId = isLinkPaid ? data.link.link_id : data.order.order_id; 
-      
-      if (!linkId) return res.status(200).send('OK');
-
-      const riderId = linkId.split('_')[1]; // ride_{riderId}_{Date.now()}
-      const amount = isLinkPaid ? data.link.link_amount_paid : (data.payment ? data.payment.payment_amount : data.order.order_amount);
-
-      const rider = await Rider.findById(riderId);
-      if (rider && rider.paymentStatus === 'unpaid') {
-        const nextWeek = new Date(rider.returnDate || Date.now());
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        rider.returnDate = nextWeek;
-        rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-        rider.paymentStatus = 'paid';
-        
-        if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
-          rider.bikesUsed.push(rider.vehicleNumber);
-        }
-        await rider.save();
-
-        // Create Invoice Record
-        const { createInvoiceRecord } = require('../utils/invoiceHelper');
-        await createInvoiceRecord(rider, amount);
-
-        console.log(`✅ Success: Rider ${rider.name} paid ₹${amount} (Link ID: ${linkId})`);
-        
-        // Send WhatsApp Confirmation
-        const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
-        await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
-      }
+    if (!data) {
+      console.error('❌ [WEBHOOK] No data object in payload');
+      return res.status(200).send('OK');
     }
+
+    // 1. Determine Payment Success (multiple strategies)
+    const linkStatus = data.link?.link_status;
+    const orderStatus = data.order?.order_status;
+    const paymentStatus = data.payment?.payment_status;
+
+    const isSuccess = 
+      linkStatus === 'PAID' || 
+      linkStatus === 'SUCCESS' || 
+      orderStatus === 'PAID' || 
+      paymentStatus === 'SUCCESS';
+
+    console.log(`🔍 [WEBHOOK] Status Check: Link=${linkStatus}, Order=${orderStatus}, Payment=${paymentStatus} -> Success=${isSuccess}`);
+
+    if (isSuccess) {
+      // 2. Identify the Rider (Order ID or Link ID)
+      const linkId = data.link?.link_id || data.order?.order_id;
+      const amount = data.link?.link_amount_paid || data.payment?.payment_amount || data.order?.order_amount;
+      const phone = data.customer_details?.customer_phone;
+
+      console.log(`🔍 [WEBHOOK] Identifiers - LinkID: ${linkId}, Amount: ${amount}, Phone: ${phone}`);
+
+      if (!linkId && !phone) {
+        console.error('❌ [WEBHOOK] Could not identify rider (No LinkID or Phone)');
+        return res.status(200).send('OK');
+      }
+
+      let rider = null;
+
+      // Strategy A: By Link ID
+      if (linkId && linkId.includes('_')) {
+        const parts = linkId.split('_');
+        const possibleId = parts[1]; // ride_{riderId}_{timestamp}
+        if (possibleId && possibleId.length === 24) {
+          rider = await Rider.findById(possibleId);
+          if (rider) console.log(`✅ [WEBHOOK] Found Rider by LinkID: ${rider.name}`);
+        }
+      }
+
+      // Strategy B: By Phone Number (fallback)
+      if (!rider && phone) {
+        // Clean phone number for matching
+        const cleanPhone = phone.replace(/[^0-9]/g, '').slice(-10);
+        rider = await Rider.findOne({ whatsappNumber: { $regex: cleanPhone } });
+        if (rider) console.log(`✅ [WEBHOOK] Found Rider by Phone Fallback: ${rider.name}`);
+      }
+
+      if (rider) {
+        // Update Rider Record
+        rider.lastWebhookData = req.body; // Log for debugging
+
+        if (rider.paymentStatus === 'unpaid') {
+          const nextWeek = new Date(rider.returnDate || Date.now());
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          
+          rider.returnDate = nextWeek;
+          rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+          rider.paymentStatus = 'paid';
+          
+          if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
+            rider.bikesUsed.push(rider.vehicleNumber);
+          }
+          
+          await rider.save();
+
+          // Create Invoice Record
+          try {
+            const { createInvoiceRecord } = require('../utils/invoiceHelper');
+            await createInvoiceRecord(rider, amount || 2000);
+          } catch (invErr) {
+            console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
+          }
+
+          console.log(`🎉 [WEBHOOK] Successfully updated Rider ${rider.name} to PAID`);
+          
+          // Send WhatsApp Confirmation
+          try {
+            const { sendPaymentReminder } = require('../utils/whatsapp');
+            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount || 2000}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+            await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
+          } catch (waErr) {
+            console.error('⚠️ [WEBHOOK] WhatsApp confirmation failed:', waErr.message);
+          }
+        } else {
+          console.log(`ℹ️ [WEBHOOK] Rider ${rider.name} was already marked as PAID`);
+          await rider.save(); // Still update lastWebhookData
+        }
+      } else {
+        console.error('❌ [WEBHOOK] Rider not found in database for this payment');
+      }
+    } else {
+      console.log('ℹ️ [WEBHOOK] Skipping non-success event');
+    }
+
     res.status(200).send('OK');
   } catch (err) {
-    console.error('Webhook Error:', err);
-    res.status(200).send('OK'); // Always send 200 so they stop retrying
+    console.error('💥 [WEBHOOK] CRITICAL ERROR:', err);
+    res.status(200).send('OK'); // Always 200 to satisfy Cashfree
   }
 };
 

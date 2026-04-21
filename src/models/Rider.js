@@ -48,6 +48,9 @@ const riderSchema = new mongoose.Schema(
     totalWeeks: {
       type: Number,
       default: 0
+    },
+    lastWebhookData: {
+      type: Object // Stores the last received webhook payload for debugging
     }
   },
   { timestamps: true }

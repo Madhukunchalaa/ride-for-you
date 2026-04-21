@@ -6,16 +6,26 @@ const razorpay = require('../config/razorpay');
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp
 const axios = require('axios');
+const cashfreeConfig = require('../config/cashfree');
 exports.sendReminder = async (req, res) => {
+  console.log(`📩 Manual Reminder Request for Rider ID: ${req.params.id}`);
   try {
     const rider = await Rider.findById(req.params.id);
     if (!rider) {
+      console.warn('❌ Rider not found for ID:', req.params.id);
       return res.status(404).json({ success: false, message: 'Rider not found' });
+    }
+
+    if (!rider.whatsappNumber) {
+      console.warn('❌ Rider has no WhatsApp number:', rider.name);
+      return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
 
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
+    console.log(`🔗 Requesting Cashfree for ${rider.name} (Amount: ${amountVal}, ID: ${uniqueLinkId})`);
+    
     // 1. Create REAL Cashfree Payment Link
     const payload = {
       link_id: uniqueLinkId,
@@ -28,34 +38,42 @@ exports.sendReminder = async (req, res) => {
       },
       link_notify: { send_sms: false, send_email: false },
       link_meta: {
-        return_url: "https://rideforyouev.com/",
-        notify_url: "https://ride-for-you-production.up.railway.app/api/payments/webhook"
+        return_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        notify_url: `${process.env.FRONTEND_URL || 'https://ride-for-you-production.up.railway.app'}/api/payments/webhook`
       }
     };
 
-    const response = await axios.post('https://sandbox.cashfree.com/pg/links', payload, {
+    const response = await axios.post(`${cashfreeConfig.baseUrl}/links`, payload, {
       headers: {
-        'x-client-id': process.env.CASHFREE_APP_ID,
-        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-        'x-api-version': '2023-08-01',
+        'x-client-id': cashfreeConfig.clientId,
+        'x-client-secret': cashfreeConfig.clientSecret,
+        'x-api-version': cashfreeConfig.apiVersion,
         'Content-Type': 'application/json'
       }
     });
 
+    console.log(`✅ Cashfree Response:`, response.data && response.data.link_url ? 'Link Received' : 'No Link URL');
     const paymentLink = response.data.link_url;
+
+    if (!paymentLink) {
+       console.error('❌ Cashfree Link Missing in Response:', response.data);
+       throw new Error('Cashfree link generation failed: No URL returned');
+    }
 
     // 2. Store Payment Link ID in Database
     rider.paymentLinkId = uniqueLinkId;
     await rider.save();
 
     // 3. Prepare QR and Message
-    // Generate valid QR from short_url
+    console.log(`🖼️ Generating QR for: ${paymentLink}`);
     const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
     
-    const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const returnDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
     const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental payment for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\n🔗 *Pay Now:* ${paymentLink}\n\nOr scan the QR code below to pay easily. Once paid, your dashboard will update automatically! ⚡`;
 
+    console.log(`📲 Sending WhatsApp to ${rider.whatsappNumber}...`);
     await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
+    console.log(`✨ Successfully sent reminder to ${rider.name}`);
 
     res.status(200).json({
       success: true,
@@ -63,7 +81,18 @@ exports.sendReminder = async (req, res) => {
     });
   } catch (err) {
     const errorData = err.response ? err.response.data : null;
-    const errorMessage = errorData ? JSON.stringify(errorData) : err.message;
+    let errorMessage = 'Failed to create payment link';
+    
+    if (errorData) {
+      if (errorData.message === 'Authentication Failed') {
+        errorMessage = 'Cashfree Authentication Failed: Please check your API credentials.';
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } else {
+      errorMessage = err.message;
+    }
+
     console.error('❌ Cashfree Link Reminder Error:', {
       message: err.message,
       data: errorData

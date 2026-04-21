@@ -77,6 +77,8 @@ exports.verifyPayment = async (req, res) => {
 // @POST /api/payments/create-link
 // @desc Create a Cashfree Payment Link for WhatsApp
 const axios = require('axios');
+const cashfreeConfig = require('../config/cashfree');
+
 exports.createPaymentLink = async (req, res) => {
   try {
     const { riderId, amount } = req.body;
@@ -97,16 +99,16 @@ exports.createPaymentLink = async (req, res) => {
       },
       link_notify: { send_sms: false, send_email: false },
       link_meta: {
-        return_url: "https://rideforyouev.com/",
-        notify_url: "https://ride-for-you-production.up.railway.app/api/payments/webhook" // Cashfree hits this URL asynchronously
+        return_url: `${process.env.FRONTEND_URL}/`,
+        notify_url: `${process.env.FRONTEND_URL}/api/payments/webhook`
       }
     };
 
-    const response = await axios.post('https://sandbox.cashfree.com/pg/links', payload, {
+    const response = await axios.post(`${cashfreeConfig.baseUrl}/links`, payload, {
       headers: {
-        'x-client-id': process.env.CASHFREE_APP_ID,
-        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-        'x-api-version': '2023-08-01',
+        'x-client-id': cashfreeConfig.clientId,
+        'x-client-secret': cashfreeConfig.clientSecret,
+        'x-api-version': cashfreeConfig.apiVersion,
         'Content-Type': 'application/json'
       }
     });
@@ -120,12 +122,24 @@ exports.createPaymentLink = async (req, res) => {
     res.status(200).json({ success: true, url: paymentUrl, id: uniqueLinkId });
   } catch (err) {
     const errorData = err.response ? err.response.data : null;
-    const errorMessage = errorData ? JSON.stringify(errorData) : err.message;
+    let errorMessage = 'Failed to create payment link';
+    
+    if (errorData) {
+      if (errorData.message === 'Authentication Failed') {
+        errorMessage = 'Cashfree Authentication Failed: Please check your API credentials.';
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } else {
+      errorMessage = err.message;
+    }
+
     console.error('❌ Cashfree Link Error:', {
       message: err.message,
       data: errorData,
       stack: err.stack
     });
+
     res.status(500).json({ 
       success: false, 
       message: errorMessage,

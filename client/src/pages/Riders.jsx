@@ -34,7 +34,8 @@ export default function Riders() {
       }
     } catch (err) {
       toast.dismiss("cf-link");
-      toast.error("Error initiating payment: " + (err.response?.data?.message || err.message));
+      const errorMsg = err.response?.data?.message || err.message;
+      toast.error("Error initiating payment: " + (typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg));
     }
   };
 
@@ -45,7 +46,8 @@ export default function Riders() {
       toast.success('Reminder sent successfully!');
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to send reminder');
+      const errorMsg = err.response?.data?.message || 'Failed to send reminder';
+      toast.error(typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg);
     } finally {
       setSendingReminder(null);
     }

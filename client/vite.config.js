@@ -16,6 +16,7 @@ export default defineConfig({
     allowedHosts: [
       'localhost',
       'ride-for-you-production.up.railway.app',
+      'rideforyouev.com',
     ],
   },
 })

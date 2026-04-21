@@ -199,3 +199,39 @@ exports.webhookHandler = async (req, res) => {
     res.status(200).send('OK'); // Always send 200 so they stop retrying
   }
 };
+
+// @GET /api/payments/config-status
+// @desc Diagnostic endpoint to verify environment variables (masked)
+exports.getConfigStatus = async (req, res) => {
+  try {
+    const mask = (val) => val ? `${val.substring(0, 4)}...${val.substring(val.length - 4)}` : 'MISSING';
+    const hasValue = (val) => !!(val && val.trim());
+
+    const status = {
+      cashfree: {
+        app_id_exists: hasValue(process.env.CASHFREE_APP_ID),
+        secret_key_exists: hasValue(process.env.CASHFREE_SECRET_KEY),
+        app_id_masked: mask(process.env.CASHFREE_APP_ID),
+        mode: (process.env.CASHFREE_APP_ID || '').startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
+      },
+      razorpay: {
+        key_id_exists: hasValue(process.env.RAZORPAY_KEY_ID),
+        key_secret_exists: hasValue(process.env.RAZORPAY_KEY_SECRET),
+        key_id_masked: mask(process.env.RAZORPAY_KEY_ID),
+      },
+      twilio: {
+        account_sid_exists: hasValue(process.env.TWILIO_ACCOUNT_SID),
+        auth_token_exists: hasValue(process.env.TWILIO_AUTH_TOKEN),
+      },
+      general: {
+        node_env: process.env.NODE_ENV,
+        frontend_url: process.env.FRONTEND_URL,
+        port: process.env.PORT,
+      }
+    };
+
+    res.status(200).json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

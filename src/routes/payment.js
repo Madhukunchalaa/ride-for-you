@@ -6,5 +6,6 @@ router.post('/create-order', paymentController.createOrder);
 router.post('/create-link', paymentController.createPaymentLink);
 router.post('/verify', paymentController.verifyPayment);
 router.post('/webhook', paymentController.webhookHandler);
+router.get('/config-status', paymentController.getConfigStatus);
 
 module.exports = router;

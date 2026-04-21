@@ -175,9 +175,15 @@ exports.webhookHandler = async (req, res) => {
     console.log(`🔍 [WEBHOOK] Status Check: Link=${linkStatus}, Order=${orderStatus}, Payment=${paymentStatus} -> Success=${isSuccess}`);
 
     if (isSuccess) {
-      // 2. Identify the Rider (Order ID or Link ID)
-      const linkId = data.link?.link_id || data.order?.order_id;
-      const amount = data.link?.link_amount_paid || data.payment?.payment_amount || data.order?.order_amount;
+      // 2. Identify the Rider (Order ID or Link ID or Order Tags)
+      const linkId = data.link?.link_id || 
+                     data.order?.order_tags?.link_id || 
+                     data.order?.order_id;
+                     
+      const amount = data.link?.link_amount_paid || 
+                     data.payment?.payment_amount || 
+                     data.order?.order_amount;
+                     
       const phone = data.customer_details?.customer_phone;
 
       console.log(`🔍 [WEBHOOK] Identifiers - LinkID: ${linkId}, Amount: ${amount}, Phone: ${phone}`);

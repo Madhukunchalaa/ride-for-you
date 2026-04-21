@@ -21,6 +21,14 @@ exports.sendReminder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
 
+    if (!cashfreeConfig.isConfigured) {
+      console.error('❌ Skipping Cashfree link creation: Keys are missing.');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Cashfree API keys are missing in the server environment. Please check your Railway Dashboard.' 
+      });
+    }
+
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 

@@ -24,7 +24,10 @@ exports.sendReminder = async (req, res) => {
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
-    console.log(`🔗 Requesting Cashfree for ${rider.name} (Amount: ${amountVal}, ID: ${uniqueLinkId})`);
+    console.log(`📡 Sending Cashfree Request:`);
+    console.log(`   - URL: ${cashfreeConfig.baseUrl}/links`);
+    console.log(`   - AppID: ${cashfreeConfig.clientId.substring(0, 4)}...${cashfreeConfig.clientId.slice(-4)} (Len: ${cashfreeConfig.clientId.length})`);
+    console.log(`   - Secret: ${cashfreeConfig.clientSecret.substring(0, 4)}...${cashfreeConfig.clientSecret.slice(-4)} (Len: ${cashfreeConfig.clientSecret.length})`);
     
     // 1. Create REAL Cashfree Payment Link
     const payload = {
@@ -52,8 +55,8 @@ exports.sendReminder = async (req, res) => {
       }
     });
 
-    console.log(`✅ Cashfree Response:`, response.data && response.data.link_url ? 'Link Received' : 'No Link URL');
-    const paymentLink = response.data.link_url;
+    console.log(`✅ Cashfree Response Status: ${response.status}`);
+    const paymentLink = response.data && response.data.link_url ? response.data.link_url : null;
 
     if (!paymentLink) {
        console.error('❌ Cashfree Link Missing in Response:', response.data);

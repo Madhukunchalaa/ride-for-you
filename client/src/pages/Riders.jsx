@@ -88,9 +88,9 @@ export default function Riders() {
   });
 
   // Fetch Riders
-  const fetchRiders = async () => {
+  const fetchRiders = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await api.get('/riders');
       setRiders(response.data.data);
       setError(null);
@@ -98,12 +98,19 @@ export default function Riders() {
       setError('Failed to fetch riders. Please try again.');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRiders();
+
+    // LIVE SYNC: Poll for updates every 10 seconds
+    const interval = setInterval(() => {
+      fetchRiders(false); // Fetch silently in background
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Handle Deploy Date Change (Update Return Date)
@@ -167,7 +174,13 @@ export default function Riders() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">RIDER MANAGEMENT</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">RIDER MANAGEMENT</h2>
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">LIVE SYNC</span>
+            </div>
+          </div>
           <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
             <ShieldCheck size={16} className="text-primary-500" /> Secure Workforce Database
           </p>

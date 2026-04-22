@@ -86,7 +86,7 @@ exports.getDashboardStats = async (req, res) => {
       ...recentExtensions.map(i => ({ 
         type: 'EXTENSION', 
         name: i.riderName, 
-        vehicleNumber: i.remarks.match(/\w+-\d+-\w+-\d+|\w+-\d+/)?.[0] || 'Unit', 
+        vehicleNumber: i.remarks?.match(/\w+-\d+-\w+-\d+|\w+-\d+/)?.[0] || 'Unit', 
         createdAt: i.createdAt 
       }))
     ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);

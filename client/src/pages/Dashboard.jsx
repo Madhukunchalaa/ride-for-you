@@ -8,7 +8,8 @@ import {
   Clock,
   Loader2,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  DollarSign
 } from 'lucide-react';
 import { 
   AreaChart, 

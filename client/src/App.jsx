@@ -9,6 +9,7 @@ import RiderDetails from './pages/RiderDetails';
 import Hala from './pages/Hala';
 import Payments from './pages/Payments';
 import Customer from './pages/Customer';
+import Reports from './pages/Reports';
 import LandingPage from './pages/LandingPage';
 
 // Helper component for private routes
@@ -42,6 +43,7 @@ function App() {
              <Route path="riders/:id" element={<RiderDetails />} />
              <Route path="hala" element={<Hala />} />
              <Route path="payments" element={<Payments />} />
+             <Route path="reports" element={<Reports />} />
              <Route path="customers" element={<Customer />} />
           </Route>
 

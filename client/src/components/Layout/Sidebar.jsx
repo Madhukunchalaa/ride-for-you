@@ -16,6 +16,7 @@ const menuItems = [
   { path: '/app/riders', label: 'Riders', icon: Users },
   { path: '/app/hala', label: 'Hala Fleet', icon: Bike },
   { path: '/app/payments', label: 'Payments', icon: CreditCard },
+  { path: '/app/reports', label: 'Intelligence', icon: TrendingUp },
   { path: '/app/customers', label: 'Customers', icon: Users },
 ];
 

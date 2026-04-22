@@ -77,7 +77,7 @@ exports.verifyPayment = async (req, res) => {
 // @POST /api/payments/create-link
 // @desc Create a Cashfree Payment Link for WhatsApp
 const axios = require('axios');
-const cashfreeConfig = require('../config/cashfree');
+const { getCashfreeConfig } = require('../config/cashfree');
 
 exports.createPaymentLink = async (req, res) => {
   try {

@@ -1,55 +1,59 @@
-// Global cleaning function to strip quotes, spaces, and hidden characters from env variables
+const SystemConfig = require('../models/SystemConfig');
+
+/**
+ * Trims and cleans values from environment or database.
+ */
 const clean = (val) => {
   if (!val) return '';
   return val
     .toString()
     .trim()
     .replace(/^["']|["']$/g, '') // Strip leading/trailing quotes
-    .trim(); // Trim again in case of spaces inside quotes
+    .trim();
 };
 
-// DEBUG: Comprehensive environment check
-const requiredKeys = ['CASHFREE_APP_ID', 'CASHFREE_SECRET_KEY'];
-const foundKeys = Object.keys(process.env).filter(k => k.toUpperCase().includes('CASH'));
+/**
+ * Dynamically fetches Cashfree configuration.
+ * Priority: 1. Database (SystemConfig collection) 2. Environment Variables
+ */
+const getCashfreeConfig = async () => {
+  let clientId = '';
+  let clientSecret = '';
 
-console.log('--- 💳 CASHFREE DIAGNOSTICS ---');
-console.log(`🔍 Detected environment keys: [${foundKeys.join(', ')}]`);
-
-requiredKeys.forEach(key => {
-  const value = process.env[key];
-  if (!value) {
-    console.error(`❌ MISSING: ${key} is not defined in process.env`);
-    // Check for common typos or case issues
-    const similar = foundKeys.find(k => k !== key && k.toUpperCase() === key.toUpperCase());
-    if (similar) {
-      console.warn(`💡 HINT: Found ${similar} which might be a typo for ${key}`);
+  try {
+    // 1. Try fetching from Database
+    const dbConfig = await SystemConfig.findOne({ key: 'CASHFREE' });
+    if (dbConfig && dbConfig.value) {
+      clientId = clean(dbConfig.value.appId);
+      clientSecret = clean(dbConfig.value.secretKey);
+      if (clientId && clientSecret) {
+        // console.log('💳 Config: Loaded from Database');
+      }
     }
-  } else {
-    const cleaned = clean(value);
-    console.log(`✅ FOUND: ${key} (Length: ${value.length}, Clean Length: ${cleaned.length})`);
-    if (value !== cleaned) {
-      console.log(`ℹ️ NOTE: ${key} was cleaned (had quotes or spaces)`);
-    }
+  } catch (err) {
+    console.error('⚠️ Falling back to ENV: Error reading SystemConfig:', err.message);
   }
-});
 
-const clientId = clean(process.env.CASHFREE_APP_ID || '');
-const clientSecret = clean(process.env.CASHFREE_SECRET_KEY || '');
+  // 2. Fallback to Environment Variables if DB is empty
+  if (!clientId) {
+    clientId = clean(process.env.CASHFREE_APP_ID || '');
+    // if (clientId) console.log('💳 Config: Loaded from CASHFREE_APP_ID');
+  }
+  if (!clientSecret) {
+    clientSecret = clean(process.env.CASHFREE_SECRET_KEY || '');
+  }
 
-const isTestKey = clientId.startsWith('TEST') || clientSecret.startsWith('cfsk_ma_test');
+  const isTestKey = clientId.startsWith('TEST') || clientSecret.startsWith('cfsk_ma_test');
 
-console.log(`💳 Mode: ${isTestKey ? 'SANDBOX' : 'PRODUCTION'}`);
-console.log(`💳 Client ID: ${clientId ? clientId.substring(0, 8) + '...' : 'MISSING'}`);
-console.log('-------------------------------');
-
-const cashfreeConfig = {
-  baseUrl: isTestKey 
-    ? 'https://sandbox.cashfree.com/pg' 
-    : 'https://api.cashfree.com/pg',
-  clientId,
-  clientSecret,
-  apiVersion: '2023-08-01',
-  isConfigured: !!(clientId && clientSecret)
+  return {
+    baseUrl: isTestKey 
+      ? 'https://sandbox.cashfree.com/pg' 
+      : 'https://api.cashfree.com/pg',
+    clientId,
+    clientSecret,
+    apiVersion: '2023-08-01',
+    isConfigured: !!(clientId && clientSecret)
+  };
 };
 
-module.exports = cashfreeConfig;
+module.exports = { getCashfreeConfig };

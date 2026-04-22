@@ -6,7 +6,7 @@ const razorpay = require('../config/razorpay');
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp
 const axios = require('axios');
-const cashfreeConfig = require('../config/cashfree');
+const { getCashfreeConfig } = require('../config/cashfree');
 exports.sendReminder = async (req, res) => {
   console.log(`📩 Manual Reminder Request for Rider ID: ${req.params.id}`);
   try {
@@ -20,6 +20,8 @@ exports.sendReminder = async (req, res) => {
       console.warn('❌ Rider has no WhatsApp number:', rider.name);
       return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
+
+    const cashfreeConfig = await getCashfreeConfig();
 
     if (!cashfreeConfig.isConfigured) {
       console.error('❌ Skipping Cashfree link creation: Keys are missing.');

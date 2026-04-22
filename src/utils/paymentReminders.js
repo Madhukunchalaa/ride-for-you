@@ -1,5 +1,5 @@
 const axios = require('axios');
-const cashfreeConfig = require('../config/cashfree');
+const { getCashfreeConfig } = require('../config/cashfree');
 const { sendPaymentReminder } = require('./whatsapp');
 
 /**
@@ -9,6 +9,7 @@ const { sendPaymentReminder } = require('./whatsapp');
  */
 const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
   try {
+    const cashfreeConfig = await getCashfreeConfig();
     if (!cashfreeConfig.isConfigured) {
       console.error('❌ Skipping automated link: Cashfree not configured.');
       return;

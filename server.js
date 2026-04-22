@@ -49,9 +49,14 @@ process.on('uncaughtException', (err) => {
 });
 
 // API Routes
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  const cashfree = require('./src/config/cashfree');
+  const { getCashfreeConfig } = require('./src/config/cashfree');
+  const SystemConfig = require('./src/models/SystemConfig');
+  
+  const cashfreeConfig = await getCashfreeConfig();
+  const dbRecord = await SystemConfig.findOne({ key: 'CASHFREE' });
+  const isDbBacked = !!(dbRecord && dbRecord.value && dbRecord.value.appId);
   
   res.json({ 
     status: 'ok', 
@@ -59,13 +64,12 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV,
     time: new Date().toISOString(),
     config: {
-      cashfree_configured: cashfree.isConfigured,
-      cashfree_mode: cashfree.clientId?.startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
+      cashfree_configured: cashfreeConfig.isConfigured,
+      cashfree_mode: cashfreeConfig.clientId?.startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
+      is_database_backed: isDbBacked,
       // SECURE TRUNCATED KEYS FOR DIAGNOSTICS
-      app_id_preview: cashfree.clientId ? `${cashfree.clientId.substring(0, 4)}...${cashfree.clientId.slice(-4)}` : 'MISSING',
-      secret_preview: cashfree.clientSecret ? `${cashfree.clientSecret.substring(0, 4)}...${cashfree.clientSecret.slice(-4)}` : 'MISSING',
-      // DIAGNOSTIC: FIND SIMILAR KEYS
-      found_cash_keys: Object.keys(process.env).filter(k => k.toUpperCase().includes('CASH'))
+      app_id_preview: cashfreeConfig.clientId ? `${cashfreeConfig.clientId.substring(0, 4)}...${cashfreeConfig.clientId.slice(-4)}` : 'MISSING',
+      secret_preview: cashfreeConfig.clientSecret ? `${cashfreeConfig.clientSecret.substring(0, 4)}...${cashfreeConfig.clientSecret.slice(-4)}` : 'MISSING'
     }
   });
 });

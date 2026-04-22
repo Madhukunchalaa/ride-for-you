@@ -122,7 +122,10 @@ exports.sendReminder = async (req, res) => {
 // @desc Add a new rider
 exports.addRider = async (req, res) => {
   try {
-    const { name, whatsappNumber, riderStatus, vehicleNumber, deployDate, returnDate } = req.body;
+    const { 
+      name, whatsappNumber, riderStatus, vehicleNumber, deployDate, returnDate,
+      autoReminderEnabled, autoReminderTime 
+    } = req.body;
 
     if (!name || !whatsappNumber || !vehicleNumber || !deployDate || !returnDate) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
@@ -134,7 +137,9 @@ exports.addRider = async (req, res) => {
       riderStatus: riderStatus || 'active',
       vehicleNumber,
       deployDate,
-      returnDate
+      returnDate,
+      autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
+      autoReminderTime: autoReminderTime || '10:00'
     });
 
     res.status(201).json({
@@ -163,7 +168,7 @@ exports.getRiders = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   try {
-    const { paymentStatus, riderStatus } = req.body;
+    const { paymentStatus, riderStatus, isRecoveryBucket } = req.body;
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
 
@@ -175,6 +180,10 @@ exports.updateStatus = async (req, res) => {
         rider.returnDate = nextWeek;
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
         
+        // Reset escalation and recovery on payment
+        rider.reminderEscalationStage = 0;
+        rider.isRecoveryBucket = false;
+
         if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
           rider.bikesUsed.push(rider.vehicleNumber);
         }
@@ -183,6 +192,14 @@ exports.updateStatus = async (req, res) => {
         await createInvoiceRecord(rider, req.body.amount || 2000);
       }
       rider.paymentStatus = paymentStatus;
+    }
+
+    // Handle recovery bucket manual toggle
+    if (isRecoveryBucket !== undefined) {
+      rider.isRecoveryBucket = isRecoveryBucket;
+      if (isRecoveryBucket) {
+        rider.reminderEscalationStage = 3; // Max stage if manually moved
+      }
     }
 
     // Handle soft deletion / archiving

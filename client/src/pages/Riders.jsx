@@ -84,7 +84,9 @@ export default function Riders() {
     riderStatus: 'active',
     vehicleNumber: '',
     deployDate: new Date().toISOString().split('T')[0],
-    returnDate: ''
+    returnDate: '',
+    autoReminderEnabled: true,
+    autoReminderTime: '10:00'
   });
 
   // Fetch Riders
@@ -145,7 +147,9 @@ export default function Riders() {
         riderStatus: 'active',
         vehicleNumber: '',
         deployDate: new Date().toISOString().split('T')[0],
-        returnDate: ''
+        returnDate: '',
+        autoReminderEnabled: true,
+        autoReminderTime: '10:00'
       });
       fetchRiders();
     } catch (err) {
@@ -162,7 +166,14 @@ export default function Riders() {
   };
 
   const filteredRiders = riders.filter(rider => {
-    const isCorrectTab = (rider.riderStatus || 'active') === activeTab;
+    let isCorrectTab = (rider.riderStatus || 'active') === activeTab;
+    
+    if (activeTab === 'recovery') {
+      isCorrectTab = rider.isRecoveryBucket === true;
+    } else if (activeTab === 'active') {
+      isCorrectTab = rider.riderStatus === 'active' && !rider.isRecoveryBucket;
+    }
+
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rider.whatsappNumber.includes(searchTerm);
@@ -201,6 +212,12 @@ export default function Riders() {
           className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           Active Fleet
+        </button>
+        <button 
+          onClick={() => setActiveTab('recovery')} 
+          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'recovery' ? 'bg-white dark:bg-slate-800 shadow-sm text-red-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Recovery Bucket
         </button>
         <button 
           onClick={() => setActiveTab('inactive')} 
@@ -371,13 +388,23 @@ export default function Riders() {
                         </span>
                       </td>
                       <td className="p-6">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                          rider.paymentStatus === 'paid' 
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                          : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
-                        }`}>
-                          {rider.paymentStatus || 'unpaid'}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`${
+                            rider.isRecoveryBucket 
+                            ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' 
+                            : rider.paymentStatus === 'paid' 
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                            : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+                          } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
+                            {rider.isRecoveryBucket ? 'RECOVERY' : (rider.paymentStatus || 'unpaid')}
+                          </span>
+                          {rider.autoReminderEnabled && !rider.isRecoveryBucket && rider.paymentStatus === 'unpaid' && (
+                            <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1 ml-1">
+                              <Loader2 size={8} className="animate-spin text-primary-500" /> 
+                              SET FOR {rider.autoReminderTime}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-6">
                         <div className="flex items-center justify-center gap-2">
@@ -493,6 +520,31 @@ export default function Riders() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
+            <div className="space-y-4">
+              <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Reminder Schedule</label>
+              <div className="flex items-center gap-4">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    name="autoReminderEnabled"
+                    className="sr-only peer"
+                    checked={formData.autoReminderEnabled}
+                    onChange={(e) => setFormData(prev => ({ ...prev, autoReminderEnabled: e.target.checked }))}
+                  />
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  <span className="ml-3 text-xs font-bold text-slate-300 uppercase">Auto-Remind</span>
+                </label>
+                {formData.autoReminderEnabled && (
+                  <input 
+                    type="time" 
+                    name="autoReminderTime"
+                    className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]"
+                    value={formData.autoReminderTime}
+                    onChange={handleInputChange}
+                  />
+                )}
+              </div>
+            </div>
             <div className="space-y-2">
               <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
               <input 
@@ -504,18 +556,8 @@ export default function Riders() {
                 onChange={handleInputChange}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Return Date (Auto)</label>
-              <input 
-                name="returnDate"
-                type="date" 
-                readOnly
-                className="input h-12 [color-scheme:dark] bg-slate-800/30 border-slate-800 border-dashed text-primary-400 font-bold cursor-not-allowed"
-                value={formData.returnDate}
-              />
-              <p className="text-[10px] text-slate-500 font-medium">* System auto-calculates 7 days from deployment</p>
-            </div>
           </div>
+          <p className="text-[10px] text-slate-500 font-medium px-4">* System will send Stage 1-3 reminders before moving to Recovery Bucket after 7 days.</p>
 
           <div className="flex gap-4 pt-4">
             <button 

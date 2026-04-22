@@ -8,12 +8,14 @@ const connectDB = require('./src/config/db');
 const { seedAdmin } = require('./src/utils/seedAdmin');
 const { initPaymentScheduler } = require('./src/services/paymentScheduler');
 const { initCronJobs } = require('./src/utils/cronJobs');
+const { initAutomatedReminders } = require('./src/services/automatedReminders');
 
 const app = express();
 
 // Database & Scheduler
 connectDB().then(() => {
   seedAdmin(); // Auto-seed on startup
+  initAutomatedReminders(); // Start Auto-Reminders & Recovery tracking
 });
 
 // Middleware

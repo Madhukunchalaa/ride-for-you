@@ -51,6 +51,25 @@ const riderSchema = new mongoose.Schema(
     },
     lastWebhookData: {
       type: Object // Stores the last received webhook payload for debugging
+    },
+    autoReminderEnabled: {
+      type: Boolean,
+      default: true
+    },
+    autoReminderTime: {
+      type: String,
+      default: "10:00"
+    },
+    reminderEscalationStage: {
+      type: Number,
+      default: 0 // 0: None, 1: Normal, 2: Warning, 3: Final
+    },
+    isRecoveryBucket: {
+      type: Boolean,
+      default: false
+    },
+    lastAutomatedReminderDate: {
+      type: Date
     }
   },
   { timestamps: true }

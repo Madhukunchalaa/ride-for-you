@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut, 
   Zap,
-  X
+  X,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 

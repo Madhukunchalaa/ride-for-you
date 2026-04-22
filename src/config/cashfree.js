@@ -1,4 +1,12 @@
-const clean = (val) => (val || '').trim().replace(/^["']|["']$/g, '');
+// Global cleaning function to strip quotes, spaces, and hidden characters from env variables
+const clean = (val) => {
+  if (!val) return '';
+  return val
+    .toString()
+    .trim()
+    .replace(/^["']|["']$/g, '') // Strip leading/trailing quotes
+    .trim(); // Trim again in case of spaces inside quotes
+};
 
 // DEBUG: Comprehensive environment check
 const requiredKeys = ['CASHFREE_APP_ID', 'CASHFREE_SECRET_KEY'];

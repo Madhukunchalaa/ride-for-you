@@ -50,11 +50,20 @@ process.on('uncaughtException', (err) => {
 // API Routes
 app.get('/health', (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const cashfree = require('./src/config/cashfree');
+  
   res.json({ 
     status: 'ok', 
     database: dbStatus,
     environment: process.env.NODE_ENV,
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
+    config: {
+      cashfree_configured: cashfree.isConfigured,
+      cashfree_mode: cashfree.clientId?.startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
+      // SECURE TRUNCATED KEYS FOR DIAGNOSTICS
+      app_id_preview: cashfree.clientId ? `${cashfree.clientId.substring(0, 4)}...${cashfree.clientId.slice(-4)}` : 'MISSING',
+      secret_preview: cashfree.clientSecret ? `${cashfree.clientSecret.substring(0, 4)}...${cashfree.clientSecret.slice(-4)}` : 'MISSING'
+    }
   });
 });
 app.use('/api/auth', require('./src/routes/auth'));

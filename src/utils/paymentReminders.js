@@ -24,7 +24,7 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
       link_purpose: `Rental Payment [${type.toUpperCase()}] - ${rider.vehicleNumber}`,
       customer_details: {
         customer_phone: rider.whatsappNumber,
-        customer_name: rider.name
+        customer_name: rider.name.replace(/[^a-zA-Z\s.]/g, '') // Sanitize name for Cashfree
       },
       link_notify: { send_sms: false, send_email: false },
       link_meta: {

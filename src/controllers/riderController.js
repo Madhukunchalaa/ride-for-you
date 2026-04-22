@@ -45,7 +45,7 @@ exports.sendReminder = async (req, res) => {
       link_purpose: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
       customer_details: {
         customer_phone: rider.whatsappNumber,
-        customer_name: rider.name
+        customer_name: rider.name.replace(/[^a-zA-Z\s.]/g, '') // Sanitize name for Cashfree
       },
       link_notify: { send_sms: false, send_email: false },
       link_meta: {

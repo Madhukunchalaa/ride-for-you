@@ -7,13 +7,16 @@ const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
  * Checks every hour for riders due for reminders.
  */
 const initAutomatedReminders = () => {
-  // Run every hour at the top of the hour
-  cron.schedule('0 * * * *', async () => {
+  // Run every minute for high precision
+  cron.schedule('* * * * *', async () => {
     console.log('🤖 Running Automated Reminders & Recovery check...');
     
     try {
       const today = new Date();
-      const currentHourMinute = `${today.getHours().toString().padStart(2, '0')}:${today.getMinutes().toString().padStart(2, '0')}`;
+      // Get current hours and minutes in HH:mm format
+      const currentHour = today.getHours().toString().padStart(2, '0');
+      const currentMinute = today.getMinutes().toString().padStart(2, '0');
+      const currentTime = `${currentHour}:${currentMinute}`;
       
       const riders = await Rider.find({ 
         riderStatus: 'active', 
@@ -23,18 +26,18 @@ const initAutomatedReminders = () => {
 
       for (const rider of riders) {
         const returnDate = new Date(rider.returnDate);
-        const daysOverdue = Math.floor((today - returnDate) / (1000 * 60 * 60 * 24));
+        // Normalize dates to midnight for accurate day comparison
+        const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const returnAtMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
+        const daysOverdue = Math.floor((todayAtMidnight - returnAtMidnight) / (1000 * 60 * 60 * 24));
+        
         const lastSentDate = rider.lastAutomatedReminderDate ? new Date(rider.lastAutomatedReminderDate).toDateString() : null;
         
         // Prevent sending multiple reminders on the same day
         if (lastSentDate === today.toDateString()) continue;
 
-        // Only send at the rider's specified time (or if they are already overdue)
-        // We allow a 1-hour window for the "exact time" check since the cron runs hourly
-        const riderTimeHour = rider.autoReminderTime.split(':')[0];
-        const currentHour = today.getHours().toString().padStart(2, '0');
-
-        if (currentHour !== riderTimeHour && daysOverdue <= 0) continue;
+        // Check if it's the exact time to send (or if they are already overdue)
+        if (currentTime !== rider.autoReminderTime && daysOverdue <= 0) continue;
 
         let success = false;
 

@@ -22,10 +22,12 @@ const createTestRider = async () => {
       riderStatus: 'active',
       vehicleNumber: 'TS-TEST-01',
       deployDate: today,
-      returnDate: today, // Today makes it "Due" (daysOverdue = 0)
+      returnDate: today, 
       autoReminderEnabled: true,
-      autoReminderTime: '08:10', // SCHEDULED TIME
-      paymentStatus: 'unpaid'
+      autoReminderTime: '08:20', // NEW SCHEDULED TIME
+      paymentStatus: 'unpaid',
+      reminderEscalationStage: 0,
+      lastAutomatedReminderDate: null
     });
 
     console.log(`✨ Test Rider Created: ${rider.name}`);

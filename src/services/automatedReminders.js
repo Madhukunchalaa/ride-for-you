@@ -25,24 +25,41 @@ const initAutomatedReminders = () => {
       });
 
       for (const rider of riders) {
+        console.log(`🔍 Checking Rider: ${rider.name} (${rider.whatsappNumber})`);
+        
         const returnDate = new Date(rider.returnDate);
-        // Normalize dates to midnight for accurate day comparison
         const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const returnAtMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
         const daysOverdue = Math.floor((todayAtMidnight - returnAtMidnight) / (1000 * 60 * 60 * 24));
         
+        console.log(`   - Scheduled Time: ${rider.autoReminderTime} | Current Time: ${currentTime}`);
+        console.log(`   - Days Overdue: ${daysOverdue} | Escalation Stage: ${rider.reminderEscalationStage}`);
+
         const lastSentDate = rider.lastAutomatedReminderDate ? new Date(rider.lastAutomatedReminderDate).toDateString() : null;
+        if (lastSentDate === today.toDateString()) {
+          console.log(`   - ⏭️ Skipping: Already sent a reminder today.`);
+          continue;
+        }
+
+        // Logic check: Match time OR be overdue
+        // We allow a 5-minute window in case the cron starts a few seconds/minutes late
+        const [targetH, targetM] = rider.autoReminderTime.split(':').map(Number);
+        const [currH, currM] = [today.getHours(), today.getMinutes()];
         
-        // Prevent sending multiple reminders on the same day
-        if (lastSentDate === today.toDateString()) continue;
+        const isExactTime = (currH === targetH && currM >= targetM && currM < targetM + 5);
+        const isOverdueTrigger = (daysOverdue > 0);
 
-        // Check if it's the exact time to send (or if they are already overdue)
-        if (currentTime !== rider.autoReminderTime && daysOverdue <= 0) continue;
+        if (!isExactTime && !isOverdueTrigger) {
+          console.log(`   - ⏭️ Skipping: Not the scheduled time yet and not overdue.`);
+          continue;
+        }
 
+        console.log(`   - 🚀 Triggering reminder logic for stage ${rider.reminderEscalationStage}...`);
         let success = false;
 
         // Stage 1: Normal (Due Today or Yesterday)
         if (daysOverdue >= 0 && daysOverdue < 3 && rider.reminderEscalationStage < 1) {
+          console.log(`   - 📤 Sending Stage 1 (NORMAL) reminder...`);
           success = await sendAutomatedPaymentLink(rider, 'normal');
           if (success) {
             rider.reminderEscalationStage = 1;
@@ -51,6 +68,7 @@ const initAutomatedReminders = () => {
         } 
         // Stage 2: Warning (3-4 days overdue)
         else if (daysOverdue >= 3 && daysOverdue < 5 && rider.reminderEscalationStage < 2) {
+          console.log(`   - 📤 Sending Stage 2 (WARNING) reminder...`);
           success = await sendAutomatedPaymentLink(rider, 'warning');
           if (success) {
             rider.reminderEscalationStage = 2;
@@ -59,6 +77,7 @@ const initAutomatedReminders = () => {
         }
         // Stage 3: Final (5-6 days overdue)
         else if (daysOverdue >= 5 && daysOverdue < 7 && rider.reminderEscalationStage < 3) {
+          console.log(`   - 📤 Sending Stage 3 (FINAL) reminder...`);
           success = await sendAutomatedPaymentLink(rider, 'final');
           if (success) {
             rider.reminderEscalationStage = 3;

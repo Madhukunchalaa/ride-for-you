@@ -64,11 +64,32 @@ exports.getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } }
     ]);
 
-    // 4. Recent Activity (Last 5 riders)
-    const recentActivity = await Rider.find()
+    // 4. Recent Activity (Unified: New Riders + Extensions)
+    const recentRiders = await Rider.find()
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name vehicleNumber createdAt');
+    
+    // Recent Payment Extensions (Invoices with riderId)
+    const recentExtensions = await Invoice.find({ riderId: { $ne: null } })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // Combine and sort by date
+    const recentActivity = [
+      ...recentRiders.map(r => ({ 
+        type: 'ONBOARDING', 
+        name: r.name, 
+        vehicleNumber: r.vehicleNumber, 
+        createdAt: r.createdAt 
+      })),
+      ...recentExtensions.map(i => ({ 
+        type: 'EXTENSION', 
+        name: i.riderName, 
+        vehicleNumber: i.remarks.match(/\w+-\d+-\w+-\d+|\w+-\d+/)?.[0] || 'Unit', 
+        createdAt: i.createdAt 
+      }))
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
 
     res.status(200).json({
       success: true,

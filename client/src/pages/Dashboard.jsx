@@ -143,11 +143,22 @@ export default function Dashboard() {
             {data?.recentActivity?.length > 0 ? (
               data.recentActivity.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-4 group cursor-pointer">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 group-hover:bg-primary-600/10 group-hover:text-primary-400 group-hover:border-primary-500/30 transition-all duration-300">
-                    <Users size={18} />
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl border flex items-center justify-center transition-all duration-300 ${
+                    item.type === 'EXTENSION' 
+                    ? 'bg-emerald-600/10 text-emerald-500 border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white' 
+                    : 'bg-primary-600/10 text-primary-500 border-primary-500/20 group-hover:bg-primary-500 group-hover:text-white'
+                  }`}>
+                    {item.type === 'EXTENSION' ? <TrendingUp size={18} /> : <Users size={18} />}
                   </div>
                   <div className="flex-1 border-b border-slate-200 dark:border-slate-800/50 pb-3 md:pb-4 group-last:border-0">
-                    <p className="text-xs md:text-sm font-bold text-slate-900 dark:text-white group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors uppercase tracking-tight">{item.name}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs md:text-sm font-bold text-slate-900 dark:text-white transition-colors uppercase tracking-tight">{item.name}</p>
+                      <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter ${
+                        item.type === 'EXTENSION' ? 'bg-emerald-500 text-white' : 'bg-primary-500 text-white'
+                      }`}>
+                        {item.type}
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-[9px] md:text-[10px] text-slate-500 font-black uppercase tracking-widest">{item.vehicleNumber}</span>
                       <span className="text-[8px] md:text-[9px] text-slate-400 dark:text-slate-600 font-bold">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

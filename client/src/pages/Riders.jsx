@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2 } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2 } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -9,13 +9,13 @@ export default function Riders() {
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(null);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
-
-  // ... existing form state and fetch functions ...
 
   // --- Cashfree Payment Logic ---
   const handlePayment = async (rider) => {
@@ -74,8 +74,6 @@ export default function Riders() {
       }
     }
   };
-
-  // Skip the next ~60 lines to avoid re-writing everything
 
   // Form State
   const [formData, setFormData] = useState({
@@ -139,24 +137,51 @@ export default function Riders() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/riders', formData);
+      if (isEditing) {
+        await api.put(`/riders/${editId}`, formData);
+      } else {
+        await api.post('/riders', formData);
+      }
+      
       setIsModalOpen(false);
-      setFormData({
-        name: '',
-        whatsappNumber: '',
-        riderStatus: 'active',
-        vehicleNumber: '',
-        deployDate: new Date().toISOString().split('T')[0],
-        returnDate: '',
-        autoReminderEnabled: true,
-        autoReminderTime: '10:00'
-      });
+      resetForm();
       fetchRiders();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error adding rider');
+      alert(err.response?.data?.message || 'Error saving rider');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setIsEditing(false);
+    setEditId(null);
+    setFormData({
+      name: '',
+      whatsappNumber: '',
+      riderStatus: 'active',
+      vehicleNumber: '',
+      deployDate: new Date().toISOString().split('T')[0],
+      returnDate: '',
+      autoReminderEnabled: true,
+      autoReminderTime: '10:00'
+    });
+  };
+
+  const handleEditClick = (rider) => {
+    setIsEditing(true);
+    setEditId(rider._id);
+    setFormData({
+      name: rider.name || '',
+      whatsappNumber: rider.whatsappNumber || '',
+      riderStatus: rider.riderStatus || 'active',
+      vehicleNumber: rider.vehicleNumber || '',
+      deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
+      returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
+      autoReminderEnabled: rider.autoReminderEnabled ?? true,
+      autoReminderTime: rider.autoReminderTime || '10:00'
+    });
+    setIsModalOpen(true);
   };
 
   const formatDate = (dateStr) => {
@@ -197,7 +222,10 @@ export default function Riders() {
           </p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
           className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
         >
           <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
@@ -300,6 +328,12 @@ export default function Riders() {
                   >
                     <CreditCard size={16} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Pay</span>
+                  </button>
+                  <button 
+                    onClick={() => handleEditClick(rider)}
+                    className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+                  >
+                    <Edit2 size={18} />
                   </button>
                   <Link 
                     to={`/app/riders/${rider._id}`}
@@ -435,6 +469,13 @@ export default function Riders() {
                             <ExternalLink size={18} />
                           </Link>
                           <button 
+                            onClick={() => handleEditClick(rider)}
+                            className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all"
+                            title="Edit Rider"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
                             onClick={() => handleDeleteRider(rider._id)}
                             className="p-2.5 hover:bg-red-500/10 rounded-xl text-slate-400 hover:text-red-500 transition-all"
                             title="Delete Rider"
@@ -458,134 +499,158 @@ export default function Riders() {
         </div>
       </div>
 
-      {/* Add Rider Modal */}
+      {/* Add/Edit Rider Modal */}
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)}
-        title="Register New Rider"
+        onClose={() => {
+          setIsModalOpen(false);
+          resetForm();
+        }}
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider Full Name</label>
-              <input 
-                name="name"
-                type="text" 
-                required
-                placeholder="Ex: John Doe" 
-                className="input h-12"
-                value={formData.name}
-                onChange={handleInputChange}
-              />
+        <div className="bg-white dark:bg-dark-100 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar animate-slide-up shadow-2xl border border-slate-200 dark:border-slate-800">
+          <div className="sticky top-0 bg-white/80 dark:bg-dark-100/80 backdrop-blur-md p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
+            <div>
+              <h3 className="text-2xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                {isEditing ? 'UPDATE RIDER PROFILE' : 'RIDER REGISTRATION'}
+              </h3>
+              <p className="text-[10px] text-primary-500 font-bold uppercase tracking-widest mt-1">
+                {isEditing ? `Modifying details for ${formData.name}` : 'Enrolling new workforce member'}
+              </p>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">WhatsApp Number</label>
-              <input 
-                name="whatsappNumber"
-                type="tel" 
-                required
-                placeholder="+91 XXXXX XXXXX" 
-                className="input h-12"
-                value={formData.whatsappNumber}
-                onChange={handleInputChange}
-              />
-            </div>
+            <button 
+              onClick={() => {
+                setIsModalOpen(false);
+                resetForm();
+              }}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            >
+              <X size={24} />
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Vehicle Number</label>
-              <input 
-                name="vehicleNumber"
-                type="text" 
-                required
-                placeholder="KA-01-XX-XXXX" 
-                className="input h-12 uppercase"
-                value={formData.vehicleNumber}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider Status</label>
-              <select 
-                name="riderStatus"
-                className="input h-12 appearance-none"
-                value={formData.riderStatus}
-                onChange={handleInputChange}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
-            <div className="space-y-4">
-              <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Reminder Schedule</label>
-              <div className="flex items-center gap-4">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    name="autoReminderEnabled"
-                    className="sr-only peer"
-                    checked={formData.autoReminderEnabled}
-                    onChange={(e) => setFormData(prev => ({ ...prev, autoReminderEnabled: e.target.checked }))}
-                  />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                  <span className="ml-3 text-xs font-bold text-slate-300 uppercase">Auto-Remind</span>
-                </label>
-                {formData.autoReminderEnabled && (
-                  <input 
-                    type="time" 
-                    name="autoReminderTime"
-                    className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]"
-                    value={formData.autoReminderTime}
-                    onChange={handleInputChange}
-                  />
-                )}
+          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider Full Name</label>
+                <input 
+                  name="name"
+                  type="text" 
+                  required
+                  placeholder="Ex: John Doe" 
+                  className="input h-12"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">WhatsApp Number</label>
+                <input 
+                  name="whatsappNumber"
+                  type="tel" 
+                  required
+                  placeholder="+91 XXXXX XXXXX" 
+                  className="input h-12"
+                  value={formData.whatsappNumber}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
-              <input 
-                name="deployDate"
-                type="date" 
-                required
-                className="input h-12 [color-scheme:dark]"
-                value={formData.deployDate}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-          <p className="text-[10px] text-slate-500 font-medium px-4">* System will send Stage 1-3 reminders before moving to Recovery Bucket after 7 days.</p>
 
-          <div className="flex gap-4 pt-4">
-            <button 
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1 btn-secondary h-14 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-2xl transition-all"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-[2] btn-primary h-14 shadow-glow-primary rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>Registering...</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck size={20} />
-                  <span>Confirm Registration</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Vehicle Number</label>
+                <input 
+                  name="vehicleNumber"
+                  type="text" 
+                  required
+                  placeholder="KA-01-XX-XXXX" 
+                  className="input h-12 uppercase"
+                  value={formData.vehicleNumber}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider Status</label>
+                <select 
+                  name="riderStatus"
+                  className="input h-12 appearance-none"
+                  value={formData.riderStatus}
+                  onChange={handleInputChange}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
+              <div className="space-y-4">
+                <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Reminder Schedule</label>
+                <div className="flex items-center gap-4">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      name="autoReminderEnabled"
+                      className="sr-only peer"
+                      checked={formData.autoReminderEnabled}
+                      onChange={(e) => setFormData(prev => ({ ...prev, autoReminderEnabled: e.target.checked }))}
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    <span className="ml-3 text-xs font-bold text-slate-300 uppercase">Auto-Remind</span>
+                  </label>
+                  {formData.autoReminderEnabled && (
+                    <input 
+                      type="time" 
+                      name="autoReminderTime"
+                      className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]"
+                      value={formData.autoReminderTime}
+                      onChange={handleInputChange}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
+                <input 
+                  name="deployDate"
+                  type="date" 
+                  required
+                  className="input h-12 [color-scheme:dark]"
+                  value={formData.deployDate}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 font-medium px-4">* System will send Stage 1-3 reminders before moving to Recovery Bucket after 7 days.</p>
+
+            <div className="flex gap-4 pt-4">
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}
+                className="w-full btn-secondary h-14 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full btn-primary h-14 shadow-glow-primary text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={24} className="animate-spin" />
+                ) : (
+                  <>
+                    <ShieldCheck size={20} />
+                    {isEditing ? 'COMMIT UPDATES' : 'FINALIZE REGISTRATION'}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );

@@ -119,7 +119,7 @@ exports.sendReminder = async (req, res) => {
 // ... existing functions ...
 
 // @POST /api/riders
-// @desc Add a new rider
+// @desc Add a new rider (with Reactivation and Vehicle Lock)
 exports.addRider = async (req, res) => {
   try {
     const { 
@@ -131,21 +131,121 @@ exports.addRider = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    const rider = await Rider.create({
+    // 1. Vehicle Lock: Check if bike is already with another ACTIVE rider
+    const activeBike = await Rider.findOne({ 
+      vehicleNumber: vehicleNumber.trim().toUpperCase(), 
+      riderStatus: 'active' 
+    });
+    if (activeBike) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Vehicle ${vehicleNumber} is currently assigned to active rider: ${activeBike.name}` 
+      });
+    }
+
+    // 2. Reactivation Logic: Check if rider already exists
+    let rider = await Rider.findOne({ whatsappNumber: whatsappNumber.trim() });
+
+    if (rider) {
+      if (rider.riderStatus === 'active') {
+        return res.status(400).json({ 
+          success: false, 
+          message: `A rider with phone ${whatsappNumber} is already active in your fleet.` 
+        });
+      }
+
+      // Reactivate Past Rider
+      console.log(`🔄 Reactivating past rider: ${rider.name}`);
+      
+      // Store old bike in history if it's different
+      if (rider.vehicleNumber && rider.vehicleNumber !== vehicleNumber.toUpperCase()) {
+        if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
+          rider.bikesUsed.push(rider.vehicleNumber);
+        }
+      }
+
+      rider.name = name;
+      rider.vehicleNumber = vehicleNumber.toUpperCase();
+      rider.riderStatus = 'active';
+      rider.deployDate = deployDate;
+      rider.returnDate = returnDate;
+      rider.paymentStatus = 'unpaid';
+      rider.autoReminderEnabled = autoReminderEnabled !== undefined ? autoReminderEnabled : true;
+      rider.autoReminderTime = autoReminderTime || '10:00';
+      rider.reminderEscalationStage = 0;
+      rider.isRecoveryBucket = false;
+      
+      await rider.save();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Past rider reactivated successfully',
+        data: rider
+      });
+    }
+
+    // 3. Create New Rider
+    const newRider = await Rider.create({
       name,
       whatsappNumber,
       riderStatus: riderStatus || 'active',
-      vehicleNumber,
+      vehicleNumber: vehicleNumber.toUpperCase(),
       deployDate,
       returnDate,
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
-      autoReminderTime: autoReminderTime || '10:00'
+      autoReminderTime: autoReminderTime || '10:00',
+      bikesUsed: [vehicleNumber.toUpperCase()]
     });
 
     res.status(201).json({
       success: true,
-      data: rider
+      data: newRider
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @PUT /api/riders/:id
+// @desc Update rider details
+exports.updateRider = async (req, res) => {
+  try {
+    const { name, whatsappNumber, vehicleNumber, deployDate, returnDate, autoReminderEnabled, autoReminderTime } = req.body;
+    
+    const rider = await Rider.findById(req.params.id);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    // Vehicle Lock check if vehicle is changing
+    if (vehicleNumber && vehicleNumber.toUpperCase() !== rider.vehicleNumber) {
+      const activeBike = await Rider.findOne({ 
+        _id: { $ne: rider._id },
+        vehicleNumber: vehicleNumber.trim().toUpperCase(), 
+        riderStatus: 'active' 
+      });
+      if (activeBike) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Cannot switch to ${vehicleNumber}. It is already assigned to: ${activeBike.name}` 
+        });
+      }
+      
+      // Store old bike in history
+      if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
+        rider.bikesUsed.push(rider.vehicleNumber);
+      }
+    }
+
+    // Update fields
+    if (name) rider.name = name;
+    if (whatsappNumber) rider.whatsappNumber = whatsappNumber;
+    if (vehicleNumber) rider.vehicleNumber = vehicleNumber.toUpperCase();
+    if (deployDate) rider.deployDate = deployDate;
+    if (returnDate) rider.returnDate = returnDate;
+    if (autoReminderEnabled !== undefined) rider.autoReminderEnabled = autoReminderEnabled;
+    if (autoReminderTime) rider.autoReminderTime = autoReminderTime;
+
+    await rider.save();
+    res.status(200).json({ success: true, data: rider });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

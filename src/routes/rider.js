@@ -6,8 +6,9 @@ const { protect } = require('../middleware/authMiddleware');
 // All rider routes are protected (Admin only)
 router.use(protect);
 
-router.post('/', riderController.addRider);
 router.get('/', riderController.getRiders);
+router.post('/', riderController.addRider);
+router.put('/:id', riderController.updateRider);
 router.get('/:id/details', riderController.getRiderDetails);
 router.post('/:id/send-reminder', riderController.sendReminder);
 router.post('/:id/complaints', riderController.addComplaint);

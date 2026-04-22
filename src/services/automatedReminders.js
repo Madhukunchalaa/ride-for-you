@@ -9,15 +9,20 @@ const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
 const initAutomatedReminders = () => {
   // Run every minute for high precision
   cron.schedule('* * * * *', async () => {
-    console.log('🤖 Running Automated Reminders & Recovery check...');
+    console.log(`🤖 [${new Date().toISOString()}] Running Automated Reminders check...`);
     
     try {
-      const today = new Date();
-      // Get current hours and minutes in HH:mm format
+      // FORCE IST TIMEZONE
+      const now = new Date();
+      const istTime = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+      const today = new Date(istTime);
+      
       const currentHour = today.getHours().toString().padStart(2, '0');
       const currentMinute = today.getMinutes().toString().padStart(2, '0');
       const currentTime = `${currentHour}:${currentMinute}`;
       
+      console.log(`📡 Server Time (IST): ${currentTime}`);
+
       const riders = await Rider.find({ 
         riderStatus: 'active', 
         paymentStatus: 'unpaid',
@@ -32,25 +37,21 @@ const initAutomatedReminders = () => {
         const returnAtMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
         const daysOverdue = Math.floor((todayAtMidnight - returnAtMidnight) / (1000 * 60 * 60 * 24));
         
-        console.log(`   - Scheduled Time: ${rider.autoReminderTime} | Current Time: ${currentTime}`);
-        console.log(`   - Days Overdue: ${daysOverdue} | Escalation Stage: ${rider.reminderEscalationStage}`);
+        console.log(`   - Scheduled: ${rider.autoReminderTime} | Days Overdue: ${daysOverdue}`);
 
         const lastSentDate = rider.lastAutomatedReminderDate ? new Date(rider.lastAutomatedReminderDate).toDateString() : null;
         if (lastSentDate === today.toDateString()) {
-          console.log(`   - ⏭️ Skipping: Already sent a reminder today.`);
+          console.log(`   - ⏭️ Already reminded today.`);
           continue;
         }
 
-        // Logic check: Match time OR be overdue
-        // We allow a 5-minute window in case the cron starts a few seconds/minutes late
+        // 5-Minute Window Matching
         const [targetH, targetM] = rider.autoReminderTime.split(':').map(Number);
         const [currH, currM] = [today.getHours(), today.getMinutes()];
-        
-        const isExactTime = (currH === targetH && currM >= targetM && currM < targetM + 5);
+        const isTimeMatch = (currH === targetH && currM >= targetM && currM < targetM + 5);
         const isOverdueTrigger = (daysOverdue > 0);
 
-        if (!isExactTime && !isOverdueTrigger) {
-          console.log(`   - ⏭️ Skipping: Not the scheduled time yet and not overdue.`);
+        if (!isTimeMatch && !isOverdueTrigger) {
           continue;
         }
 

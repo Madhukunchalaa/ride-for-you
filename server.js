@@ -63,7 +63,9 @@ app.get('/health', (req, res) => {
       cashfree_mode: cashfree.clientId?.startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
       // SECURE TRUNCATED KEYS FOR DIAGNOSTICS
       app_id_preview: cashfree.clientId ? `${cashfree.clientId.substring(0, 4)}...${cashfree.clientId.slice(-4)}` : 'MISSING',
-      secret_preview: cashfree.clientSecret ? `${cashfree.clientSecret.substring(0, 4)}...${cashfree.clientSecret.slice(-4)}` : 'MISSING'
+      secret_preview: cashfree.clientSecret ? `${cashfree.clientSecret.substring(0, 4)}...${cashfree.clientSecret.slice(-4)}` : 'MISSING',
+      // DIAGNOSTIC: FIND SIMILAR KEYS
+      found_cash_keys: Object.keys(process.env).filter(k => k.toUpperCase().includes('CASH'))
     }
   });
 });

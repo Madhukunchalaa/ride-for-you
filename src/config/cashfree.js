@@ -25,8 +25,8 @@ requiredKeys.forEach(key => {
   }
 });
 
-const clientId = clean(process.env.CASHFREE_APP_ID || 'TEST110559835195b055af54a9c8961438955011');
-const clientSecret = clean(process.env.CASHFREE_SECRET_KEY || 'cfsk_ma_test_71ff06c3fd8508cc8df8683ec1529808_6a35af96');
+const clientId = clean(process.env.CASHFREE_APP_ID || '');
+const clientSecret = clean(process.env.CASHFREE_SECRET_KEY || '');
 
 const isTestKey = clientId.startsWith('TEST') || clientSecret.startsWith('cfsk_ma_test');
 

@@ -8,8 +8,10 @@ import {
   ArrowRight,
   Menu,
   X,
-  CheckCircle2
+  CheckCircle2,
+  MapPin
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const LandingPage = () => {
   const [formData, setFormData] = useState({
@@ -351,24 +353,52 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t border-white/5 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col mb-8 md:mb-0">
-            <div className="flex items-center gap-3 mb-2">
-              <Zap className="text-primary-500 fill-primary-500" size={24} />
-              <span className="font-black tracking-tighter uppercase text-2xl font-display text-white">Ride For You EV</span>
+      <footer className="py-20 border-t border-white/5 px-6 bg-slate-950">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-3 mb-6">
+                <Zap className="text-primary-500 fill-primary-500" size={28} />
+                <span className="font-black tracking-tighter uppercase text-2xl font-display text-white">Ride For You EV</span>
+              </div>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                Leading the shift to sustainable urban mobility with high-performance electric vehicles.
+              </p>
             </div>
-            <p className="text-slate-400 text-sm font-medium">Shift to Electric. Ride Smart.</p>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-6">Compliance</h4>
+              <ul className="space-y-4 text-sm font-bold text-slate-500">
+                <li><Link to="/terms-and-conditions" className="hover:text-primary-400 transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/privacy-policy" className="hover:text-primary-400 transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/refund-policy" className="hover:text-primary-400 transition-colors">Refund & Cancellation</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-6">Support</h4>
+              <ul className="space-y-4 text-sm font-bold text-slate-500">
+                <li className="flex items-center gap-2"><Mail size={14} className="text-primary-500" /> rideforyouev@gmail.com</li>
+                <li className="flex items-center gap-2"><Phone size={14} className="text-primary-500" /> +91 7989776255</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-white mb-6">Location</h4>
+              <div className="flex items-start gap-2 text-sm font-bold text-slate-500">
+                <MapPin size={18} className="text-primary-500 flex-shrink-0 mt-0.5" />
+                <p>Plot No. 12, Phase 1, Jeedimetla Industrial Area, Hyderabad, Telangana 500055</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex flex-col text-right">
-             <h4 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2">Ownership & Management</h4>
-             <p className="font-bold text-white text-lg">Pasireddy Balram Kumar</p>
-             <p className="text-primary-400 font-medium text-sm">Founder, YS Manpower Solutions</p>
+
+          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col">
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-1">Ownership & Management</h4>
+              <p className="font-bold text-white text-sm">Pasireddy Balram Kumar <span className="text-slate-500 mx-2">|</span> <span className="text-primary-400 font-medium">Founder, YS Manpower Solutions</span></p>
+            </div>
+            <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Ride For You EV. All Rights Reserved.</p>
           </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 text-center">
-            <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">© 2026 Ride For You EV. All Rights Reserved.</p>
         </div>
       </footer>
     </div>

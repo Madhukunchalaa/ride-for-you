@@ -1,0 +1,86 @@
+import React from 'react';
+import { Zap, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const RefundPolicy = () => {
+  return (
+    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-primary-500/30">
+      <nav className="fixed w-full z-50 bg-slate-900/90 backdrop-blur-xl border-b border-white/5 py-4">
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="bg-gradient-to-br from-primary-500 to-primary-700 p-2 rounded-xl shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform">
+              <Zap className="text-white w-5 h-5 fill-white" />
+            </div>
+            <span className="text-xl font-black tracking-tighter uppercase font-display">
+              Ride <span className="text-primary-400">For You</span>
+            </span>
+          </Link>
+          <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors font-bold text-sm uppercase tracking-widest">
+            <ArrowLeft size={16} /> Back to Home
+          </Link>
+        </div>
+      </nav>
+
+      <main className="pt-32 pb-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl lg:text-6xl font-black tracking-tighter font-display mb-8">
+            REFUND & <span className="text-primary-400">CANCELLATION</span>
+          </h1>
+          
+          <div className="space-y-8 text-slate-400 leading-relaxed text-lg font-medium">
+            <section className="bg-white/5 border border-white/10 p-8 rounded-3xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">1. Rental Cancellation</h2>
+              <p>
+                We understand that plans can change. Our cancellation policy is as follows:
+              </p>
+              <ul className="list-disc ml-6 mt-4 space-y-2">
+                <li>If you cancel your booking before the vehicle is picked up, the weekly rental amount is refundable.</li>
+                <li>However, the **Platform Fee** and **Booking Fee** are non-refundable as they cover administrative and registration costs.</li>
+                <li>Once the vehicle is picked up or the rental period has started, no refunds will be issued for the current week.</li>
+              </ul>
+            </section>
+
+            <section className="p-4">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">2. Security Deposit Refunds</h2>
+              <p>
+                If a security deposit was collected:
+              </p>
+              <ul className="list-disc ml-6 mt-4 space-y-2">
+                <li>The deposit will be refunded within 7-10 business days after the vehicle is returned in good condition.</li>
+                <li>Any outstanding dues, fines, or damage costs will be deducted from the deposit.</li>
+              </ul>
+            </section>
+
+            <section className="bg-white/5 border border-white/10 p-8 rounded-3xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">3. Refund Processing</h2>
+              <p>
+                All refunds will be processed via the original payment method (Cashfree/Razorpay). It usually takes 5-7 business days for the amount to reflect in your bank account after we initiate the refund.
+              </p>
+            </section>
+
+            <section className="p-4">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">4. Late Returns & Extensions</h2>
+              <p>
+                If you wish to extend your rental, you must do so at least 24 hours before the current period ends. Late returns without prior notice may attract a penalty fee, which is non-refundable.
+              </p>
+            </section>
+
+            <section className="bg-primary-500/10 border border-primary-500/20 p-8 rounded-3xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">5. Dispute Resolution</h2>
+              <p>
+                In case of any discrepancies regarding refunds, please contact our support team at **rideforyouev@gmail.com** with your transaction details. We aim to resolve all issues within 48 hours.
+              </p>
+              <div className="mt-6 text-sm opacity-70 italic">Last Updated: April 24, 2026</div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer className="py-12 border-t border-white/5 text-center">
+        <p className="text-slate-600 text-xs font-bold uppercase tracking-widest">© 2026 Ride For You EV. All Rights Reserved.</p>
+      </footer>
+    </div>
+  );
+};
+
+export default RefundPolicy;

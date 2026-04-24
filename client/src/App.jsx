@@ -11,6 +11,9 @@ import Payments from './pages/Payments';
 import Customer from './pages/Customer';
 import Reports from './pages/Reports';
 import LandingPage from './pages/LandingPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
+import RefundPolicy from './pages/RefundPolicy';
 
 // Helper component for private routes
 const PrivateRoute = ({ children }) => {
@@ -33,6 +36,9 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           
           {/* Private Dashboard Routes */}

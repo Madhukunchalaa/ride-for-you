@@ -74,16 +74,37 @@ const PrivacyPolicy = () => {
               </ul>
             </section>
 
+            <section className="bg-white/5 border border-white/10 p-8 rounded-3xl">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">5. Your Data Rights</h2>
+              <p>
+                As a user, you have the following rights regarding your personal data:
+              </p>
+              <ul className="list-disc ml-6 mt-4 space-y-2">
+                <li><strong>Right to Access:</strong> You can request a copy of the data we hold about you.</li>
+                <li><strong>Right to Correction:</strong> You can ask us to update or fix any inaccurate information.</li>
+                <li><strong>Right to Erasure:</strong> You can request that we delete your personal data (subject to legal retention requirements).</li>
+                <li><strong>Right to Withdraw Consent:</strong> You can opt-out of marketing communications at any time.</li>
+              </ul>
+            </section>
+
+            <section className="p-4">
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">6. Data Retention</h2>
+              <p>
+                We retain your personal information for as long as your account is active or as needed to provide you services. We will also retain and use your information as necessary to comply with our legal obligations, resolve disputes, and enforce our agreements.
+              </p>
+            </section>
+
             <section className="bg-primary-500/10 border border-primary-500/20 p-8 rounded-3xl">
-              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">5. Contact Us</h2>
+              <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">7. Grievance Officer</h2>
               <p className="text-white">
-                If you have any questions regarding this Privacy Policy, you may contact us using the information below:
+                In accordance with Information Technology Act 2000 and rules made there under, the name and contact details of the Grievance Officer are provided below:
               </p>
               <div className="mt-4 space-y-1">
-                <p className="font-bold">Ride For You EV</p>
+                <p className="font-bold">Grievance Officer: Pasireddy Balram Kumar</p>
+                <p>Ride For You EV (YS Manpower Solutions)</p>
                 <p>Email: rideforyouev@gmail.com</p>
-                <p>Phone: +91 7989776255</p>
-                <p className="mt-2 text-sm opacity-70 italic">Last Updated: April 24, 2026</p>
+                <p>Address: Plot No. 12, Phase 1, Jeedimetla Industrial Area, Hyderabad, TS 500055</p>
+                <p className="mt-2 text-sm opacity-70 italic">Last Updated: April 25, 2026</p>
               </div>
             </section>
           </div>

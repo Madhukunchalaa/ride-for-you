@@ -27,6 +27,19 @@ const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [plans, setPlans] = useState([]);
+  const [showCookieBanner, setShowCookieBanner] = useState(false);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('cookie-consent');
+    if (!consent) {
+      setTimeout(() => setShowCookieBanner(true), 2000);
+    }
+  }, []);
+
+  const handleCookieAccept = () => {
+    localStorage.setItem('cookie-consent', 'accepted');
+    setShowCookieBanner(false);
+  };
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -419,11 +432,47 @@ const LandingPage = () => {
             <div className="flex flex-col">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-1">Ownership & Management</h4>
               <p className="font-bold text-white text-sm">Pasireddy Balram Kumar <span className="text-slate-500 mx-2">|</span> <span className="text-primary-400 font-medium">Founder, YS Manpower Solutions</span></p>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">GST: [Enter GST Number]</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">MSME Registered</span>
+              </div>
             </div>
             <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Ride For You EV. All Rights Reserved.</p>
           </div>
         </div>
       </footer>
+
+      {/* Cookie Consent Banner */}
+      {showCookieBanner && (
+        <div className="fixed bottom-8 left-8 right-8 z-[100] animate-in slide-in-from-bottom-10 duration-500">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-[2rem] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-500/10 rounded-full flex items-center justify-center text-primary-400 flex-shrink-0">
+                  <CheckCircle2 size={24} />
+                </div>
+                <p className="text-sm text-slate-300 font-medium leading-relaxed">
+                  We use cookies to enhance your experience and analyze our traffic. By clicking <span className="text-white font-bold">"Accept All"</span>, you consent to our use of cookies in accordance with our <Link to="/privacy-policy" className="text-primary-400 underline underline-offset-4 decoration-primary-500/30 hover:decoration-primary-500 transition-all">Privacy Policy</Link>.
+                </p>
+              </div>
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <button 
+                  onClick={() => setShowCookieBanner(false)}
+                  className="flex-1 md:flex-none px-6 py-3 text-sm font-bold text-slate-500 hover:text-white transition-colors"
+                >
+                  Decline
+                </button>
+                <button 
+                  onClick={handleCookieAccept}
+                  className="flex-1 md:flex-none px-10 py-4 bg-primary-500 hover:bg-primary-400 text-black font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg shadow-primary-500/20 active:scale-95"
+                >
+                  Accept All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

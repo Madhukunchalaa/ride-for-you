@@ -23,12 +23,10 @@ const riderSchema = new mongoose.Schema(
       trim: true
     },
     deployDate: {
-      type: Date,
-      required: [true, 'Deploy date is required']
+      type: Date
     },
     returnDate: {
-      type: Date,
-      required: [true, 'Return date is required']
+      type: Date
     },
     paymentStatus: {
       type: String,

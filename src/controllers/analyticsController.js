@@ -1,5 +1,6 @@
 const Rider = require('../models/Rider');
 const Invoice = require('../models/Invoice');
+const Expense = require('../models/Expense');
 
 // @GET /api/analytics/dashboard
 exports.getDashboardStats = async (req, res) => {
@@ -191,6 +192,51 @@ exports.getPaymentAnalytics = async (req, res) => {
     res.status(200).json({
       success: true,
       data: { stats, riders: activeRiders }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @GET /api/analytics/profit-loss
+exports.getProfitLoss = async (req, res) => {
+  try {
+    const { month } = req.query; // e.g., "April 2026"
+    if (!month) {
+      return res.status(400).json({ success: false, message: 'Month is required' });
+    }
+
+    // 1. User Revenue (Total billAmount from Invoices with riderId)
+    const revenueMatch = { billingMonth: month, riderId: { $ne: null } };
+    const revenueStats = await Invoice.aggregate([
+      { $match: revenueMatch },
+      { $group: { _id: null, total: { $sum: "$billAmount" } } }
+    ]);
+    const userRevenue = revenueStats[0]?.total || 0;
+
+    // 2. Hala Amount (Total actualRent from Invoices without riderId)
+    const halaMatch = { billingMonth: month, riderId: null };
+    const halaStats = await Invoice.aggregate([
+      { $match: halaMatch },
+      { $group: { _id: null, total: { $sum: "$actualRent" } } }
+    ]);
+    const halaAmount = halaStats[0]?.total || 0;
+
+    // 3. Admin Spends (Total from Expense model for that month)
+    const expenseStats = await Expense.aggregate([
+      { $match: { month } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const adminSpends = expenseStats[0]?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        userRevenue,
+        halaAmount,
+        adminSpends,
+        netProfit: userRevenue - (halaAmount + adminSpends)
+      }
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, Download, Search, Calendar, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
+import Pagination from '../components/Pagination';
 
 export default function Payments() {
   const [data, setData] = useState({ stats: {}, riders: [] });
@@ -10,6 +11,8 @@ export default function Payments() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRider, setSelectedRider] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchPayments = async () => {
     try {
@@ -48,6 +51,16 @@ export default function Payments() {
     rider.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredRiders.length / itemsPerPage);
+  const paginatedRiders = filteredRiders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const unpaidRiders = data.riders.filter(r => r.paymentStatus === 'unpaid');
 
@@ -139,8 +152,8 @@ export default function Payments() {
                     <Loader2 className="animate-spin text-primary-500 mx-auto" size={40} />
                   </td>
                 </tr>
-              ) : filteredRiders.length > 0 ? (
-                filteredRiders.map((rider) => (
+              ) : paginatedRiders.length > 0 ? (
+                paginatedRiders.map((rider) => (
                   <tr key={rider._id} className="group hover:bg-slate-800/10 transition-colors">
                     <td className="p-8 font-bold text-white uppercase tracking-tight">{rider.name}</td>
                     <td className="p-8 font-mono text-slate-400 font-bold">{rider.vehicleNumber}</td>
@@ -168,6 +181,14 @@ export default function Payments() {
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredRiders.length}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
 
       {/* Manual Payment Modal */}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2 } from 'lucide-react';
 import api from '../api/axios';
 import Modal from '../components/Modal';
+import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
 
 export default function Riders() {
@@ -16,6 +17,18 @@ export default function Riders() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const location = useLocation();
+  const isRecoveryPage = location.pathname.includes('/recovery');
+
+  useEffect(() => {
+    if (isRecoveryPage) {
+      setActiveTab('recovery');
+    } else {
+      setActiveTab('active');
+    }
+  }, [isRecoveryPage]);
 
   // --- Cashfree Payment Logic ---
   const handlePayment = async (rider) => {
@@ -81,7 +94,7 @@ export default function Riders() {
     whatsappNumber: '',
     riderStatus: 'active',
     vehicleNumber: '',
-    deployDate: new Date().toISOString().split('T')[0],
+    deployDate: '',
     returnDate: '',
     autoReminderEnabled: true,
     autoReminderTime: '10:00'
@@ -161,7 +174,7 @@ export default function Riders() {
       whatsappNumber: '',
       riderStatus: 'active',
       vehicleNumber: '',
-      deployDate: new Date().toISOString().split('T')[0],
+      deployDate: '',
       returnDate: '',
       autoReminderEnabled: true,
       autoReminderTime: '10:00'
@@ -205,21 +218,35 @@ export default function Riders() {
     return isCorrectTab && matchesSearch;
   });
 
+  const totalPages = Math.ceil(filteredRiders.length / itemsPerPage);
+  const paginatedRiders = filteredRiders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">RIDER MANAGEMENT</h2>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">LIVE SYNC</span>
-            </div>
+          <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">
+            {isRecoveryPage ? 'RECOVERY BUCKET' : 'RIDER MANAGEMENT'}
+          </h2>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">LIVE SYNC</span>
           </div>
-          <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
-            <ShieldCheck size={16} className="text-primary-500" /> Secure Workforce Database
-          </p>
+        </div>
+        <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
+          <ShieldCheck size={16} className="text-primary-500" /> 
+          {isRecoveryPage ? 'Defaulters & High Risk Database' : 'Secure Workforce Database'}
+        </p>
         </div>
         <button 
           onClick={() => {
@@ -234,26 +261,22 @@ export default function Riders() {
       </div>
 
       {/* Controls */}
-      <div className="flex bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4">
-        <button 
-          onClick={() => setActiveTab('active')} 
-          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          Active Fleet
-        </button>
-        <button 
-          onClick={() => setActiveTab('recovery')} 
-          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'recovery' ? 'bg-white dark:bg-slate-800 shadow-sm text-red-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          Recovery Bucket
-        </button>
-        <button 
-          onClick={() => setActiveTab('inactive')} 
-          className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          Past Riders
-        </button>
-      </div>
+      {!isRecoveryPage && (
+        <div className="flex bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4">
+          <button 
+            onClick={() => setActiveTab('active')} 
+            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Active Fleet
+          </button>
+          <button 
+            onClick={() => setActiveTab('inactive')} 
+            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Past Riders
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-3 relative group">
@@ -280,8 +303,8 @@ export default function Riders() {
                <Loader2 size={32} className="text-primary-500 animate-spin" />
                <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Loading Fleet...</span>
             </div>
-          ) : filteredRiders.length > 0 ? (
-            filteredRiders.map((rider) => (
+          ) : paginatedRiders.length > 0 ? (
+            paginatedRiders.map((rider) => (
               <div key={rider._id} className="bg-white dark:bg-dark-100/60 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-lg relative overflow-hidden group">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-primary-600/10 dark:bg-primary-600/5 border border-primary-500/20 flex items-center justify-center text-primary-500">
@@ -374,8 +397,8 @@ export default function Riders() {
                       </div>
                     </td>
                   </tr>
-                ) : filteredRiders.length > 0 ? (
-                  filteredRiders.map((rider) => (
+                ) : paginatedRiders.length > 0 ? (
+                  paginatedRiders.map((rider) => (
                     <tr key={rider._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
@@ -497,6 +520,14 @@ export default function Riders() {
             </table>
           </div>
         </div>
+
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredRiders.length}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
 
       {/* Add/Edit Rider Modal */}
@@ -614,7 +645,6 @@ export default function Riders() {
                 <input 
                   name="deployDate"
                   type="date" 
-                  required
                   className="input h-12 [color-scheme:dark]"
                   value={formData.deployDate}
                   onChange={handleInputChange}

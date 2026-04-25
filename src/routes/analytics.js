@@ -9,5 +9,6 @@ router.get('/dashboard', analyticsController.getDashboardStats);
 router.get('/reports', analyticsController.getFinancialReports);
 router.get('/billing', analyticsController.getBillingStats);
 router.get('/payments', analyticsController.getPaymentAnalytics);
+router.get('/profit-loss', analyticsController.getProfitLoss);
 
 module.exports = router;

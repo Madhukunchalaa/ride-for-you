@@ -26,6 +26,19 @@ const LandingPage = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [plans, setPlans] = useState([]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await api.get('/landing/plans');
+        setPlans(res.data.data);
+      } catch (err) {
+        console.error('Failed to fetch pricing plans:', err);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -118,7 +131,7 @@ const LandingPage = () => {
                 <span className="w-2 h-2 bg-primary-400 rounded-full animate-ping" />
                 Pure Electric Fleet
               </div>
-              <h1 className="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tighter font-display">
+              <h1 className="text-6xl lg:text-8xl font-black leading-[0.9] tracking-tighter font-display text-white">
                 FUTURE <br/>OF <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-600">URBAN</span> <br/>MOBILITY.
               </h1>
               <p className="text-xl text-slate-400 leading-relaxed max-w-lg">
@@ -136,7 +149,7 @@ const LandingPage = () => {
                   </div>
                   <div className="text-sm">
                     <div className="font-bold text-white">2,500+</div>
-                    <div className="text-slate-500 font-medium whitespace-nowrap">Eco-Trips</div>
+                    <div className="text-slate-400 font-medium whitespace-nowrap">Eco-Trips</div>
                   </div>
                 </div>
               </div>
@@ -168,7 +181,7 @@ const LandingPage = () => {
             ].map(stat => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-black text-white mb-1 tracking-tighter font-display">{stat.value}</div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 font-bold">{stat.label}</div>
+                <div className="text-xs uppercase tracking-widest text-slate-400 font-bold">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -187,55 +200,65 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-10">
-            {[
-              { name: '3 Months Old EV', rental: '1,920', platformFee: '1,500', total: '3,620', img: '/assets/storm.png' },
-              { name: '1-2 Months Old EV', rental: '1,920', platformFee: '2,000', total: '4,120', img: '/assets/fusion.png' },
-              { name: 'Brand New EV', rental: '1,920', platformFee: '2,500', total: '4,620', img: '/assets/atlas.png' }
-            ].map((ev, i) => (
-              <div key={i} className="group relative bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/[0.08] transition-all duration-500 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <h4 className="text-2xl font-black tracking-tighter font-display text-white">{ev.name}</h4>
-                    <p className="text-primary-500 font-bold tracking-widest uppercase mt-1 text-[10px]">Unlimited Swapping</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-black transition-all flex-shrink-0">
-                    <ArrowRight size={20} />
-                  </div>
-                </div>
-                
-                <div className="aspect-[4/3] bg-slate-900 border border-white/5 rounded-3xl overflow-hidden mb-8 relative flex items-center justify-center shadow-inner">
-                   <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent z-10 opacity-80"></div>
-                   <img src={ev.img} alt={ev.name} className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 opacity-90 group-hover:opacity-100" />
-                </div>
-
-                <div className="mt-auto space-y-4">
-                  <div className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
-                    <div className="flex justify-between items-center text-sm font-medium">
-                      <span className="text-slate-400">Weekly Rental <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5">7 Days</span></span>
-                      <span className="text-white font-bold">₹{ev.rental}</span>
+            {plans.length > 0 ? (
+              plans.map((ev, i) => (
+                <div key={i} className="group relative bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/[0.08] transition-all duration-500 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-8">
+                    <div>
+                      <h4 className="text-2xl font-black tracking-tighter font-display text-white">{ev.name}</h4>
+                      <p className="text-primary-500 font-bold tracking-widest uppercase mt-1 text-[10px]">Unlimited Swapping</p>
                     </div>
-                    <div className="h-px bg-white/5 w-full"></div>
-                    <div className="flex justify-between items-center text-sm font-medium">
-                      <span className="text-slate-400">Platform Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
-                      <span className="text-white font-bold">₹{ev.platformFee}</span>
-                    </div>
-                    <div className="h-px bg-white/5 w-full"></div>
-                    <div className="flex justify-between items-center text-sm font-medium">
-                      <span className="text-slate-400">Booking Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
-                      <span className="text-white font-bold">₹200</span>
+                    <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-black transition-all flex-shrink-0">
+                      <ArrowRight size={20} />
                     </div>
                   </div>
                   
-                  <div className="bg-primary-500/10 border border-primary-500/20 p-6 rounded-3xl flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-primary-400 font-black block">Total Amount</span>
-                      <span className="text-xs text-primary-500/60 font-bold">Due Today</span>
+                  <div className="aspect-[4/3] bg-slate-900 border border-white/5 rounded-3xl overflow-hidden mb-8 relative flex items-center justify-center shadow-inner">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent z-10 opacity-80"></div>
+                    <img src={ev.image} alt={ev.name} className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                  </div>
+
+                  <div className="mt-auto space-y-4">
+                    <div className="space-y-4 bg-white/5 p-6 rounded-3xl border border-white/5">
+                      <div className="flex justify-between items-center text-sm font-medium">
+                        <span className="text-slate-400">Weekly Rental <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5">7 Days</span></span>
+                        <span className="text-white font-bold">₹{ev.rental}</span>
+                      </div>
+                      <div className="h-px bg-white/5 w-full"></div>
+                      <div className="flex justify-between items-center text-sm font-medium">
+                        <span className="text-slate-400">Platform Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
+                        <span className="text-white font-bold">₹{ev.platformFee}</span>
+                      </div>
+                      <div className="h-px bg-white/5 w-full"></div>
+                      <div className="flex justify-between items-center text-sm font-medium">
+                        <span className="text-slate-400">Booking Fee <span className="text-[9px] uppercase tracking-widest text-slate-500 block mt-0.5 border border-slate-700 rounded p-0.5 w-fit">Non-Refundable</span></span>
+                        <span className="text-white font-bold">₹{ev.bookingFee || '200'}</span>
+                      </div>
                     </div>
-                    <span className="text-3xl font-black tracking-tighter text-white">₹{ev.total}/-</span>
+                    
+                    <div className="bg-primary-500/10 border border-primary-500/20 p-6 rounded-3xl flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-widest text-primary-400 font-black block">Total Amount</span>
+                        <span className="text-xs text-primary-500/60 font-bold">Due Today</span>
+                      </div>
+                      <span className="text-3xl font-black tracking-tighter text-white">₹{ev.total}/-</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              // Fallback cards while loading or if empty
+              [1, 2, 3].map(i => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 animate-pulse">
+                  <div className="h-8 bg-white/10 rounded w-3/4 mb-4" />
+                  <div className="aspect-video bg-white/5 rounded-2xl mb-8" />
+                  <div className="space-y-4">
+                    <div className="h-12 bg-white/5 rounded-2xl" />
+                    <div className="h-16 bg-white/5 rounded-2xl" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

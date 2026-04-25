@@ -30,6 +30,10 @@ const invoiceSchema = new mongoose.Schema(
       required: true,
       default: 0
     },
+    securityDeposit: {
+      type: Number,
+      default: 0
+    },
     remarks: {
       type: String,
       trim: true

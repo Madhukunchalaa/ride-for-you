@@ -3,7 +3,7 @@ const Invoice = require('../models/Invoice');
 // @POST /api/invoices
 exports.addInvoice = async (req, res) => {
   try {
-    const { billingMonth, invoiceType, invoiceNum, billAmount, actualRent, remarks } = req.body;
+    const { billingMonth, invoiceType, invoiceNum, billAmount, actualRent, securityDeposit, remarks } = req.body;
 
     if (!billingMonth || !invoiceType || !invoiceNum) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
@@ -15,6 +15,7 @@ exports.addInvoice = async (req, res) => {
       invoiceNum,
       billAmount,
       actualRent,
+      securityDeposit,
       remarks
     });
 

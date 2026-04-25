@@ -79,6 +79,8 @@ app.use('/api/invoices', require('./src/routes/invoice'));
 app.use('/api/analytics', require('./src/routes/analytics'));
 app.use('/api/payments', require('./src/routes/payment'));
 app.use('/api/customers', require('./src/routes/customer'));
+app.use('/api/expenses', require('./src/routes/expense'));
+app.use('/api/landing', require('./src/routes/landing'));
 
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {

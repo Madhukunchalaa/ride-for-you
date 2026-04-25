@@ -14,6 +14,8 @@ import LandingPage from './pages/LandingPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import RefundPolicy from './pages/RefundPolicy';
+import Expenses from './pages/Expenses';
+import LandingCMS from './pages/LandingCMS';
 
 // Helper component for private routes
 const PrivateRoute = ({ children }) => {
@@ -46,11 +48,14 @@ function App() {
              <Route index element={<Navigate to="/app/dashboard" replace />} />
              <Route path="dashboard" element={<Dashboard />} />
              <Route path="riders" element={<Riders />} />
+             <Route path="recovery" element={<Riders />} />
              <Route path="riders/:id" element={<RiderDetails />} />
              <Route path="hala" element={<Hala />} />
              <Route path="payments" element={<Payments />} />
              <Route path="reports" element={<Reports />} />
              <Route path="customers" element={<Customer />} />
+             <Route path="expenses" element={<Expenses />} />
+             <Route path="landing-cms" element={<LandingCMS />} />
           </Route>
 
           {/* Fallback */}

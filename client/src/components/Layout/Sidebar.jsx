@@ -8,17 +8,23 @@ import {
   LogOut, 
   Zap,
   X,
-  TrendingUp
+  TrendingUp,
+  AlertCircle,
+  DollarSign,
+  Monitor
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const menuItems = [
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/riders', label: 'Riders', icon: Users },
+  { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
   { path: '/app/hala', label: 'Hala Fleet', icon: Bike },
   { path: '/app/payments', label: 'Payments', icon: CreditCard },
   { path: '/app/reports', label: 'Intelligence', icon: TrendingUp },
   { path: '/app/customers', label: 'Customers', icon: Users },
+  { path: '/app/expenses', label: 'Admin Spends', icon: DollarSign },
+  { path: '/app/landing-cms', label: 'Landing CMS', icon: Monitor },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {

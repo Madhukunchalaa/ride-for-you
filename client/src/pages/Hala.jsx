@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import api from '../api/axios';
 import Modal from '../components/Modal';
+import Pagination from '../components/Pagination';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f97316', '#ef4444', '#a855f7'];
 
@@ -33,6 +34,8 @@ export default function Hala() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   // Month Selection
   const currentMonthStr = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -45,6 +48,7 @@ export default function Hala() {
     invoiceNum: '',
     billAmount: '',
     actualRent: '',
+    securityDeposit: '',
     remarks: ''
   });
 
@@ -66,6 +70,7 @@ export default function Hala() {
 
   useEffect(() => {
     fetchInvoices();
+    setCurrentPage(1);
   }, [selectedMonth]);
 
   const handleInputChange = (e) => {
@@ -81,7 +86,8 @@ export default function Hala() {
         ...formData,
         billingMonth: selectedMonth,
         billAmount: Number(formData.billAmount),
-        actualRent: Number(formData.actualRent)
+        actualRent: Number(formData.actualRent),
+        securityDeposit: Number(formData.securityDeposit || 0)
       });
       setIsModalOpen(false);
       setFormData({
@@ -90,6 +96,7 @@ export default function Hala() {
         invoiceNum: '',
         billAmount: '',
         actualRent: '',
+        securityDeposit: '',
         remarks: ''
       });
       fetchInvoices();
@@ -113,6 +120,13 @@ export default function Hala() {
 
   const totalBillAmount = invoices.reduce((sum, inv) => sum + (inv.billAmount || 0), 0);
   const totalActualRent = invoices.reduce((sum, inv) => sum + (inv.actualRent || 0), 0);
+  const totalSecurityDeposit = invoices.reduce((sum, inv) => sum + (inv.securityDeposit || 0), 0);
+
+  const totalPages = Math.ceil(invoices.length / itemsPerPage);
+  const paginatedInvoices = invoices.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -218,8 +232,12 @@ export default function Hala() {
               <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-widest uppercase flex items-center gap-2">
                 <Receipt size={16} className="text-primary-500" /> Ledger Details
               </h3>
-              <div className="flex gap-4">
+              <div className="flex gap-8">
                 <div className="text-right">
+                  <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-tighter leading-none">Total SD</p>
+                  <p className="text-xs text-emerald-500 font-black mt-1 leading-none">₹ {totalSecurityDeposit.toLocaleString()}</p>
+                </div>
+                <div className="text-right border-l border-slate-200 dark:border-slate-800 pl-8">
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter leading-none">Bill Total</p>
                   <p className="text-xs text-slate-900 dark:text-white font-black mt-1 leading-none">₹ {totalBillAmount.toLocaleString()}</p>
                 </div>
@@ -234,14 +252,15 @@ export default function Hala() {
                     <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Invoice Num</th>
                     <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Amount</th>
                     <th className="p-6 text-xs font-black text-primary-500 uppercase tracking-widest">Actual</th>
+                    <th className="p-6 text-xs font-black text-emerald-500 uppercase tracking-widest">SD</th>
                     <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/30">
                   {loading ? (
                     <tr><td colSpan="5" className="p-20 text-center"><Loader2 className="animate-spin text-primary-500 mx-auto" size={32} /></td></tr>
-                  ) : invoices.length > 0 ? (
-                    invoices.map((inv) => (
+                  ) : paginatedInvoices.length > 0 ? (
+                    paginatedInvoices.map((inv) => (
                       <tr key={inv._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                         <td className="p-6">
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-tighter border ${
@@ -258,6 +277,9 @@ export default function Hala() {
                         <td className="p-6 text-slate-900 dark:text-white font-black text-sm">₹ {inv.billAmount?.toLocaleString()}</td>
                         <td className="p-6">
                           <span className="text-sm font-black text-primary-600 dark:text-primary-400">₹ {inv.actualRent?.toLocaleString()}</span>
+                        </td>
+                        <td className="p-6 text-emerald-600 dark:text-emerald-400 font-black text-sm italic">
+                          ₹ {inv.securityDeposit?.toLocaleString() || 0}
                         </td>
                         <td className="p-6 text-right">
                           <button 
@@ -278,6 +300,14 @@ export default function Hala() {
               </table>
             </div>
           </div>
+
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={invoices.length}
+            itemsPerPage={itemsPerPage}
+          />
         </div>
       </div>
 
@@ -317,7 +347,7 @@ export default function Hala() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2 group">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Bill Amount (₹)</label>
               <input 
@@ -339,6 +369,17 @@ export default function Hala() {
                 placeholder="0.00" 
                 className="input h-12 border-primary-500/30 focus:border-primary-500 focus:bg-primary-500/5"
                 value={formData.actualRent}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2 group">
+              <label className="text-xs font-black text-emerald-500 uppercase tracking-widest ml-1">SD / Deposit (₹)</label>
+              <input 
+                name="securityDeposit"
+                type="number" 
+                placeholder="0.00" 
+                className="input h-12 border-emerald-500/30 focus:border-emerald-500 focus:bg-emerald-500/5"
+                value={formData.securityDeposit}
                 onChange={handleInputChange}
               />
             </div>

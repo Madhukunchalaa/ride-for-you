@@ -14,7 +14,7 @@ const createTestRider = async () => {
     // Delete existing test rider if any
     await Rider.deleteMany({ whatsappNumber: phone });
 
-    // Create new rider
+    // Create new ridetime k
     const today = new Date();
     const rider = await Rider.create({
       name: riderName,

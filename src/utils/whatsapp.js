@@ -19,24 +19,16 @@ const sendPaymentReminder = async (to, options = {}) => {
   const sid = options.contentSid || process.env.TWILIO_CONTENT_SID;
 
   let client;
-  if (accountSid && authToken && authToken !== 'your_auth_token_here') {
+  if (accountSid && authToken && !authToken.includes('your_')) {
     client = twilio(accountSid, authToken);
   }
 
   // Ensure number is in correct format (+91 for India)
   let cleaned = to.replace(/[^0-9]/g, '');
-  
-  // If number starts with 91 and has 12 digits, it already has country code
-  // If it has 10 digits, prepend 91
-  let formattedNumber = cleaned;
   if (cleaned.length === 10) {
-    formattedNumber = '91' + cleaned;
-  } else if (cleaned.length > 10 && !cleaned.startsWith('91')) {
-    // some other country code or weird format, let it be but warn
-    console.warn('⚠️ Non-standard phone number length for India:', cleaned);
+    cleaned = '91' + cleaned;
   }
-
-  const finalTo = `whatsapp:+${formattedNumber}`;
+  const finalTo = `whatsapp:+${cleaned}`;
 
   if (!client) {
     console.log('📝 [MOCK WHATSAPP] To:', finalTo, 'Options:', options);
@@ -49,17 +41,20 @@ const sendPaymentReminder = async (to, options = {}) => {
       to: finalTo,
     };
 
-    // If body is provided, it's a session message (requires 24h window)
-    if (options.body) {
+    // If contentSid (Template) is present, use it (Business standard)
+    if (sid && !options.body) {
+      console.log(`📋 Sending Template Message [SID: ${sid}] to ${finalTo}`);
+      messageConfig.contentSid = sid;
+      if (options.variables) {
+        // Twilio expects a JSON string or object for variables
+        messageConfig.contentVariables = JSON.stringify(options.variables);
+      }
+    } else {
+      // Session message (Free-form)
+      console.log(`💬 Sending Session Message to ${finalTo}`);
       messageConfig.body = options.body;
       if (options.mediaUrl) {
         messageConfig.mediaUrl = [options.mediaUrl];
-      }
-    } else {
-      // Proactive template message
-      messageConfig.contentSid = sid;
-      if (options.variables) {
-        messageConfig.contentVariables = JSON.stringify(options.variables);
       }
     }
 
@@ -67,9 +62,14 @@ const sendPaymentReminder = async (to, options = {}) => {
     console.log('✅ WhatsApp sent:', message.sid);
     return message;
   } catch (err) {
-    console.error('❌ WhatsApp Error:', err);
+    console.error('❌ WhatsApp Error Details:', {
+      code: err.code,
+      message: err.message,
+      moreInfo: err.moreInfo
+    });
     throw err;
   }
 };
+
 
 module.exports = { sendPaymentReminder };

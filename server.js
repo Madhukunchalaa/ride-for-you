@@ -81,6 +81,8 @@ app.use('/api/payments', require('./src/routes/payment'));
 app.use('/api/customers', require('./src/routes/customer'));
 app.use('/api/expenses', require('./src/routes/expense'));
 app.use('/api/landing', require('./src/routes/landing'));
+app.use('/api/whatsapp', require('./src/routes/whatsapp'));
+
 
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {

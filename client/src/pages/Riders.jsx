@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2 } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX } from 'lucide-react';
+
 import api from '../api/axios';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
@@ -21,14 +22,19 @@ export default function Riders() {
   const itemsPerPage = 10;
   const location = useLocation();
   const isRecoveryPage = location.pathname.includes('/recovery');
+  const isReturnsPage = location.pathname.includes('/returns');
+
 
   useEffect(() => {
     if (isRecoveryPage) {
       setActiveTab('recovery');
+    } else if (isReturnsPage) {
+      setActiveTab('returned');
     } else {
       setActiveTab('active');
     }
-  }, [isRecoveryPage]);
+  }, [isRecoveryPage, isReturnsPage]);
+
 
   // --- Cashfree Payment Logic ---
   const handlePayment = async (rider) => {
@@ -207,10 +213,15 @@ export default function Riders() {
     let isCorrectTab = (rider.riderStatus || 'active') === activeTab;
     
     if (activeTab === 'recovery') {
-      isCorrectTab = rider.isRecoveryBucket === true;
+      isCorrectTab = rider.isRecoveryBucket === true && rider.riderStatus !== 'returned';
     } else if (activeTab === 'active') {
       isCorrectTab = rider.riderStatus === 'active' && !rider.isRecoveryBucket;
+    } else if (activeTab === 'returned') {
+      isCorrectTab = rider.riderStatus === 'returned';
+    } else if (activeTab === 'inactive') {
+      isCorrectTab = rider.riderStatus === 'inactive';
     }
+
 
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,8 +247,9 @@ export default function Riders() {
         <div>
           <div className="flex items-center gap-3">
           <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">
-            {isRecoveryPage ? 'RECOVERY BUCKET' : 'RIDER MANAGEMENT'}
+            {isRecoveryPage ? 'RECOVERY BUCKET' : isReturnsPage ? 'RETURNED FLEET' : 'RIDER MANAGEMENT'}
           </h2>
+
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">LIVE SYNC</span>
@@ -245,7 +257,8 @@ export default function Riders() {
         </div>
         <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
           <ShieldCheck size={16} className="text-primary-500" /> 
-          {isRecoveryPage ? 'Defaulters & High Risk Database' : 'Secure Workforce Database'}
+          {isRecoveryPage ? 'Defaulters & High Risk Database' : isReturnsPage ? 'Inventory of Returned Vehicles' : 'Secure Workforce Database'}
+
         </p>
         </div>
         <button 
@@ -261,22 +274,29 @@ export default function Riders() {
       </div>
 
       {/* Controls */}
-      {!isRecoveryPage && (
-        <div className="flex bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4">
+      {(!isRecoveryPage && !isReturnsPage) && (
+        <div className="flex bg-slate-200/50 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4 border border-slate-200 dark:border-slate-800/50">
           <button 
             onClick={() => setActiveTab('active')} 
-            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'active' ? 'bg-white dark:bg-slate-800 shadow-md text-primary-600 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             Active Fleet
           </button>
           <button 
+            onClick={() => setActiveTab('returned')} 
+            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'returned' ? 'bg-white dark:bg-slate-800 shadow-md text-primary-600 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Returned
+          </button>
+          <button 
             onClick={() => setActiveTab('inactive')} 
-            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-sm text-primary-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-md text-primary-600 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             Past Riders
           </button>
         </div>
       )}
+
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-3 relative group">
@@ -288,10 +308,25 @@ export default function Riders() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+            >
+              <FilterX size={18} />
+            </button>
+          )}
         </div>
-        <button className="h-14 bg-white dark:bg-dark-200/50 border border-slate-200 dark:border-slate-800/50 rounded-2xl flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all hover:text-primary-500 dark:hover:text-white">
+        <button 
+          onClick={() => {
+            if (searchTerm) setSearchTerm('');
+            else toast('Use the search box to filter results', { icon: '🔍' });
+          }}
+          className="h-14 bg-white dark:bg-dark-200/50 border border-slate-300 dark:border-slate-800/50 rounded-2xl flex items-center justify-center gap-2 text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all hover:text-primary-600 dark:hover:text-white shadow-sm"
+        >
           <Filter size={18} /> Filters
         </button>
+
       </div>
 
       {/* Content - Adaptive View */}
@@ -353,7 +388,19 @@ export default function Riders() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Pay</span>
                   </button>
                   <button 
+                    onClick={() => {
+                      if(confirm('Mark this vehicle as returned? This will end the active rental.')) {
+                        handleUpdateStatus(rider._id, 'returned');
+                      }
+                    }}
+                    className="h-12 w-12 bg-orange-500/10 text-orange-600 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+                    title="Mark as Returned"
+                  >
+                    <RotateCcw size={18} />
+                  </button>
+                  <button 
                     onClick={() => handleEditClick(rider)}
+
                     className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90"
                   >
                     <Edit2 size={18} />
@@ -439,7 +486,10 @@ export default function Riders() {
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                           rider.riderStatus === 'active' 
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                          : rider.riderStatus === 'returned'
+                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                           : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+
                         }`}>
                           {rider.riderStatus}
                         </span>
@@ -492,7 +542,19 @@ export default function Riders() {
                             <ExternalLink size={18} />
                           </Link>
                           <button 
+                            onClick={() => {
+                              if(confirm('Mark this vehicle as returned? This will end the active rental.')) {
+                                handleUpdateStatus(rider._id, 'returned');
+                              }
+                            }}
+                            className="p-2.5 hover:bg-orange-500/10 rounded-xl text-orange-500 hover:text-orange-600 transition-all"
+                            title="Mark as Returned"
+                          >
+                            <RotateCcw size={18} />
+                          </button>
+                          <button 
                             onClick={() => handleEditClick(rider)}
+
                             className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all"
                             title="Edit Rider"
                           >

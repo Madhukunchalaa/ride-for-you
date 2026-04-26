@@ -65,16 +65,17 @@ export default function Reports() {
           <div className="bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl flex">
             <button 
               onClick={() => setRange('weekly')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'weekly' ? 'bg-white dark:bg-slate-800 text-primary-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'weekly' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
             >
               Weekly
             </button>
             <button 
               onClick={() => setRange('monthly')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'monthly' ? 'bg-white dark:bg-slate-800 text-primary-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'monthly' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
             >
               Monthly
             </button>
+
           </div>
           <button className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm">
             <Download size={20} />

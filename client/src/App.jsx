@@ -49,6 +49,8 @@ function App() {
              <Route path="dashboard" element={<Dashboard />} />
              <Route path="riders" element={<Riders />} />
              <Route path="recovery" element={<Riders />} />
+             <Route path="returns" element={<Riders />} />
+
              <Route path="riders/:id" element={<RiderDetails />} />
              <Route path="hala" element={<Hala />} />
              <Route path="payments" element={<Payments />} />

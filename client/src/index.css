@@ -7,8 +7,9 @@
   --surface-secondary: #f1f5f9;
   --border: #e2e8f0;
   --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
 }
 
 .dark {

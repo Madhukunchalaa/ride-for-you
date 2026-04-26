@@ -2,7 +2,8 @@ require('dotenv').config();
 const { sendPaymentReminder } = require('./src/utils/whatsapp');
 
 const testNewTemplate = async () => {
-  const testNumber = '7095682464';
+  const testNumber = process.argv[2] || '7095682464';
+
   
   console.log(`🚀 Sending Test Template Message to: ${testNumber}`);
   

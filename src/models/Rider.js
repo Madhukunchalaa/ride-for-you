@@ -14,7 +14,8 @@ const riderSchema = new mongoose.Schema(
     },
     riderStatus: {
       type: String,
-      enum: ['active', 'inactive'],
+      enum: ['active', 'inactive', 'returned'],
+
       default: 'active'
     },
     vehicleNumber: {

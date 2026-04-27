@@ -16,6 +16,8 @@ import TermsAndConditions from './pages/TermsAndConditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Expenses from './pages/Expenses';
 import LandingCMS from './pages/LandingCMS';
+import WhatsAppCRM from './pages/WhatsAppCRM';
+
 
 // Helper component for private routes
 const PrivateRoute = ({ children }) => {
@@ -58,6 +60,8 @@ function App() {
              <Route path="customers" element={<Customer />} />
              <Route path="expenses" element={<Expenses />} />
              <Route path="landing-cms" element={<LandingCMS />} />
+             <Route path="whatsapp-crm" element={<WhatsAppCRM />} />
+
           </Route>
 
           {/* Fallback */}

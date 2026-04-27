@@ -12,8 +12,10 @@ import {
   AlertCircle,
   DollarSign,
   Monitor,
-  RotateCcw
+  RotateCcw,
+  MessageSquare
 } from 'lucide-react';
+
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -29,7 +31,9 @@ const menuItems = [
   { path: '/app/customers', label: 'Customers', icon: Users },
   { path: '/app/expenses', label: 'Admin Spends', icon: DollarSign },
   { path: '/app/landing-cms', label: 'Landing CMS', icon: Monitor },
+  { path: '/app/whatsapp-crm', label: 'WhatsApp CRM', icon: MessageSquare },
 ];
+
 
 export default function Sidebar({ isOpen, onClose }) {
   const { logout } = useAuth();

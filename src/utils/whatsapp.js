@@ -72,4 +72,18 @@ const sendPaymentReminder = async (to, options = {}) => {
 };
 
 
-module.exports = { sendPaymentReminder };
+/**
+ * Sends a Re-engagement Template to Past Riders.
+ * @param {string} to - Recipient number.
+ * @param {string} name - Rider name.
+ */
+const sendReengageMessage = async (to, name) => {
+  const sid = process.env.TWILIO_REENGAGE_CONTENT_SID;
+  return sendPaymentReminder(to, {
+    contentSid: sid,
+    variables: { 1: name } // {{1}} is the name
+  });
+};
+
+module.exports = { sendPaymentReminder, sendReengageMessage };
+

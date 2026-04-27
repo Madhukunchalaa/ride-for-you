@@ -165,6 +165,8 @@ export default function Riders() {
       setIsModalOpen(false);
       resetForm();
       fetchRiders();
+      toast.success(isEditing ? 'Profile updated successfully' : 'Rider registered successfully');
+
     } catch (err) {
       alert(err.response?.data?.message || 'Error saving rider');
     } finally {

@@ -25,10 +25,11 @@ exports.sendReminder = async (req, res) => {
 
     if (!cashfreeConfig.isConfigured) {
       console.error('❌ Skipping Cashfree link creation: Keys are missing.');
-      return res.status(500).json({ 
+      return res.status(400).json({ 
         success: false, 
-        message: 'Cashfree API keys are missing in the server environment. Please check your Railway Dashboard.' 
+        message: 'Cashfree API keys are missing. Please use Manual Payment for now.' 
       });
+
     }
 
     const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
@@ -212,7 +213,8 @@ exports.addRider = async (req, res) => {
 // @desc Update rider details
 exports.updateRider = async (req, res) => {
   try {
-    const { name, whatsappNumber, vehicleNumber, deployDate, returnDate, autoReminderEnabled, autoReminderTime } = req.body;
+    const { name, whatsappNumber, vehicleNumber, deployDate, returnDate, autoReminderEnabled, autoReminderTime, riderStatus } = req.body;
+
     
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
@@ -245,6 +247,8 @@ exports.updateRider = async (req, res) => {
     if (returnDate) rider.returnDate = returnDate;
     if (autoReminderEnabled !== undefined) rider.autoReminderEnabled = autoReminderEnabled;
     if (autoReminderTime) rider.autoReminderTime = autoReminderTime;
+    if (riderStatus) rider.riderStatus = riderStatus;
+
 
     await rider.save();
     res.status(200).json({ success: true, data: rider });

@@ -56,36 +56,49 @@ exports.sendReminder = async (req, res) => {
     await rider.save();
 
     // 3. Send WhatsApp (Using the newly APPROVED template!)
-    console.log(`📲 Sending Approved Template WhatsApp to ${rider.whatsappNumber}...`);
+    console.log(`📲 Sending Template [${process.env.TWILIO_CONTENT_SID}] to ${rider.whatsappNumber}...`);
+    console.log(`📊 Variables: 1:${rider.name}, 2:${rider.vehicleNumber}, 4:${paymentLink}`);
     
-    await sendPaymentReminder(rider.whatsappNumber, { 
-      contentSid: process.env.TWILIO_CONTENT_SID,
-      variables: {
-        1: rider.name,
-        2: rider.vehicleNumber,
-        3: new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-        4: paymentLink
-      }
-    });
-
-
-    // 4. (Optional) Follow up with QR code if session is open
     try {
-      const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
-      await sendPaymentReminder(rider.whatsappNumber, { 
-        body: `You can also scan this QR code to pay instantly! ⚡`,
-        mediaUrl: mediaUrl 
+      const formattedDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
+      
+      const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
+        contentSid: process.env.TWILIO_CONTENT_SID,
+        variables: {
+          1: rider.name,
+          2: rider.vehicleNumber,
+          3: formattedDate,
+          4: paymentLink
+        }
       });
-    } catch (qrErr) {
-      console.log('ℹ️ QR Follow-up skipped (expected if no session open)');
+      
+      console.log('✅ Twilio API Response:', whatsappRes.sid);
+
+      // 4. (Optional) Follow up with QR code if session is open
+      try {
+        const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+        await sendPaymentReminder(rider.whatsappNumber, { 
+          body: `You can also scan this QR code to pay instantly! ⚡`,
+          mediaUrl: mediaUrl 
+        });
+      } catch (qrErr) {
+        console.log('ℹ️ QR Follow-up skipped');
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Reminder sent to ${rider.name}`
+      });
+
+    } catch (waErr) {
+      console.error('❌ WhatsApp Delivery Error:', waErr.message);
+      return res.status(400).json({
+        success: false,
+        message: `WhatsApp Error: ${waErr.message}`,
+        details: waErr.code
+      });
     }
 
-    console.log(`✨ Successfully sent reminder to ${rider.name}`);
-
-    res.status(200).json({
-      success: true,
-      message: `Reminder sent to ${rider.name}`
-    });
   } catch (err) {
     const errorData = err.response ? err.response.data : null;
     let errorMessage = 'Failed to create payment link';

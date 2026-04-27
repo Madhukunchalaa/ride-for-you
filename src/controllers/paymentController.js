@@ -106,8 +106,9 @@ exports.createPaymentLink = async (req, res) => {
         riderId: riderId,
         link_id: uniqueLinkId
       },
-      callback_url: `${process.env.FRONTEND_URL}/`,
+      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
       callback_method: "get"
+
     });
 
     const paymentUrl = response.short_url;

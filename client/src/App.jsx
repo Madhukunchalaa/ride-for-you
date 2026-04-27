@@ -17,6 +17,8 @@ import RefundPolicy from './pages/RefundPolicy';
 import Expenses from './pages/Expenses';
 import LandingCMS from './pages/LandingCMS';
 import WhatsAppCRM from './pages/WhatsAppCRM';
+import ThankYou from './pages/ThankYou';
+
 
 
 // Helper component for private routes
@@ -43,7 +45,9 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+
           
           {/* Private Dashboard Routes */}
           <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>

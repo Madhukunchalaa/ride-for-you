@@ -42,8 +42,9 @@ exports.sendReminder = async (req, res) => {
         riderId: rider._id.toString(),
         link_id: uniqueLinkId
       },
-      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
       callback_method: "get"
+
     });
 
     const paymentLink = response.short_url;

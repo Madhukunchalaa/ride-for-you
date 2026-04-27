@@ -263,16 +263,18 @@ export default function Riders() {
 
         </p>
         </div>
-        <button 
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
-        >
-          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span>Add New Rider</span>
-        </button>
+        {(!isRecoveryPage && !isReturnsPage) && (
+          <button 
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
+          >
+            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span>Add New Rider</span>
+          </button>
+        )}
       </div>
 
       {/* Controls */}

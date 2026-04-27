@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { FiSettings, FiSave, FiInfo } from 'react-icons/fi';
 
@@ -16,7 +16,7 @@ const Settings = () => {
 
   const fetchConfig = async () => {
     try {
-      const { data } = await axios.get('/api/config');
+      const { data } = await api.get('/config');
       if (data.success) {
         setConfigs(data.data);
       }
@@ -30,7 +30,7 @@ const Settings = () => {
   const handleUpdate = async (key, value) => {
     setSaving(true);
     try {
-      const { data } = await axios.post('/api/config', {
+      const { data } = await api.post('/config', {
         key,
         value: Number(value),
         description: 'Default weekly rental amount for all payment links'

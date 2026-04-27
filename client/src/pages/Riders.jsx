@@ -678,32 +678,7 @@ export default function Riders() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
-              <div className="space-y-4">
-                <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Reminder Schedule</label>
-                <div className="flex items-center gap-4">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      name="autoReminderEnabled"
-                      className="sr-only peer"
-                      checked={formData.autoReminderEnabled}
-                      onChange={(e) => setFormData(prev => ({ ...prev, autoReminderEnabled: e.target.checked }))}
-                    />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                    <span className="ml-3 text-xs font-bold text-slate-300 uppercase">Auto-Remind</span>
-                  </label>
-                  {formData.autoReminderEnabled && (
-                    <input 
-                      type="time" 
-                      name="autoReminderTime"
-                      className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white [color-scheme:dark]"
-                      value={formData.autoReminderTime}
-                      onChange={handleInputChange}
-                    />
-                  )}
-                </div>
-              </div>
+            <div className="p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
               <div className="space-y-2">
                 <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
                 <input 
@@ -715,7 +690,7 @@ export default function Riders() {
                 />
               </div>
             </div>
-            <p className="text-[10px] text-slate-500 font-medium px-4">* System will send Stage 1-3 reminders before moving to Recovery Bucket after 7 days.</p>
+
 
             <div className="flex gap-4 pt-4">
               <button 

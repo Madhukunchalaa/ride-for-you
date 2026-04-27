@@ -21,61 +21,37 @@ exports.sendReminder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
 
-    const cashfreeConfig = await getCashfreeConfig();
-
-    if (!cashfreeConfig.isConfigured) {
-      console.error('❌ Skipping Cashfree link creation: Keys are missing.');
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cashfree API keys are missing. Please use Manual Payment for now.' 
-      });
-
-    }
-
-    const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
+    // 1. Create REAL Razorpay Payment Link
+    const amountVal = (rider.whatsappNumber === '7095682464' ? 1 : 2000) * 100; // in paise
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
-    console.log(`📡 Sending Cashfree Request:`);
-    console.log(`   - URL: ${cashfreeConfig.baseUrl}/links`);
-    console.log(`   - AppID: ${cashfreeConfig.clientId.substring(0, 4)}...${cashfreeConfig.clientId.slice(-4)} (Len: ${cashfreeConfig.clientId.length})`);
-    console.log(`   - Secret: ${cashfreeConfig.clientSecret.substring(0, 4)}...${cashfreeConfig.clientSecret.slice(-4)} (Len: ${cashfreeConfig.clientSecret.length})`);
-    
-    // 1. Create REAL Cashfree Payment Link
-    const payload = {
-      link_id: uniqueLinkId,
-      link_amount: amountVal,
-      link_currency: "INR",
-      link_purpose: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
-      customer_details: {
-        customer_phone: rider.whatsappNumber,
-        customer_name: rider.name.replace(/[^a-zA-Z\s.]/g, '') // Sanitize name for Cashfree
+    const response = await razorpay.paymentLink.create({
+      amount: amountVal,
+      currency: "INR",
+      accept_partial: false,
+      description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
       },
-      link_notify: { send_sms: false, send_email: false },
-      link_meta: {
-        return_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
-        notify_url: `${process.env.FRONTEND_URL || 'https://ride-for-you-production.up.railway.app'}/api/payments/webhook`
-      }
-    };
-
-    const response = await axios.post(`${cashfreeConfig.baseUrl}/links`, payload, {
-      headers: {
-        'x-client-id': cashfreeConfig.clientId,
-        'x-client-secret': cashfreeConfig.clientSecret,
-        'x-api-version': cashfreeConfig.apiVersion,
-        'Content-Type': 'application/json'
-      }
+      notify: {
+        sms: false,
+        email: false
+      },
+      notes: {
+        riderId: rider._id.toString(),
+        link_id: uniqueLinkId
+      },
+      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+      callback_method: "get"
     });
 
-    console.log(`✅ Cashfree Response Status: ${response.status}`);
-    const paymentLink = response.data && response.data.link_url ? response.data.link_url : null;
+    const paymentLink = response.short_url;
 
-    if (!paymentLink) {
-       console.error('❌ Cashfree Link Missing in Response:', response.data);
-       throw new Error('Cashfree link generation failed: No URL returned');
-    }
 
     // 2. Store Payment Link ID in Database
-    rider.paymentLinkId = uniqueLinkId;
+    rider.paymentLinkId = response.id;
+
     await rider.save();
 
     // 3. Prepare QR and Message

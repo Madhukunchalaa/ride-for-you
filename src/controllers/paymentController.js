@@ -85,138 +85,72 @@ exports.createPaymentLink = async (req, res) => {
     const rider = await Rider.findById(riderId);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
     
-    const amountVal = amount || 2000;
+    const amountVal = (amount || 2000) * 100; // in paise
     const uniqueLinkId = `ride_${riderId}_${Date.now()}`;
     
-    const payload = {
-      link_id: uniqueLinkId,
-      link_amount: amountVal,
-      link_currency: "INR",
-      link_purpose: `Weekly Rental - ${rider.vehicleNumber}`,
-      customer_details: {
-        customer_phone: rider.whatsappNumber,
-        customer_name: rider.name
+    const response = await razorpay.paymentLink.create({
+      amount: amountVal,
+      currency: "INR",
+      accept_partial: false,
+      description: `Weekly Rental - ${rider.vehicleNumber}`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
       },
-      link_notify: { send_sms: false, send_email: false },
-      link_meta: {
-        return_url: `${process.env.FRONTEND_URL}/`,
-        notify_url: `${process.env.FRONTEND_URL}/api/payments/webhook`
-      }
-    };
-
-    const response = await axios.post(`${cashfreeConfig.baseUrl}/links`, payload, {
-      headers: {
-        'x-client-id': cashfreeConfig.clientId,
-        'x-client-secret': cashfreeConfig.clientSecret,
-        'x-api-version': cashfreeConfig.apiVersion,
-        'Content-Type': 'application/json'
-      }
+      notify: {
+        sms: false,
+        email: false
+      },
+      reminder_enable: true,
+      notes: {
+        riderId: riderId,
+        link_id: uniqueLinkId
+      },
+      callback_url: `${process.env.FRONTEND_URL}/`,
+      callback_method: "get"
     });
 
-    const paymentUrl = response.data.link_url;
+    const paymentUrl = response.short_url;
 
     // Save ID
-    rider.paymentLinkId = uniqueLinkId;
+    rider.paymentLinkId = response.id; // Razorpay PL ID
     await rider.save();
 
-    res.status(200).json({ success: true, url: paymentUrl, id: uniqueLinkId });
+    res.status(200).json({ success: true, url: paymentUrl, id: response.id });
   } catch (err) {
-    const errorData = err.response ? err.response.data : null;
-    let errorMessage = 'Failed to create payment link';
-    
-    if (errorData) {
-      if (errorData.message === 'Authentication Failed') {
-        errorMessage = 'Cashfree Authentication Failed: Please check your API credentials.';
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      }
-    } else {
-      errorMessage = err.message;
-    }
-
-    console.error('❌ Cashfree Link Error:', {
-      message: err.message,
-      data: errorData,
-      stack: err.stack
-    });
-
+    console.error('❌ Razorpay Link Error:', err);
     res.status(500).json({ 
       success: false, 
-      message: errorMessage,
-      details: errorData 
+      message: err.message || 'Failed to create Razorpay link'
     });
   }
 };
+
 const { sendPaymentReminder } = require('../utils/whatsapp');
 
 // @POST /api/payments/webhook
 // @desc Handle Cashfree Webhooks for automatic database updates
 exports.webhookHandler = async (req, res) => {
-  console.log('🔔 [WEBHOOK] Received Payload:', JSON.stringify(req.body, null, 2));
+  console.log('🔔 [RAZORPAY WEBHOOK] Received Event:', req.body.event);
 
   try {
-    const { type, data } = req.body;
-    if (!data) {
-      console.error('❌ [WEBHOOK] No data object in payload');
-      return res.status(200).send('OK');
-    }
+    const { event, payload } = req.body;
 
-    // 1. Determine Payment Success (multiple strategies)
-    const linkStatus = data.link?.link_status;
-    const orderStatus = data.order?.order_status;
-    const paymentStatus = data.payment?.payment_status;
+    // Handle Payment Link Success
+    if (event === 'payment_link.paid') {
+      const data = payload.payment_link.entity;
+      const amount = data.amount_paid / 100;
+      const riderId = data.notes?.riderId;
 
-    const isSuccess = 
-      linkStatus === 'PAID' || 
-      linkStatus === 'SUCCESS' || 
-      orderStatus === 'PAID' || 
-      paymentStatus === 'SUCCESS';
+      console.log(`🔍 [WEBHOOK] Processing Razorpay Link: ${data.id}, Rider: ${riderId}, Amount: ${amount}`);
 
-    console.log(`🔍 [WEBHOOK] Status Check: Link=${linkStatus}, Order=${orderStatus}, Payment=${paymentStatus} -> Success=${isSuccess}`);
-
-    if (isSuccess) {
-      // 2. Identify the Rider (Order ID or Link ID or Order Tags)
-      const linkId = data.link?.link_id || 
-                     data.order?.order_tags?.link_id || 
-                     data.order?.order_id;
-                     
-      const amount = data.link?.link_amount_paid || 
-                     data.payment?.payment_amount || 
-                     data.order?.order_amount;
-                     
-      const phone = data.customer_details?.customer_phone;
-
-      console.log(`🔍 [WEBHOOK] Identifiers - LinkID: ${linkId}, Amount: ${amount}, Phone: ${phone}`);
-
-      if (!linkId && !phone) {
-        console.error('❌ [WEBHOOK] Could not identify rider (No LinkID or Phone)');
+      if (!riderId) {
+        console.error('❌ [WEBHOOK] No riderId in link notes');
         return res.status(200).send('OK');
       }
 
-      let rider = null;
-
-      // Strategy A: By Link ID
-      if (linkId && linkId.includes('_')) {
-        const parts = linkId.split('_');
-        const possibleId = parts[1]; // ride_{riderId}_{timestamp}
-        if (possibleId && possibleId.length === 24) {
-          rider = await Rider.findById(possibleId);
-          if (rider) console.log(`✅ [WEBHOOK] Found Rider by LinkID: ${rider.name}`);
-        }
-      }
-
-      // Strategy B: By Phone Number (fallback)
-      if (!rider && phone) {
-        // Clean phone number for matching
-        const cleanPhone = phone.replace(/[^0-9]/g, '').slice(-10);
-        rider = await Rider.findOne({ whatsappNumber: { $regex: cleanPhone } });
-        if (rider) console.log(`✅ [WEBHOOK] Found Rider by Phone Fallback: ${rider.name}`);
-      }
-
+      const rider = await Rider.findById(riderId);
       if (rider) {
-        // Update Rider Record
-        rider.lastWebhookData = req.body; // Log for debugging
-
         if (rider.paymentStatus === 'unpaid') {
           const nextWeek = new Date(rider.returnDate || Date.now());
           nextWeek.setDate(nextWeek.getDate() + 7);
@@ -234,7 +168,7 @@ exports.webhookHandler = async (req, res) => {
           // Create Invoice Record
           try {
             const { createInvoiceRecord } = require('../utils/invoiceHelper');
-            await createInvoiceRecord(rider, amount || 2000);
+            await createInvoiceRecord(rider, amount);
           } catch (invErr) {
             console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
           }
@@ -244,28 +178,22 @@ exports.webhookHandler = async (req, res) => {
           // Send WhatsApp Confirmation
           try {
             const { sendPaymentReminder } = require('../utils/whatsapp');
-            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount || 2000}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
             await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
           } catch (waErr) {
             console.error('⚠️ [WEBHOOK] WhatsApp confirmation failed:', waErr.message);
           }
-        } else {
-          console.log(`ℹ️ [WEBHOOK] Rider ${rider.name} was already marked as PAID`);
-          await rider.save(); // Still update lastWebhookData
         }
-      } else {
-        console.error('❌ [WEBHOOK] Rider not found in database for this payment');
       }
-    } else {
-      console.log('ℹ️ [WEBHOOK] Skipping non-success event');
     }
 
     res.status(200).send('OK');
   } catch (err) {
     console.error('💥 [WEBHOOK] CRITICAL ERROR:', err);
-    res.status(200).send('OK'); // Always 200 to satisfy Cashfree
+    res.status(200).send('OK');
   }
 };
+
 
 // @GET /api/payments/config-status
 // @desc Diagnostic endpoint to verify environment variables (masked)

@@ -82,6 +82,7 @@ app.use('/api/customers', require('./src/routes/customer'));
 app.use('/api/expenses', require('./src/routes/expense'));
 app.use('/api/landing', require('./src/routes/landing'));
 app.use('/api/whatsapp', require('./src/routes/whatsapp'));
+app.use('/api/config', require('./src/routes/config'));
 
 
 // Serve Static Files in Production

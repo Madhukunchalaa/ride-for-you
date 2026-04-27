@@ -22,7 +22,11 @@ exports.sendReminder = async (req, res) => {
     }
 
     // 1. Create REAL Razorpay Payment Link
-    const amountVal = (rider.whatsappNumber === '7095682464' ? 1 : 2000) * 100; // in paise
+    const SystemConfig = require('../models/SystemConfig');
+    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+    const defaultAmount = config ? config.value : 2000;
+
+    const amountVal = (rider.whatsappNumber === '7095682464' ? 1 : defaultAmount) * 100; // in paise
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
     const response = await razorpay.paymentLink.create({
@@ -301,8 +305,9 @@ exports.updateStatus = async (req, res) => {
           rider.bikesUsed.push(rider.vehicleNumber);
         }
 
-        const { createInvoiceRecord } = require('../utils/invoiceHelper');
-        await createInvoiceRecord(rider, req.body.amount || 2000);
+        const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+        const defaultAmount = config ? config.value : 2000;
+        await createInvoiceRecord(rider, req.body.amount || defaultAmount);
       }
       rider.paymentStatus = paymentStatus;
     }

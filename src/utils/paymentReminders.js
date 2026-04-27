@@ -1,65 +1,60 @@
-const axios = require('axios');
-const { getCashfreeConfig } = require('../config/cashfree');
+const razorpay = require('../config/razorpay');
 const { sendPaymentReminder } = require('./whatsapp');
+const SystemConfig = require('../models/SystemConfig');
 
 /**
- * Generates a Cashfree link and sends a WhatsApp reminder to a rider.
+ * Generates a Razorpay link and sends a WhatsApp reminder to a rider.
  * @param {Object} rider - Rider document
  * @param {String} type - 'normal', 'warning', 'final'
  */
 const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
   try {
-    const cashfreeConfig = await getCashfreeConfig();
-    if (!cashfreeConfig.isConfigured) {
-      console.error('❌ Skipping automated link: Cashfree not configured.');
-      return;
-    }
-
-    const amountVal = rider.whatsappNumber === '7095682464' ? 1 : 2000;
+    // Fetch Dynamic Amount from Settings
+    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+    const defaultAmount = config ? config.value : 2000;
+    
+    const amountVal = (rider.whatsappNumber === '7095682464' ? 1 : defaultAmount) * 100; // in paise
     const uniqueLinkId = `auto_${type}_${rider._id}_${Date.now()}`;
 
-    const payload = {
-      link_id: uniqueLinkId,
-      link_amount: amountVal,
-      link_currency: "INR",
-      link_purpose: `Rental Payment [${type.toUpperCase()}] - ${rider.vehicleNumber}`,
-      customer_details: {
-        customer_phone: rider.whatsappNumber,
-        customer_name: rider.name.replace(/[^a-zA-Z\s.]/g, '') // Sanitize name for Cashfree
+    // Create Razorpay Link
+    const response = await razorpay.paymentLink.create({
+      amount: amountVal,
+      currency: "INR",
+      accept_partial: false,
+      description: `Weekly Rental [${type.toUpperCase()}] - ${rider.vehicleNumber} (Rider: ${rider.name})`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
       },
-      link_notify: { send_sms: false, send_email: false },
-      link_meta: {
-        return_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
-        notify_url: `${process.env.FRONTEND_URL || 'https://ride-for-you-production.up.railway.app'}/api/payments/webhook`
-      }
-    };
+      notify: { sms: false, email: false },
+      notes: {
+        riderId: rider._id.toString(),
+        link_id: uniqueLinkId,
+        automation_type: type
+      },
+      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
+      callback_method: "get"
+    });
 
-    const response = await axios.post(`${cashfreeConfig.baseUrl}/links`, payload, {
-      headers: {
-        'x-client-id': cashfreeConfig.clientId,
-        'x-client-secret': cashfreeConfig.clientSecret,
-        'x-api-version': cashfreeConfig.apiVersion,
-        'Content-Type': 'application/json'
+    const paymentLink = response.short_url;
+    rider.paymentLinkId = response.id;
+
+    // Send WhatsApp (Using Content API for consistency if available, otherwise fallback)
+    // For automation, we usually use the APPROVED template (TWILIO_CONTENT_SID)
+    const formattedDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
+
+    console.log(`🤖 Automated Reminder [${type}] to ${rider.whatsappNumber}...`);
+
+    await sendPaymentReminder(rider.whatsappNumber, { 
+      contentSid: process.env.TWILIO_CONTENT_SID,
+      variables: {
+        1: rider.name,
+        2: rider.vehicleNumber,
+        3: formattedDate,
+        4: paymentLink
       }
     });
 
-    const paymentLink = response.data.link_url;
-    rider.paymentLinkId = uniqueLinkId;
-
-    let body = '';
-    const returnDate = new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-
-    if (type === 'normal') {
-      body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental payment for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\n🔗 *Pay Now:* ${paymentLink}\n\nThank you! ⚡`;
-    } else if (type === 'warning') {
-      body = `⚠️ *URGENT: Payment Overdue - Ride For You*\n\nHello *${rider.name}*,\n\nYour payment for *${rider.vehicleNumber}* is now *3 days overdue*.\n\nPlease complete the payment immediately to avoid service interruption.\n\n🔗 *Pay Now:* ${paymentLink}`;
-    } else if (type === 'final') {
-      body = `🚨 *FINAL NOTICE: Recovery Action - Ride For You*\n\nHello *${rider.name}*,\n\nYour payment is *5 days overdue*. This is your final warning.\n\nIf payment is not received today, your case will be moved to our **Recovery Bucket** and an agent will be dispatched to reclaim the vehicle.\n\n🔗 *Pay Now:* ${paymentLink}`;
-    }
-
-    const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
-    await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
-    
     return true;
   } catch (err) {
     console.error(`❌ Automated Reminder Error [${type}]:`, err.message);

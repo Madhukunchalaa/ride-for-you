@@ -32,6 +32,7 @@ const menuItems = [
   { path: '/app/expenses', label: 'Admin Spends', icon: DollarSign },
   { path: '/app/landing-cms', label: 'Landing CMS', icon: Monitor },
   { path: '/app/whatsapp-crm', label: 'WhatsApp CRM', icon: MessageSquare },
+  { path: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
 

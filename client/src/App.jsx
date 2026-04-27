@@ -18,6 +18,7 @@ import Expenses from './pages/Expenses';
 import LandingCMS from './pages/LandingCMS';
 import WhatsAppCRM from './pages/WhatsAppCRM';
 import ThankYou from './pages/ThankYou';
+import Settings from './pages/Settings';
 
 
 
@@ -65,6 +66,7 @@ function App() {
              <Route path="expenses" element={<Expenses />} />
              <Route path="landing-cms" element={<LandingCMS />} />
              <Route path="whatsapp-crm" element={<WhatsAppCRM />} />
+             <Route path="settings" element={<Settings />} />
 
           </Route>
 

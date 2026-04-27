@@ -195,7 +195,7 @@ export default function Riders() {
     setFormData({
       name: rider.name || '',
       whatsappNumber: rider.whatsappNumber || '',
-      riderStatus: rider.riderStatus || 'active',
+      riderStatus: rider.isRecoveryBucket ? 'recovery' : (rider.riderStatus || 'active'),
       vehicleNumber: rider.vehicleNumber || '',
       deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
       returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
@@ -675,6 +675,7 @@ export default function Riders() {
                   onChange={handleInputChange}
                 >
                   <option value="active">Active</option>
+                  <option value="recovery">Recovery</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>

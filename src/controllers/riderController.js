@@ -322,7 +322,17 @@ exports.updateStatus = async (req, res) => {
 
     // Handle soft deletion / archiving
     if (riderStatus) {
-      rider.riderStatus = riderStatus;
+      if (riderStatus === 'recovery') {
+        rider.riderStatus = 'active';
+        rider.isRecoveryBucket = true;
+        rider.reminderEscalationStage = 3;
+      } else if (riderStatus === 'active') {
+        rider.riderStatus = 'active';
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
+      } else {
+        rider.riderStatus = riderStatus;
+      }
     }
 
     await rider.save();

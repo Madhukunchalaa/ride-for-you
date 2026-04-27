@@ -55,15 +55,31 @@ exports.sendReminder = async (req, res) => {
 
     await rider.save();
 
-    // 3. Prepare QR and Message
-    console.log(`🖼️ Generating QR for: ${paymentLink}`);
-    const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+    // 3. Send WhatsApp (Using the newly APPROVED template!)
+    console.log(`📲 Sending Approved Template WhatsApp to ${rider.whatsappNumber}...`);
     
-    const returnDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
-    const body = `💳 *Payment Reminder - Ride For You*\n\nHello *${rider.name}*,\n\nYour rental payment for vehicle *${rider.vehicleNumber}* is due on *${returnDate}*.\n\n🔗 *Pay Now:* ${paymentLink}\n\nOr scan the QR code below to pay easily. Once paid, your dashboard will update automatically! ⚡`;
+    await sendPaymentReminder(rider.whatsappNumber, { 
+      contentSid: process.env.TWILIO_CONTENT_SID,
+      variables: {
+        1: rider.name,
+        2: rider.vehicleNumber,
+        3: new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+        4: paymentLink
+      }
+    });
 
-    console.log(`📲 Sending WhatsApp to ${rider.whatsappNumber}...`);
-    await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
+
+    // 4. (Optional) Follow up with QR code if session is open
+    try {
+      const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+      await sendPaymentReminder(rider.whatsappNumber, { 
+        body: `You can also scan this QR code to pay instantly! ⚡`,
+        mediaUrl: mediaUrl 
+      });
+    } catch (qrErr) {
+      console.log('ℹ️ QR Follow-up skipped (expected if no session open)');
+    }
+
     console.log(`✨ Successfully sent reminder to ${rider.name}`);
 
     res.status(200).json({
@@ -84,7 +100,7 @@ exports.sendReminder = async (req, res) => {
       errorMessage = err.message;
     }
 
-    console.error('❌ Cashfree Link Reminder Error:', {
+    console.error('❌ Razorpay Link Reminder Error:', {
       message: err.message,
       data: errorData
     });
@@ -93,6 +109,7 @@ exports.sendReminder = async (req, res) => {
       message: errorMessage,
       details: errorData 
     });
+
   }
 };
 

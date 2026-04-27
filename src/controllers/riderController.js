@@ -26,7 +26,7 @@ exports.sendReminder = async (req, res) => {
     const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
     const defaultAmount = config ? config.value : 2000;
 
-    const amountVal = (rider.whatsappNumber === '7095682464' ? 1 : defaultAmount) * 100; // in paise
+    const amountVal = defaultAmount * 100; // in paise
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
     const response = await razorpay.paymentLink.create({

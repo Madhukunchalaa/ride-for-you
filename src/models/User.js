@@ -11,6 +11,17 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    whatsappNumber: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
+    otp: {
+      type: String
+    },
+    otpExpires: {
+      type: Date
+    },
     password: {
       type: String,
       required: true,

@@ -107,6 +107,61 @@ const Settings = () => {
               </div>
             </div>
           </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              Security Settings
+            </h2>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col md:flex-row justify-between gap-4 p-4 rounded-xl bg-gray-50/50 border border-gray-100">
+              <div className="flex gap-4 mb-4 md:mb-0">
+                <div className="p-2 bg-white rounded-lg shadow-sm h-fit">
+                  <FiSave className="text-gray-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Change Password</h3>
+                  <p className="text-sm text-gray-500 max-w-md">
+                    Update your account password. This applies to your Admin Email Login.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 min-w-[250px]">
+                <input
+                  type="password"
+                  placeholder="Current Password"
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  id="currentPassword"
+                />
+                <input
+                  type="password"
+                  placeholder="New Password"
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  id="newPassword"
+                />
+                <button
+                  onClick={async () => {
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    if (!currentPassword || !newPassword) return toast.error('Please enter both passwords');
+                    try {
+                      const { data } = await api.post('/auth/change-password', { currentPassword, newPassword });
+                      toast.success(data.message || 'Password updated');
+                      document.getElementById('currentPassword').value = '';
+                      document.getElementById('newPassword').value = '';
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || 'Update failed');
+                    }
+                  }}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  Update Password
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Info Card */}

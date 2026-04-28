@@ -107,6 +107,8 @@ const Settings = () => {
               </div>
             </div>
           </div>
+        </div>
+        
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">

@@ -12,6 +12,7 @@ router.put('/:id', riderController.updateRider);
 router.get('/:id/details', riderController.getRiderDetails);
 router.post('/:id/send-reminder', riderController.sendReminder);
 router.post('/:id/complaints', riderController.addComplaint);
+router.post('/:id/damage', riderController.addDamage);
 router.patch('/:id/status', riderController.updateStatus);
 router.delete('/:id', riderController.deleteRider);
 

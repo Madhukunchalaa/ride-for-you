@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench } from 'lucide-react';
 
 import api from '../api/axios';
 import Modal from '../components/Modal';
@@ -11,6 +11,9 @@ export default function Riders() {
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDamageModalOpen, setIsDamageModalOpen] = useState(false);
+  const [damageRider, setDamageRider] = useState(null);
+  const [damageData, setDamageData] = useState({ amount: '', reason: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,6 +94,31 @@ export default function Riders() {
       } catch (err) {
         toast.error('Failed to archive rider');
       }
+    }
+  };
+
+  const submitDamage = async (e) => {
+    e.preventDefault();
+    if (!damageData.amount || !damageData.reason) {
+      toast.error('Amount and reason are required');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await api.post(`/riders/${damageRider._id}/damage`, {
+        amount: Number(damageData.amount),
+        reason: damageData.reason
+      });
+      toast.success('Damage recorded and payment link sent via WhatsApp!');
+      setIsDamageModalOpen(false);
+      setDamageData({ amount: '', reason: '' });
+      setDamageRider(null);
+      fetchRiders(); // Refresh to see new invoice if needed
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to record damage');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -403,6 +431,16 @@ export default function Riders() {
                     <RotateCcw size={18} />
                   </button>
                   <button 
+                    onClick={() => {
+                      setDamageRider(rider);
+                      setIsDamageModalOpen(true);
+                    }}
+                    className="h-12 w-12 bg-red-500/10 text-red-600 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+                    title="Add Damage Charge"
+                  >
+                    <Wrench size={18} />
+                  </button>
+                  <button 
                     onClick={() => handleEditClick(rider)}
 
                     className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90"
@@ -555,6 +593,16 @@ export default function Riders() {
                             title="Mark as Returned"
                           >
                             <RotateCcw size={18} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setDamageRider(rider);
+                              setIsDamageModalOpen(true);
+                            }}
+                            className="p-2.5 hover:bg-red-500/10 rounded-xl text-red-500 hover:text-red-600 transition-all"
+                            title="Add Damage Charge"
+                          >
+                            <Wrench size={18} />
                           </button>
                           <button 
                             onClick={() => handleEditClick(rider)}
@@ -717,6 +765,93 @@ export default function Riders() {
                   <>
                     <ShieldCheck size={20} />
                     {isEditing ? 'COMMIT UPDATES' : 'FINALIZE REGISTRATION'}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* Damage Record Modal */}
+      <Modal 
+        isOpen={isDamageModalOpen} 
+        onClose={() => {
+          setIsDamageModalOpen(false);
+          setDamageData({ amount: '', reason: '' });
+          setDamageRider(null);
+        }}
+      >
+        <div className="bg-white dark:bg-dark-100 rounded-[2.5rem] w-full max-w-lg overflow-y-auto custom-scrollbar animate-slide-up shadow-2xl border border-red-500/20">
+          <div className="sticky top-0 bg-red-500/5 dark:bg-red-500/10 backdrop-blur-md p-8 border-b border-red-500/10 flex items-center justify-between z-10">
+            <div>
+              <h3 className="text-2xl font-display font-black text-red-600 dark:text-red-400 uppercase tracking-tight flex items-center gap-2">
+                <Wrench size={24} /> Record Damage
+              </h3>
+              <p className="text-[10px] text-red-500/70 font-bold uppercase tracking-widest mt-1">
+                For Rider: {damageRider?.name} ({damageRider?.vehicleNumber})
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                setIsDamageModalOpen(false);
+                setDamageData({ amount: '', reason: '' });
+                setDamageRider(null);
+              }}
+              className="p-2 hover:bg-red-500/10 rounded-xl transition-colors text-red-500"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <form onSubmit={submitDamage} className="p-8 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Damage Amount (₹)</label>
+                <input 
+                  type="number" 
+                  required
+                  placeholder="Ex: 500" 
+                  className="input h-14 text-xl font-black text-slate-900 dark:text-white"
+                  value={damageData.amount}
+                  onChange={(e) => setDamageData({...damageData, amount: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Reason for Charge</label>
+                <textarea 
+                  required
+                  placeholder="Ex: Broken side mirror" 
+                  className="input min-h-[100px] resize-none py-4"
+                  value={damageData.reason}
+                  onChange={(e) => setDamageData({...damageData, reason: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsDamageModalOpen(false);
+                  setDamageData({ amount: '', reason: '' });
+                  setDamageRider(null);
+                }}
+                className="w-full btn-secondary h-14 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full btn-primary h-14 shadow-glow-primary bg-red-500 hover:bg-red-600 border-red-500 text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={24} className="animate-spin" />
+                ) : (
+                  <>
+                    <CreditCard size={20} />
+                    CHARGE RIDER
                   </>
                 )}
               </button>

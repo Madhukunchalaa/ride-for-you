@@ -394,3 +394,83 @@ exports.addComplaint = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// @POST /api/riders/:id/damage
+// @desc Add a damage charge and send payment link
+exports.addDamage = async (req, res) => {
+  try {
+    const { amount, reason } = req.body;
+    if (!amount || !reason) {
+      return res.status(400).json({ success: false, message: 'Amount and reason are required' });
+    }
+
+    const rider = await Rider.findById(req.params.id);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    // 1. Create a Damage Invoice
+    const invoiceNum = `INV-DMG-${Date.now().toString().slice(-6)}`;
+    const today = new Date();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const billingMonth = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+
+    const newInvoice = await Invoice.create({
+      billingMonth,
+      riderId: rider._id,
+      riderName: rider.name,
+      invoiceType: 'REPAIR & DAMAGE',
+      invoiceNum,
+      billAmount: amount,
+      actualRent: 0,
+      securityDeposit: 0,
+      remarks: reason
+    });
+
+    // 2. Create Razorpay Link for Damage
+    const uniqueLinkId = `dmg_${rider._id}_${Date.now()}`;
+    const response = await razorpay.paymentLink.create({
+      amount: amount * 100, // in paise
+      currency: "INR",
+      accept_partial: false,
+      description: `Damage Charge: ${reason} - ${rider.vehicleNumber}`,
+      customer: {
+        name: rider.name,
+        contact: rider.whatsappNumber,
+      },
+      notify: { sms: false, email: false },
+      notes: {
+        riderId: rider._id.toString(),
+        invoiceId: newInvoice._id.toString(),
+        link_id: uniqueLinkId,
+        type: 'damage'
+      },
+      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
+      callback_method: "get"
+    });
+
+    const paymentLink = response.short_url;
+
+    // 3. Send WhatsApp Notification
+    if (rider.whatsappNumber) {
+      const body = `🛠️ *Damage Charge - Ride For You*\n\nHello *${rider.name}*,\n\nA damage charge has been added to your account for vehicle *${rider.vehicleNumber}*.\n\n*Reason:* ${reason}\n*Amount:* ₹${amount}\n\nPlease pay using this link to avoid service interruption:\n🔗 *Pay Now:* ${paymentLink}`;
+      
+      const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+      
+      try {
+        await sendPaymentReminder(rider.whatsappNumber, { body, mediaUrl });
+      } catch (waErr) {
+        console.warn(`WhatsApp failed for damage notice: ${waErr.message}`);
+        // We still return success because the invoice and link were created
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Damage recorded and payment link sent',
+      data: newInvoice
+    });
+
+  } catch (err) {
+    console.error('Add Damage Error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

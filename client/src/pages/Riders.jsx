@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange } from 'lucide-react';
 
 import api from '../api/axios';
 import Modal from '../components/Modal';
@@ -27,6 +27,12 @@ export default function Riders() {
   const isRecoveryPage = location.pathname.includes('/recovery');
   const isReturnsPage = location.pathname.includes('/returns');
 
+  // Filter States
+  const [showFilters, setShowFilters] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateFilterType, setDateFilterType] = useState('deployDate'); // 'deployDate' or 'returnDate'
+
 
   useEffect(() => {
     if (isRecoveryPage) {
@@ -51,7 +57,6 @@ export default function Riders() {
 
       if (data.success && data.url) {
         toast.dismiss("cf-link");
-        // Open the generated Payment Link in a new tab or same tab
         window.open(data.url, '_blank');
       }
     } catch (err) {
@@ -114,7 +119,7 @@ export default function Riders() {
       setIsDamageModalOpen(false);
       setDamageData({ amount: '', reason: '' });
       setDamageRider(null);
-      fetchRiders(); // Refresh to see new invoice if needed
+      fetchRiders(); 
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to record damage');
     } finally {
@@ -122,7 +127,6 @@ export default function Riders() {
     }
   };
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     whatsappNumber: '',
@@ -134,7 +138,6 @@ export default function Riders() {
     autoReminderTime: '10:00'
   });
 
-  // Fetch Riders
   const fetchRiders = async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
@@ -151,16 +154,12 @@ export default function Riders() {
 
   useEffect(() => {
     fetchRiders();
-
-    // LIVE SYNC: Poll for updates every 10 seconds
     const interval = setInterval(() => {
-      fetchRiders(false); // Fetch silently in background
+      fetchRiders(false);
     }, 10000);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Handle Deploy Date Change (Update Return Date)
   useEffect(() => {
     if (formData.deployDate) {
       const deploy = new Date(formData.deployDate);
@@ -252,11 +251,31 @@ export default function Riders() {
       isCorrectTab = rider.riderStatus === 'inactive';
     }
 
-
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rider.whatsappNumber.includes(searchTerm);
-    return isCorrectTab && matchesSearch;
+
+    const matchesDate = (() => {
+      if (!startDate && !endDate) return true;
+      const dateVal = rider[dateFilterType];
+      if (!dateVal) return false;
+      
+      const targetDate = new Date(dateVal);
+      targetDate.setHours(0, 0, 0, 0);
+
+      const start = startDate ? new Date(startDate) : null;
+      if (start) start.setHours(0, 0, 0, 0);
+
+      const end = endDate ? new Date(endDate) : null;
+      if (end) end.setHours(23, 59, 59, 999);
+
+      if (start && end) return targetDate >= start && targetDate <= end;
+      if (start) return targetDate >= start;
+      if (end) return targetDate <= end;
+      return true;
+    })();
+
+    return isCorrectTab && matchesSearch && matchesDate;
   });
 
   const totalPages = Math.ceil(filteredRiders.length / itemsPerPage);
@@ -265,10 +284,16 @@ export default function Riders() {
     currentPage * itemsPerPage
   );
 
-  // Reset to page 1 when tab or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchTerm]);
+  }, [activeTab, searchTerm, startDate, endDate, dateFilterType]);
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setSearchTerm('');
+    setShowFilters(false);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -288,7 +313,6 @@ export default function Riders() {
         <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
           <ShieldCheck size={16} className="text-primary-500" /> 
           {isRecoveryPage ? 'Defaulters & High Risk Database' : isReturnsPage ? 'Inventory of Returned Vehicles' : 'Secure Workforce Database'}
-
         </p>
         </div>
         {(!isRecoveryPage && !isReturnsPage) && (
@@ -305,7 +329,7 @@ export default function Riders() {
         )}
       </div>
 
-      {/* Controls */}
+      {/* Tab Controls */}
       {(!isRecoveryPage && !isReturnsPage) && (
         <div className="flex bg-slate-200/50 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4 border border-slate-200 dark:border-slate-800/50">
           <button 
@@ -330,40 +354,93 @@ export default function Riders() {
       )}
 
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-3 relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary-500 transition-colors" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search by name, vehicle number or phone..." 
-            className="input pl-12 h-14 bg-white dark:bg-dark-200/50 border-slate-200 dark:border-slate-800/50 focus:border-primary-500/50 focus:bg-white dark:focus:bg-dark-200"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button 
-              onClick={() => setSearchTerm('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
-            >
-              <FilterX size={18} />
-            </button>
-          )}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-3 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary-500 transition-colors" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search by name, vehicle number or phone..." 
+              className="input pl-12 h-14 bg-white dark:bg-dark-200/50 border-slate-200 dark:border-slate-800/50 focus:border-primary-500/50 focus:bg-white dark:focus:bg-dark-200"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`h-14 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all border shadow-sm ${showFilters ? 'bg-primary-500 text-black border-primary-500' : 'bg-white dark:bg-dark-200/50 border-slate-300 dark:border-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+          >
+            <Filter size={18} /> 
+            <span>{showFilters ? 'Hide Filters' : 'Advanced Filters'}</span>
+          </button>
         </div>
-        <button 
-          onClick={() => {
-            if (searchTerm) setSearchTerm('');
-            else toast('Use the search box to filter results', { icon: '🔍' });
-          }}
-          className="h-14 bg-white dark:bg-dark-200/50 border border-slate-300 dark:border-slate-800/50 rounded-2xl flex items-center justify-center gap-2 text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all hover:text-primary-600 dark:hover:text-white shadow-sm"
-        >
-          <Filter size={18} /> Filters
-        </button>
 
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div className="bg-white dark:bg-dark-100/40 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl animate-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Filter By</label>
+                <div className="relative">
+                  <select 
+                    value={dateFilterType}
+                    onChange={(e) => setDateFilterType(e.target.value)}
+                    className="input h-12 appearance-none bg-slate-50 dark:bg-dark-200/50"
+                  >
+                    <option value="deployDate">Deployment Date</option>
+                    <option value="returnDate">Return Date</option>
+                  </select>
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">From Date</label>
+                <div className="relative">
+                  <CalendarRange size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />
+                  <input 
+                    type="date" 
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="input h-12 pl-12 bg-slate-50 dark:bg-dark-200/50 [color-scheme:light] dark:[color-scheme:dark]"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">To Date</label>
+                <div className="relative">
+                  <CalendarRange size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />
+                  <input 
+                    type="date" 
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="input h-12 pl-12 bg-slate-50 dark:bg-dark-200/50 [color-scheme:light] dark:[color-scheme:dark]"
+                  />
+                </div>
+              </div>
+              <div className="flex items-end">
+                <button 
+                  onClick={clearFilters}
+                  className="w-full h-12 flex items-center justify-center gap-2 text-red-500 font-bold text-xs uppercase tracking-widest hover:bg-red-500/10 rounded-xl transition-all"
+                >
+                  <FilterX size={16} /> Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content - Adaptive View */}
       <div className="space-y-4 md:space-y-0">
-        {/* Mobile Card View (Visible only on small screens) */}
+        {/* Mobile Card View */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {loading ? (
             <div className="py-20 flex flex-col items-center gap-4 bg-white dark:bg-dark-100/40 rounded-[2rem] border border-slate-200 dark:border-slate-800">
@@ -397,7 +474,7 @@ export default function Riders() {
                    </div>
                    <div className="text-right">
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Payment Status</p>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${rider.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${rider.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}>
                         {rider.paymentStatus || 'unpaid'}
                       </span>
                    </div>
@@ -407,14 +484,14 @@ export default function Riders() {
                   <button 
                     onClick={() => handleSendReminder(rider._id)}
                     disabled={sendingReminder === rider._id}
-                    className="flex-1 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                    className="flex-1 h-12 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                   >
                     {sendingReminder === rider._id ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     <span className="text-[10px] font-black uppercase tracking-widest">Remind</span>
                   </button>
                   <button 
                     onClick={() => handlePayment(rider)}
-                    className="flex-1 h-12 bg-primary-500/10 text-primary-500 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                    className="flex-1 h-12 bg-primary-500/10 text-primary-600 dark:text-primary-500 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                   >
                     <CreditCard size={16} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Pay</span>
@@ -442,7 +519,6 @@ export default function Riders() {
                   </button>
                   <button 
                     onClick={() => handleEditClick(rider)}
-
                     className="h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center transition-all active:scale-90"
                   >
                     <Edit2 size={18} />
@@ -461,19 +537,19 @@ export default function Riders() {
           )}
         </div>
 
-        {/* Desktop Table View (Hidden on mobile) */}
+        {/* Desktop Table View */}
         <div className="hidden md:block bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800/50 rounded-[2rem] overflow-hidden shadow-2xl">
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800/50 bg-slate-50/50 dark:bg-dark-200/30">
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Rider Details</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Vehicle No.</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Deploy Date</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Return Date</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Status</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Payment</th>
-                  <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-[0.2em] text-center">Actions</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Rider Details</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Vehicle No.</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Deploy Date</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Return Date</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Payment</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/30">
@@ -491,7 +567,7 @@ export default function Riders() {
                     <tr key={rider._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-primary-600/10 dark:bg-primary-600/5 border border-primary-500/20 flex items-center justify-center text-primary-500 dark:text-primary-400">
+                          <div className="w-12 h-12 rounded-2xl bg-primary-600/10 dark:bg-primary-600/5 border border-primary-500/20 flex items-center justify-center text-primary-600 dark:text-primary-400">
                             <Users size={24} />
                           </div>
                           <div>
@@ -508,7 +584,7 @@ export default function Riders() {
                         </div>
                       </td>
                       <td className="p-6">
-                        <span className="text-sm font-mono text-primary-600 dark:text-primary-300 font-black bg-primary-500/5 px-3 py-1.5 rounded-xl border border-primary-500/10">
+                        <span className="text-sm font-mono text-primary-700 dark:text-primary-300 font-black bg-primary-500/5 px-3 py-1.5 rounded-xl border border-primary-500/10">
                           {rider.vehicleNumber}
                         </span>
                       </td>
@@ -519,19 +595,18 @@ export default function Riders() {
                         </div>
                       </td>
                       <td className="p-6">
-                        <div className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-300 font-black bg-primary-500/10 w-fit px-3 py-1 rounded-lg">
-                          <Calendar size={14} className="text-primary-500" />
+                        <div className="flex items-center gap-2 text-sm text-primary-700 dark:text-primary-300 font-black bg-primary-500/10 w-fit px-3 py-1 rounded-lg">
+                          <Calendar size={14} className="text-primary-600 dark:text-primary-500" />
                           {formatDate(rider.returnDate)}
                         </div>
                       </td>
                       <td className="p-6">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                           rider.riderStatus === 'active' 
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
                           : rider.riderStatus === 'returned'
-                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-
+                          ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
+                          : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
                         }`}>
                           {rider.riderStatus}
                         </span>
@@ -540,10 +615,10 @@ export default function Riders() {
                         <div className="flex flex-col gap-1">
                           <span className={`${
                             rider.isRecoveryBucket 
-                            ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' 
+                            ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
                             : rider.paymentStatus === 'paid' 
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
-                            : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
+                            : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
                           } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
                             {rider.isRecoveryBucket ? 'RECOVERY' : (rider.paymentStatus || 'unpaid')}
                           </span>
@@ -560,7 +635,7 @@ export default function Riders() {
                           <button 
                             onClick={() => handleSendReminder(rider._id)}
                             disabled={sendingReminder === rider._id}
-                            className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-600 transition-all disabled:opacity-50"
+                            className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 transition-all disabled:opacity-50"
                             title="Send WhatsApp Reminder"
                           >
                             {sendingReminder === rider._id ? (
@@ -571,7 +646,7 @@ export default function Riders() {
                           </button>
                           <button 
                             onClick={() => handlePayment(rider)}
-                            className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-500 hover:text-emerald-600 transition-all"
+                            className="p-2.5 hover:bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 transition-all"
                             title="Test Cashfree Payment"
                           >
                             <CreditCard size={18} />
@@ -589,7 +664,7 @@ export default function Riders() {
                                 handleUpdateStatus(rider._id, 'returned');
                               }
                             }}
-                            className="p-2.5 hover:bg-orange-500/10 rounded-xl text-orange-500 hover:text-orange-600 transition-all"
+                            className="p-2.5 hover:bg-orange-500/10 rounded-xl text-orange-600 dark:text-orange-500 hover:text-orange-700 transition-all"
                             title="Mark as Returned"
                           >
                             <RotateCcw size={18} />
@@ -599,14 +674,13 @@ export default function Riders() {
                               setDamageRider(rider);
                               setIsDamageModalOpen(true);
                             }}
-                            className="p-2.5 hover:bg-red-500/10 rounded-xl text-red-500 hover:text-red-600 transition-all"
+                            className="p-2.5 hover:bg-red-500/10 rounded-xl text-red-600 dark:text-red-500 hover:text-red-700 transition-all"
                             title="Add Damage Charge"
                           >
                             <Wrench size={18} />
                           </button>
                           <button 
                             onClick={() => handleEditClick(rider)}
-
                             className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all"
                             title="Edit Rider"
                           >
@@ -729,13 +803,13 @@ export default function Riders() {
               </div>
             </div>
 
-            <div className="p-6 bg-dark-200/50 rounded-2xl border border-slate-800">
+            <div className="p-6 bg-slate-50 dark:bg-dark-200/50 rounded-2xl border border-slate-200 dark:border-slate-800">
               <div className="space-y-2">
-                <label className="text-xs font-black text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
+                <label className="text-xs font-black text-primary-600 dark:text-primary-500/70 uppercase tracking-widest ml-1">Deployment Date</label>
                 <input 
                   name="deployDate"
                   type="date" 
-                  className="input h-12 [color-scheme:dark]"
+                  className="input h-12 [color-scheme:light] dark:[color-scheme:dark]"
                   value={formData.deployDate}
                   onChange={handleInputChange}
                 />
@@ -750,7 +824,7 @@ export default function Riders() {
                   setIsModalOpen(false);
                   resetForm();
                 }}
-                className="w-full btn-secondary h-14 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-2xl transition-all"
+                className="w-full btn-secondary h-14 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
               >
                 Cancel
               </button>
@@ -798,7 +872,7 @@ export default function Riders() {
                 setDamageData({ amount: '', reason: '' });
                 setDamageRider(null);
               }}
-              className="p-2 hover:bg-red-500/10 rounded-xl transition-colors text-red-500"
+              className="p-2 hover:bg-red-500/10 rounded-xl transition-colors text-red-600 dark:text-red-500"
             >
               <X size={24} />
             </button>

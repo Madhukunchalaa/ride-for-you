@@ -1,61 +1,76 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Rider = require('../models/Rider');
 const { sendPaymentReminder } = require('../utils/whatsapp');
 const crypto = require('crypto');
+
+// Helper to clean and standardize WhatsApp number
+const cleanNumber = (num) => {
+  if (!num) return '';
+  return num.replace(/[^0-9]/g, '').slice(-10);
+};
 
 // @POST /api/auth/login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    console.log(`🔑 Login attempt: ${email}`);
-    if (!email || !password) {
-      console.log('⚠️ Missing email or password');
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    const { email, whatsappNumber, password } = req.body;
+    
+    if ((!email && !whatsappNumber) || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide credentials and password' });
     }
 
-    // 1. Check if user exists
-    const user = await User.findOne({ email }).select('+password');
-    console.log(`👤 User found: ${!!user}`);
-    
-    if (!user || !user.password) {
-      console.log('❌ User not found or password missing in DB');
+    let account;
+    let role = 'rider';
+
+    if (email) {
+      account = await User.findOne({ email }).select('+password');
+      role = account?.role || 'admin';
+    } else {
+      const searchNumber = cleanNumber(whatsappNumber);
+      // Check User (Admin) first
+      account = await User.findOne({ whatsappNumber: searchNumber }).select('+password');
+      if (account) {
+        role = account.role;
+      } else {
+        // Check Rider
+        account = await Rider.findOne({ whatsappNumber: searchNumber }).select('+password');
+        role = 'rider';
+      }
+    }
+
+    if (!account) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // 2. Check password
-    console.log('🔄 Comparing passwords...');
-    const isMatch = await user.comparePassword(password);
-    console.log(`✅ Password match: ${isMatch}`);
-    
+    const isMatch = await account.comparePassword(password);
     if (!isMatch) {
-      console.log('❌ Password mismatch');
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-
-    // 3. Generate JWT
-    console.log('🎫 Generating JWT...');
-    if (!process.env.JWT_SECRET) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
     }
 
     const tokenOptions = {};
-    if (user.whatsappNumber === '7989776255') {
-      console.log('Admin whatsapp number detected. Token will not expire.');
-      // Omit expiresIn so it lasts forever
+    const searchNumber = cleanNumber(whatsappNumber || account.whatsappNumber);
+    if (searchNumber === '7989776255') {
+      console.log('Admin detected. Token will not expire.');
     } else {
-      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '15m';
+      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '24h';
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, tokenOptions);
+    const token = jwt.sign({ id: account._id, role }, process.env.JWT_SECRET, tokenOptions);
 
-    console.log('🚀 Login successful, sending response');
     res.json({
       success: true,
       message: 'Login successful',
       token,
-      user: { id: user._id, email: user.email, name: user.name, role: user.role }
+      user: { 
+        id: account._id, 
+        email: account.email, 
+        name: account.name, 
+        role, 
+        whatsappNumber: account.whatsappNumber 
+      }
     });
   } catch (err) {
+    console.error('Login Error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -68,45 +83,38 @@ exports.requestOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a WhatsApp number' });
     }
 
-    // Clean number
-    let cleaned = whatsappNumber.replace(/[^0-9]/g, '');
-    if (cleaned.length === 10) cleaned = '91' + cleaned;
-    else if (cleaned.startsWith('91') && cleaned.length === 12) { /* already starts with 91 */ }
-    else {
-      // just default to taking last 10
-      cleaned = '91' + cleaned.slice(-10);
-    }
+    const searchNumber = cleanNumber(whatsappNumber);
+    let account = await User.findOne({ whatsappNumber: searchNumber });
     
-    // For lookup, just store what the user inputs or standardize. Let's use standard 10 digit internally if possible, but the user requested 7989776255 specifically.
-    const searchNumber = whatsappNumber.replace(/[^0-9]/g, '').slice(-10);
-
-    let user = await User.findOne({ whatsappNumber: searchNumber });
-    
-    if (!user) {
-      // If it's the admin default number, auto-create
+    if (!account) {
+      // If it's the admin default number, auto-create in User model
       if (searchNumber === '7989776255') {
-        user = await User.create({
+        account = await User.create({
           name: 'Super Admin',
-          email: 'admin@evride.com', // might clash if exists, so let's handle uniqueness
-          password: 'temp_' + crypto.randomBytes(8).toString('hex'),
+          email: 'admin@evride.com',
+          password: 'admin_' + crypto.randomBytes(4).toString('hex'),
           whatsappNumber: searchNumber,
           role: 'admin'
         }).catch(async err => {
           if (err.code === 11000) {
-             // email exists, just update that user with whatsappNumber
              return await User.findOneAndUpdate({ email: 'admin@evride.com' }, { whatsappNumber: searchNumber }, { new: true });
           }
           throw err;
         });
       } else {
-        return res.status(404).json({ success: false, message: 'Number not registered for login.' });
+        // Check if it's a Rider
+        account = await Rider.findOne({ whatsappNumber: searchNumber });
       }
     }
 
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Number not registered for login.' });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
-    await user.save();
+    account.otp = otp;
+    account.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+    await account.save();
 
     await sendPaymentReminder(whatsappNumber, {
       body: `Your Ride For You login OTP is: *${otp}*. Valid for 10 minutes.`
@@ -127,32 +135,44 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide number and OTP' });
     }
 
-    const searchNumber = whatsappNumber.replace(/[^0-9]/g, '').slice(-10);
-    const user = await User.findOne({ whatsappNumber: searchNumber });
+    const searchNumber = cleanNumber(whatsappNumber);
+    let account = await User.findOne({ whatsappNumber: searchNumber });
+    let role = 'admin';
 
-    if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
+    if (!account) {
+      account = await Rider.findOne({ whatsappNumber: searchNumber });
+      role = 'rider';
+    }
+
+    if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
     }
 
     // Clear OTP
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    await user.save();
+    account.otp = undefined;
+    account.otpExpires = undefined;
+    await account.save();
 
     const tokenOptions = {};
     if (searchNumber === '7989776255') {
-      console.log('Admin whatsapp number detected. Token will not expire.');
+      console.log('Admin detected. Token will not expire.');
     } else {
-      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '15m';
+      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '24h';
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, tokenOptions);
+    const token = jwt.sign({ id: account._id, role }, process.env.JWT_SECRET, tokenOptions);
 
     res.json({
       success: true,
       message: 'OTP Login successful',
       token,
-      user: { id: user._id, email: user.email, name: user.name, role: user.role, whatsappNumber: user.whatsappNumber }
+      user: { 
+        id: account._id, 
+        email: account.email, 
+        name: account.name, 
+        role, 
+        whatsappNumber: account.whatsappNumber 
+      }
     });
   } catch (err) {
     console.error('Verify OTP Error:', err);
@@ -160,27 +180,96 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+// @POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { whatsappNumber } = req.body;
+    if (!whatsappNumber) {
+      return res.status(400).json({ success: false, message: 'Please provide a WhatsApp number' });
+    }
+
+    const searchNumber = cleanNumber(whatsappNumber);
+    let account = await User.findOne({ whatsappNumber: searchNumber });
+    if (!account) {
+      account = await Rider.findOne({ whatsappNumber: searchNumber });
+    }
+
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Account not found with this number' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    account.otp = otp;
+    account.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+    await account.save();
+
+    await sendPaymentReminder(whatsappNumber, {
+      body: `Your Ride For You password reset OTP is: *${otp}*. Valid for 10 minutes.`
+    });
+
+    res.json({ success: true, message: 'Reset OTP sent to WhatsApp' });
+  } catch (err) {
+    console.error('Forgot Password Error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { whatsappNumber, otp, newPassword } = req.body;
+    if (!whatsappNumber || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const searchNumber = cleanNumber(whatsappNumber);
+    let account = await User.findOne({ whatsappNumber: searchNumber });
+    if (!account) {
+      account = await Rider.findOne({ whatsappNumber: searchNumber });
+    }
+
+    if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+
+    account.password = newPassword;
+    account.otp = undefined;
+    account.otpExpires = undefined;
+    await account.save();
+
+    res.json({ success: true, message: 'Password reset successful. You can now login with your new password.' });
+  } catch (err) {
+    console.error('Reset Password Error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // @POST /api/auth/change-password
 exports.changePassword = async (req, res) => {
   try {
-    // Requires authMiddleware
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Please provide current and new password' });
     }
 
-    const user = await User.findById(req.user.id).select('+password');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    // Check User model first
+    let account = await User.findById(req.user.id).select('+password');
+    if (!account) {
+      // Check Rider model
+      account = await Rider.findById(req.user.id).select('+password');
     }
 
-    const isMatch = await user.comparePassword(currentPassword);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Account not found' });
+    }
+
+    const isMatch = await account.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Incorrect current password' });
     }
 
-    user.password = newPassword;
-    await user.save();
+    account.password = newPassword;
+    await account.save();
 
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {

@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
-// @POST /api/auth/login
+// Unified login routes
 router.post('/login', authController.login);
-
-// OTP routes
 router.post('/request-otp', authController.requestOtp);
 router.post('/verify-otp', authController.verifyOtp);
 
-// Change password (Requires authentication)
-const { protect } = require('../middleware/authMiddleware');
+// Password reset routes
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+
+// Authenticated routes
 router.post('/change-password', protect, authController.changePassword);
 
 module.exports = router;

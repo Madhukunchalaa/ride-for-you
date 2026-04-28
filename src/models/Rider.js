@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const riderSchema = new mongoose.Schema(
   {
@@ -10,12 +11,22 @@ const riderSchema = new mongoose.Schema(
     whatsappNumber: {
       type: String,
       required: [true, 'WhatsApp number is required'],
+      unique: true,
       trim: true
+    },
+    password: {
+      type: String,
+      select: false
+    },
+    otp: {
+      type: String
+    },
+    otpExpires: {
+      type: Date
     },
     riderStatus: {
       type: String,
       enum: ['active', 'inactive', 'returned'],
-
       default: 'active'
     },
     vehicleNumber: {
@@ -73,5 +84,20 @@ const riderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Hash password before saving
+riderSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
+  next();
+});
+
+// Compare password method
+riderSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false;
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('Rider', riderSchema);

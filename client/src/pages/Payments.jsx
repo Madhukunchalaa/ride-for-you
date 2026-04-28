@@ -68,61 +68,61 @@ export default function Payments() {
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-display font-black text-white tracking-tight uppercase">Payments Tracking</h2>
+          <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Payments Tracking</h2>
           <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold">Monitor rental transactions and upcoming dues</p>
         </div>
-        <button className="btn-secondary px-6 border-slate-800 text-slate-300 font-bold bg-dark-100/50 hover:bg-slate-800 flex items-center gap-2">
+        <button className="btn-secondary px-6 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold bg-white dark:bg-dark-100/50 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 shadow-sm">
           <Download size={18} /> Export Reports
         </button>
       </div>
 
       {/* Dynamic Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-dark-100/40 backdrop-blur-xl border border-slate-800 p-6 rounded-[2rem] shadow-xl">
+        <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Total Collected</p>
-          <p className="text-3xl font-display font-black text-emerald-400 mt-2">
+          <p className="text-3xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-2">
             ₹{loading ? '...' : data.stats.totalCollected?.toLocaleString()}
           </p>
         </div>
-        <div className="bg-dark-100/40 backdrop-blur-xl border border-slate-800 border-l-4 border-l-orange-500 p-6 rounded-[2rem] shadow-xl">
+        <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 border-l-4 border-l-orange-500 p-6 rounded-[2rem] shadow-xl">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Pending Dues</p>
-          <p className="text-3xl font-display font-black text-orange-400 mt-2">
+          <p className="text-3xl font-display font-black text-orange-600 dark:text-orange-400 mt-2">
             ₹{loading ? '...' : data.stats.pendingDues?.toLocaleString()}
           </p>
         </div>
-        <div className="bg-dark-100/40 backdrop-blur-xl border border-slate-800 p-6 rounded-[2rem] shadow-xl">
+        <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Successful</p>
-          <p className="text-3xl font-display font-black text-white mt-2">
+          <p className="text-3xl font-display font-black text-slate-900 dark:text-white mt-2">
             {loading ? '...' : data.stats.successfulCount}
           </p>
         </div>
         <div className="bg-primary-600/10 backdrop-blur-xl border border-primary-500/20 p-6 rounded-[2rem] shadow-glow-primary">
-          <p className="text-[10px] font-black text-primary-400 uppercase tracking-[0.3em]">Upcoming Total</p>
-          <p className="text-3xl font-display font-black text-primary-400 mt-2">
+          <p className="text-[10px] font-black text-primary-500 dark:text-primary-400 uppercase tracking-[0.3em]">Upcoming Total</p>
+          <p className="text-3xl font-display font-black text-primary-600 dark:text-primary-400 mt-2">
             ₹{loading ? '...' : data.stats.upcomingTotal?.toLocaleString()}
           </p>
         </div>
       </div>
 
       {/* Transaction History Section */}
-      <div className="bg-dark-100/40 backdrop-blur-3xl border border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
-        <div className="p-8 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white dark:bg-dark-100/40 backdrop-blur-3xl border border-slate-200 dark:border-slate-800 rounded-[3rem] overflow-hidden shadow-2xl">
+        <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <CreditCard size={24} />
             </div>
-            <h3 className="text-xl font-display font-black text-white uppercase tracking-tight">Transaction History</h3>
+            <h3 className="text-xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Transaction History</h3>
           </div>
           
           <div className="flex items-center gap-4">
             <div className="relative group">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input 
                 type="text"
                 placeholder="Search riders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-dark-200/50 border border-slate-800 text-white pl-12 pr-6 py-3 rounded-2xl w-full md:w-64 focus:outline-none focus:border-primary-500 transition-all font-bold text-sm"
+                className="bg-slate-50 dark:bg-dark-200/50 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white pl-12 pr-6 py-3 rounded-2xl w-full md:w-64 focus:outline-none focus:border-primary-500 transition-all font-bold text-sm"
               />
             </div>
             <button 
@@ -137,7 +137,7 @@ export default function Payments() {
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-900/30">
+              <tr className="bg-slate-50 dark:bg-slate-900/30">
                 <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Rider</th>
                 <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Vehicle</th>
                 <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Due Date</th>
@@ -145,7 +145,7 @@ export default function Payments() {
                 <th className="p-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
               {loading ? (
                 <tr>
                   <td colSpan="5" className="p-32 text-center">
@@ -154,16 +154,16 @@ export default function Payments() {
                 </tr>
               ) : paginatedRiders.length > 0 ? (
                 paginatedRiders.map((rider) => (
-                  <tr key={rider._id} className="group hover:bg-slate-800/10 transition-colors">
-                    <td className="p-8 font-bold text-white uppercase tracking-tight">{rider.name}</td>
-                    <td className="p-8 font-mono text-slate-400 font-bold">{rider.vehicleNumber}</td>
-                    <td className="p-8 font-bold text-slate-400">
+                  <tr key={rider._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/10 transition-colors">
+                    <td className="p-8 font-bold text-slate-900 dark:text-white uppercase tracking-tight">{rider.name}</td>
+                    <td className="p-8 font-mono text-slate-500 dark:text-slate-400 font-bold">{rider.vehicleNumber}</td>
+                    <td className="p-8 font-bold text-slate-500 dark:text-slate-400">
                       {new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="p-8 text-white font-black">₹2,000</td>
+                    <td className="p-8 text-slate-900 dark:text-white font-black">₹2,000</td>
                     <td className="p-8">
                       <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
-                        rider.paymentStatus === 'paid' ? 'text-emerald-400' : 'text-orange-400'
+                        rider.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'
                       }`}>
                         {rider.paymentStatus === 'paid' ? <CheckCircle size={14} /> : <Calendar size={14} />}
                         {rider.paymentStatus}

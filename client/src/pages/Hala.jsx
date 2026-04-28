@@ -248,12 +248,12 @@ export default function Hala() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-dark-200/20">
-                    <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Type</th>
-                    <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Invoice Num</th>
-                    <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Amount</th>
-                    <th className="p-6 text-xs font-black text-primary-500 uppercase tracking-widest">Actual</th>
-                    <th className="p-6 text-xs font-black text-emerald-500 uppercase tracking-widest">SD</th>
-                    <th className="p-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Type</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Invoice Num</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Amount</th>
+                    <th className="p-6 text-xs font-black text-primary-600 dark:text-primary-500 uppercase tracking-widest">Actual</th>
+                    <th className="p-6 text-xs font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">SD</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/30">

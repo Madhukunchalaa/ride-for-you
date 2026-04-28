@@ -16,8 +16,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
+  const login = async (credentials) => {
+    // credentials can be { email, password } or { whatsappNumber, password }
+    const { data } = await api.post('/auth/login', credentials);
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
@@ -32,6 +33,16 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const forgotPassword = async (whatsappNumber) => {
+    const { data } = await api.post('/auth/forgot-password', { whatsappNumber });
+    return data;
+  };
+
+  const resetPassword = async (whatsappNumber, otp, newPassword) => {
+    const { data } = await api.post('/auth/reset-password', { whatsappNumber, otp, newPassword });
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -39,7 +50,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithOtp, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      loginWithOtp, 
+      forgotPassword, 
+      resetPassword, 
+      logout, 
+      loading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

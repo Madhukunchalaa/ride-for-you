@@ -2,54 +2,43 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Mail, Lock, LogIn, Eye, EyeOff, Zap, Phone, ArrowLeft, KeyRound } from 'lucide-react';
+import { Mail, Lock, LogIn, Eye, EyeOff, Zap, Phone, ArrowLeft, KeyRound, CheckCircle2 } from 'lucide-react';
 import api from '../api/axios';
 
 export default function Login() {
-  const [authMethod, setAuthMethod] = useState('otp'); // 'otp' or 'password'
-  const [whatsappNumber, setWhatsappNumber] = useState('7989776255');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
+  // 2FA / OTP State
+  const [step, setStep] = useState(1); // 1: Credentials, 2: OTP
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [otp, setOtp] = useState('');
+
+  // Forgot Password State
   const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   
   const { login, loginWithOtp, forgotPassword, resetPassword } = useAuth();
   const navigate = useNavigate();
 
-  const handlePasswordSubmit = async (e) => {
+  const handleInitialLogin = async (e) => {
     e.preventDefault();
-    if (!whatsappNumber || !password) return toast.error('Please enter number and password');
+    if (!email || !password) return toast.error('Please enter email and password');
     setLoading(true);
     try {
-      await login({ whatsappNumber, password });
-      toast.success('Welcome back!');
-      navigate('/app/dashboard'); 
+      const res = await login({ email, password });
+      if (res.otp_required) {
+        setWhatsappNumber(res.whatsappNumber);
+        setStep(2);
+        toast.success('Credentials verified. Please enter OTP.');
+      } else {
+        toast.success('Welcome back!');
+        navigate('/app/dashboard'); 
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed. Please check credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRequestOtp = async (e) => {
-    e.preventDefault();
-    if (!whatsappNumber) return toast.error('Please enter your WhatsApp number');
-    setLoading(true);
-    try {
-      if (forgotPasswordMode) {
-        await forgotPassword(whatsappNumber);
-      } else {
-        await api.post('/auth/request-otp', { whatsappNumber });
-      }
-      setOtpSent(true);
-      toast.success('OTP sent to your WhatsApp!');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send OTP.');
     } finally {
       setLoading(false);
     }
@@ -64,9 +53,8 @@ export default function Login() {
         await resetPassword(whatsappNumber, otp, newPassword);
         toast.success('Password reset successful! You can now login.');
         setForgotPasswordMode(false);
-        setOtpSent(false);
+        setStep(1);
         setOtp('');
-        setAuthMethod('password');
       } else {
         await loginWithOtp(whatsappNumber, otp);
         toast.success('Login successful!');
@@ -77,6 +65,29 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPasswordRequest = async (e) => {
+    e.preventDefault();
+    if (!email) return toast.error('Please enter your registered email');
+    setLoading(true);
+    try {
+      const res = await forgotPassword(email);
+      setWhatsappNumber(res.data.whatsappNumber);
+      setStep(2); // Move to OTP verification
+      toast.success('Reset OTP sent to your WhatsApp!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate password reset.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetFlow = () => {
+    setStep(1);
+    setForgotPasswordMode(false);
+    setOtp('');
+    setPassword('');
   };
 
   return (
@@ -92,194 +103,56 @@ export default function Login() {
           </div>
           <h1 className="text-3xl font-display font-black text-white tracking-tight">Ride For You</h1>
           <p className="text-slate-500 mt-2 font-medium">
-            {forgotPasswordMode ? 'Reset your account password' : 'Sign in to your account'}
+            {forgotPasswordMode ? 'Recover Client Account' : 'Authorized Access Only'}
           </p>
         </div>
 
-        <div className="bg-dark-100/50 backdrop-blur-xl p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
-          {!forgotPasswordMode && !otpSent && (
-            <div className="flex gap-4 mb-8 bg-dark-200/50 p-1.5 rounded-2xl border border-slate-800">
-              <button
-                onClick={() => setAuthMethod('otp')}
-                className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${authMethod === 'otp' ? 'bg-primary-500 text-black shadow-lg shadow-primary-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-              >
-                OTP Login
-              </button>
-              <button
-                onClick={() => setAuthMethod('password')}
-                className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${authMethod === 'password' ? 'bg-primary-500 text-black shadow-lg shadow-primary-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-              >
-                Password
-              </button>
+        <div className="bg-dark-100/50 backdrop-blur-xl p-8 rounded-[2rem] border border-slate-800 shadow-2xl relative">
+          
+          {step === 2 && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-[10px] font-black px-4 py-1 rounded-full shadow-lg flex items-center gap-2">
+              <CheckCircle2 size={12} />
+              STEP 2: WHATSAPP VERIFICATION
             </div>
           )}
 
-          {forgotPasswordMode ? (
-            <div className="space-y-6">
-              {!otpSent ? (
-                <form onSubmit={handleRequestOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="label">WhatsApp Number</label>
-                    <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
-                      <input 
-                        type="text" 
-                        className="input pl-12" 
-                        placeholder="7989776255"
-                        value={whatsappNumber}
-                        onChange={(e) => setWhatsappNumber(e.target.value)}
-                        required
-                      />
-                    </div>
+          {forgotPasswordMode && step === 1 ? (
+             <form onSubmit={handleForgotPasswordRequest} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="label">Registered Email</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                    <input 
+                      type="email" 
+                      className="input pl-12" 
+                      placeholder="rider@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                   </div>
-                  <div className="flex items-center gap-4">
-                    <button 
-                      type="button"
-                      onClick={() => setForgotPasswordMode(false)}
-                      className="p-4 rounded-2xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
-                    >
-                      <ArrowLeft size={20} />
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={loading}
-                      className="btn-primary flex-1 py-4 text-base"
-                    >
-                      {loading ? 'Sending...' : 'Send Reset OTP'}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="label">Enter OTP</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
-                      <input 
-                        type="text" 
-                        className="input pl-12 text-center tracking-widest text-lg font-mono" 
-                        placeholder="••••••"
-                        maxLength="6"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="label">New Password</label>
-                    <div className="relative group">
-                      <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
-                      <input 
-                        type={showPassword ? 'text' : 'password'} 
-                        className="input pl-12 pr-12" 
-                        placeholder="••••••••"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="btn-primary w-full py-4 text-base"
-                  >
-                    {loading ? 'Resetting...' : 'Reset Password'}
+                </div>
+                <div className="flex items-center gap-4 pt-2">
+                  <button type="button" onClick={resetFlow} className="p-4 rounded-2xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                    <ArrowLeft size={20} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setOtpSent(false)}
-                    className="w-full text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    Resend OTP
+                  <button type="submit" disabled={loading} className="btn-primary flex-1 py-4 text-base">
+                    {loading ? 'Processing...' : 'Send Reset OTP'}
                   </button>
-                </form>
-              )}
-            </div>
-          ) : authMethod === 'otp' ? (
-            <div className="space-y-6">
-              {!otpSent ? (
-                <form onSubmit={handleRequestOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="label">WhatsApp Number</label>
-                    <div className="relative group">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
-                      <input 
-                        type="text" 
-                        className="input pl-12" 
-                        placeholder="7989776255"
-                        value={whatsappNumber}
-                        onChange={(e) => setWhatsappNumber(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="btn-primary w-full py-4 text-base"
-                  >
-                    {loading ? (
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-                    ) : (
-                      'Request OTP'
-                    )}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="label">Enter OTP</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
-                      <input 
-                        type="text" 
-                        className="input pl-12 text-center tracking-widest text-lg font-mono" 
-                        placeholder="••••••"
-                        maxLength="6"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="btn-primary w-full py-4 text-base"
-                  >
-                    {loading ? (
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-                    ) : (
-                      <>
-                        <LogIn size={20} className="inline mr-2" />
-                        <span>Verify & Login</span>
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOtpSent(false)}
-                    className="w-full mt-4 text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    Change Number
-                  </button>
-                </form>
-              )}
-            </div>
-          ) : (
-            <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                </div>
+             </form>
+          ) : step === 1 ? (
+            <form onSubmit={handleInitialLogin} className="space-y-6">
               <div className="space-y-2">
-                <label className="label">WhatsApp Number</label>
+                <label className="label">Email Address</label>
                 <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                   <input 
-                    type="text" 
+                    type="email" 
                     className="input pl-12" 
-                    placeholder="7989776255"
-                    value={whatsappNumber}
-                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    placeholder="admin@evride.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -331,11 +204,60 @@ export default function Login() {
                 )}
               </button>
             </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="text-center mb-6">
+                <p className="text-xs text-slate-400 mb-1 uppercase tracking-widest font-black">Verification Code Sent To</p>
+                <p className="text-sm font-bold text-white tracking-widest">XXXXXX{whatsappNumber.slice(-4)}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="label">Enter OTP</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                  <input 
+                    type="text" 
+                    className="input pl-12 text-center tracking-[0.5em] text-lg font-mono" 
+                    placeholder="••••••"
+                    maxLength="6"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {forgotPasswordMode && (
+                <div className="space-y-2">
+                  <label className="label">New Password</label>
+                  <div className="relative group">
+                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                    <input 
+                      type={showPassword ? 'text' : 'password'} 
+                      className="input pl-12 pr-12" 
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4">
+                <button type="button" onClick={resetFlow} className="p-4 rounded-2xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                  <ArrowLeft size={20} />
+                </button>
+                <button type="submit" disabled={loading} className="btn-primary flex-1 py-4 text-base">
+                  {loading ? 'Verifying...' : forgotPasswordMode ? 'Reset Password' : 'Verify & Login'}
+                </button>
+              </div>
+            </form>
           )}
 
           <div className="mt-8 pt-6 border-t border-slate-800/50 text-center">
-            <p className="text-xs text-slate-600 italic">
-              {forgotPasswordMode ? 'Secure recovery protocol' : 'Secure area. Authorized access only.'}
+            <p className="text-[10px] text-slate-600 uppercase tracking-[0.2em] font-black">
+              {forgotPasswordMode ? 'Security Recovery Protocol Active' : 'System Access Key Required'}
             </p>
           </div>
         </div>

@@ -137,7 +137,7 @@ exports.sendReminder = async (req, res) => {
 exports.addRider = async (req, res) => {
   try {
     const { 
-      name, whatsappNumber, riderStatus, vehicleNumber, deployDate, returnDate,
+      name, whatsappNumber, email, riderStatus, vehicleNumber, deployDate, returnDate,
       autoReminderEnabled, autoReminderTime 
     } = req.body;
 
@@ -179,6 +179,7 @@ exports.addRider = async (req, res) => {
       }
 
       rider.name = name;
+      rider.email = email;
       rider.vehicleNumber = vehicleNumber.toUpperCase();
       rider.riderStatus = 'active';
       rider.deployDate = deployDate;
@@ -199,9 +200,10 @@ exports.addRider = async (req, res) => {
     }
 
     // 3. Create New Rider
-    const newRider = await Rider.create({
+    const newRider = new Rider({
       name,
       whatsappNumber,
+      email,
       riderStatus: riderStatus || 'active',
       vehicleNumber: vehicleNumber.toUpperCase(),
       deployDate,
@@ -210,6 +212,13 @@ exports.addRider = async (req, res) => {
       autoReminderTime: autoReminderTime || '10:00',
       bikesUsed: [vehicleNumber.toUpperCase()]
     });
+
+    if (riderStatus === 'recovery') {
+      newRider.isRecoveryBucket = true;
+      newRider.reminderEscalationStage = 3;
+    }
+
+    await newRider.save();
 
     res.status(201).json({
       success: true,
@@ -224,7 +233,7 @@ exports.addRider = async (req, res) => {
 // @desc Update rider details
 exports.updateRider = async (req, res) => {
   try {
-    const { name, whatsappNumber, vehicleNumber, deployDate, returnDate, autoReminderEnabled, autoReminderTime, riderStatus } = req.body;
+    const { name, email, whatsappNumber, vehicleNumber, deployDate, returnDate, autoReminderEnabled, autoReminderTime, riderStatus } = req.body;
 
     
     const rider = await Rider.findById(req.params.id);
@@ -252,13 +261,23 @@ exports.updateRider = async (req, res) => {
 
     // Update fields
     if (name) rider.name = name;
+    if (email) rider.email = email;
     if (whatsappNumber) rider.whatsappNumber = whatsappNumber;
     if (vehicleNumber) rider.vehicleNumber = vehicleNumber.toUpperCase();
     if (deployDate) rider.deployDate = deployDate;
     if (returnDate) rider.returnDate = returnDate;
     if (autoReminderEnabled !== undefined) rider.autoReminderEnabled = autoReminderEnabled;
     if (autoReminderTime) rider.autoReminderTime = autoReminderTime;
-    if (riderStatus) rider.riderStatus = riderStatus;
+    if (riderStatus) {
+      rider.riderStatus = riderStatus;
+      if (riderStatus === 'recovery') {
+        rider.isRecoveryBucket = true;
+        rider.reminderEscalationStage = 3;
+      } else if (riderStatus === 'active') {
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
+      }
+    }
 
 
     await rider.save();

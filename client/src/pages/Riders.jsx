@@ -134,6 +134,7 @@ export default function Riders() {
     vehicleNumber: '',
     deployDate: '',
     returnDate: '',
+    email: '',
     autoReminderEnabled: true,
     autoReminderTime: '10:00'
   });
@@ -211,6 +212,7 @@ export default function Riders() {
       vehicleNumber: '',
       deployDate: '',
       returnDate: '',
+      email: '',
       autoReminderEnabled: true,
       autoReminderTime: '10:00'
     });
@@ -226,6 +228,7 @@ export default function Riders() {
       vehicleNumber: rider.vehicleNumber || '',
       deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
       returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
+      email: rider.email || '',
       autoReminderEnabled: rider.autoReminderEnabled ?? true,
       autoReminderTime: rider.autoReminderTime || '10:00'
     });
@@ -773,6 +776,18 @@ export default function Riders() {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Email Address (For Login)</label>
+              <input 
+                name="email"
+                type="email" 
+                placeholder="rider@example.com" 
+                className="input h-12"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,6 +1,13 @@
 const Rider = require('../models/Rider');
 const Invoice = require('../models/Invoice');
 const Expense = require('../models/Expense');
+const SystemConfig = require('../models/SystemConfig');
+
+// Helper to get global weekly rate
+const getWeeklyRate = async () => {
+  const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+  return config ? Number(config.value) : 2000;
+};
 
 // @GET /api/analytics/dashboard
 exports.getDashboardStats = async (req, res) => {
@@ -29,7 +36,7 @@ exports.getDashboardStats = async (req, res) => {
       paymentStatus: 'unpaid', 
       riderStatus: 'active' 
     });
-    const weeklyRate = 2000;
+    const weeklyRate = await getWeeklyRate();
     const pendingDues = totalUnpaidRiders * weeklyRate;
 
     // 3. 7-Day Trends
@@ -181,12 +188,13 @@ exports.getPaymentAnalytics = async (req, res) => {
     const totalPaid = activeRiders.filter(r => r.paymentStatus === 'paid').length;
     const totalUnpaid = activeRiders.filter(r => r.paymentStatus === 'unpaid').length;
     
-    const weeklyRate = 2000;
+    const weeklyRate = await getWeeklyRate();
     const stats = {
       totalCollected: totalPaid * weeklyRate,
       pendingDues: totalUnpaid * weeklyRate,
       successfulCount: totalPaid,
-      upcomingTotal: activeRiders.length * weeklyRate
+      upcomingTotal: activeRiders.length * weeklyRate,
+      weeklyRate // Send the rate so frontend can display it
     };
 
     res.status(200).json({

@@ -14,6 +14,13 @@ const riderSchema = new mongoose.Schema(
       unique: true,
       trim: true
     },
+    email: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      sparse: true // Allow nulls for now as we transition
+    },
     password: {
       type: String,
       select: false
@@ -26,7 +33,7 @@ const riderSchema = new mongoose.Schema(
     },
     riderStatus: {
       type: String,
-      enum: ['active', 'inactive', 'returned'],
+      enum: ['active', 'inactive', 'returned', 'recovery'],
       default: 'active'
     },
     vehicleNumber: {

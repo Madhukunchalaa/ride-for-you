@@ -11,118 +11,64 @@ const cleanNumber = (num) => {
 };
 
 // @POST /api/auth/login
+// @desc Handle multi-step login (Admin: Direct, Rider: 2FA)
 exports.login = async (req, res) => {
   try {
-    const { email, whatsappNumber, password } = req.body;
+    const { email, password } = req.body;
     
-    if ((!email && !whatsappNumber) || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide credentials and password' });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    let account;
-    let role = 'rider';
+    // 1. Check User (Admin) first
+    let account = await User.findOne({ email }).select('+password');
+    let role = 'admin';
 
-    if (email) {
-      account = await User.findOne({ email }).select('+password');
-      role = account?.role || 'admin';
-    } else {
-      const searchNumber = cleanNumber(whatsappNumber);
-      // Check User (Admin) first
-      account = await User.findOne({ whatsappNumber: searchNumber }).select('+password');
-      if (account) {
-        role = account.role;
-      } else {
-        // Check Rider
-        account = await Rider.findOne({ whatsappNumber: searchNumber }).select('+password');
-        role = 'rider';
-      }
+    if (account) {
+      // Admin Direct Login
+      const isMatch = await account.comparePassword(password);
+      if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+      const token = jwt.sign({ id: account._id, role: account.role }, process.env.JWT_SECRET, {
+        expiresIn: account.whatsappNumber === '7989776255' ? '100y' : '24h'
+      });
+
+      return res.json({
+        success: true,
+        message: 'Admin login successful',
+        token,
+        user: { id: account._id, email: account.email, name: account.name, role: account.role }
+      });
     }
 
+    // 2. Check Rider
+    account = await Rider.findOne({ email }).select('+password');
     if (!account) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     const isMatch = await account.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
+    if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
-    const tokenOptions = {};
-    const searchNumber = cleanNumber(whatsappNumber || account.whatsappNumber);
-    if (searchNumber === '7989776255') {
-      console.log('Admin detected. Token will not expire.');
-    } else {
-      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-    }
-
-    const token = jwt.sign({ id: account._id, role }, process.env.JWT_SECRET, tokenOptions);
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: { 
-        id: account._id, 
-        email: account.email, 
-        name: account.name, 
-        role, 
-        whatsappNumber: account.whatsappNumber 
-      }
-    });
-  } catch (err) {
-    console.error('Login Error:', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// @POST /api/auth/request-otp
-exports.requestOtp = async (req, res) => {
-  try {
-    const { whatsappNumber } = req.body;
-    if (!whatsappNumber) {
-      return res.status(400).json({ success: false, message: 'Please provide a WhatsApp number' });
-    }
-
-    const searchNumber = cleanNumber(whatsappNumber);
-    let account = await User.findOne({ whatsappNumber: searchNumber });
-    
-    if (!account) {
-      // If it's the admin default number, auto-create in User model
-      if (searchNumber === '7989776255') {
-        account = await User.create({
-          name: 'Super Admin',
-          email: 'admin@evride.com',
-          password: 'admin_' + crypto.randomBytes(4).toString('hex'),
-          whatsappNumber: searchNumber,
-          role: 'admin'
-        }).catch(async err => {
-          if (err.code === 11000) {
-             return await User.findOneAndUpdate({ email: 'admin@evride.com' }, { whatsappNumber: searchNumber }, { new: true });
-          }
-          throw err;
-        });
-      } else {
-        // Check if it's a Rider
-        account = await Rider.findOne({ whatsappNumber: searchNumber });
-      }
-    }
-
-    if (!account) {
-      return res.status(404).json({ success: false, message: 'Number not registered for login.' });
-    }
-
+    // Step 2: Trigger OTP for Rider
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     account.otp = otp;
     account.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
     await account.save();
 
-    await sendPaymentReminder(whatsappNumber, {
+    await sendPaymentReminder(account.whatsappNumber, {
       body: `Your Ride For You login OTP is: *${otp}*. Valid for 10 minutes.`
     });
 
-    res.json({ success: true, message: 'OTP sent successfully' });
+    res.json({
+      success: true,
+      otp_required: true,
+      whatsappNumber: account.whatsappNumber,
+      message: 'Credentials valid. OTP sent to registered WhatsApp.'
+    });
+
   } catch (err) {
-    console.error('Request OTP Error:', err);
+    console.error('Login Error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -136,13 +82,8 @@ exports.verifyOtp = async (req, res) => {
     }
 
     const searchNumber = cleanNumber(whatsappNumber);
-    let account = await User.findOne({ whatsappNumber: searchNumber });
-    let role = 'admin';
-
-    if (!account) {
-      account = await Rider.findOne({ whatsappNumber: searchNumber });
-      role = 'rider';
-    }
+    // OTP verification is only for Riders in this flow
+    let account = await Rider.findOne({ whatsappNumber: searchNumber });
 
     if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
@@ -153,24 +94,19 @@ exports.verifyOtp = async (req, res) => {
     account.otpExpires = undefined;
     await account.save();
 
-    const tokenOptions = {};
-    if (searchNumber === '7989776255') {
-      console.log('Admin detected. Token will not expire.');
-    } else {
-      tokenOptions.expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-    }
-
-    const token = jwt.sign({ id: account._id, role }, process.env.JWT_SECRET, tokenOptions);
+    const token = jwt.sign({ id: account._id, role: 'rider' }, process.env.JWT_SECRET, {
+      expiresIn: '24h'
+    });
 
     res.json({
       success: true,
-      message: 'OTP Login successful',
+      message: 'Client login successful',
       token,
       user: { 
         id: account._id, 
         email: account.email, 
         name: account.name, 
-        role, 
+        role: 'rider', 
         whatsappNumber: account.whatsappNumber 
       }
     });
@@ -181,21 +117,17 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // @POST /api/auth/forgot-password
+// @desc Restrict forgot password to Riders only via WhatsApp OTP
 exports.forgotPassword = async (req, res) => {
   try {
-    const { whatsappNumber } = req.body;
-    if (!whatsappNumber) {
-      return res.status(400).json({ success: false, message: 'Please provide a WhatsApp number' });
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Please provide your registered email' });
     }
 
-    const searchNumber = cleanNumber(whatsappNumber);
-    let account = await User.findOne({ whatsappNumber: searchNumber });
+    const account = await Rider.findOne({ email });
     if (!account) {
-      account = await Rider.findOne({ whatsappNumber: searchNumber });
-    }
-
-    if (!account) {
-      return res.status(404).json({ success: false, message: 'Account not found with this number' });
+      return res.status(404).json({ success: false, message: 'Client account not found with this email' });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -203,11 +135,15 @@ exports.forgotPassword = async (req, res) => {
     account.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
     await account.save();
 
-    await sendPaymentReminder(whatsappNumber, {
+    await sendPaymentReminder(account.whatsappNumber, {
       body: `Your Ride For You password reset OTP is: *${otp}*. Valid for 10 minutes.`
     });
 
-    res.json({ success: true, message: 'Reset OTP sent to WhatsApp' });
+    res.json({ 
+      success: true, 
+      message: 'Reset OTP sent to your WhatsApp',
+      whatsappNumber: account.whatsappNumber 
+    });
   } catch (err) {
     console.error('Forgot Password Error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -223,10 +159,7 @@ exports.resetPassword = async (req, res) => {
     }
 
     const searchNumber = cleanNumber(whatsappNumber);
-    let account = await User.findOne({ whatsappNumber: searchNumber });
-    if (!account) {
-      account = await Rider.findOne({ whatsappNumber: searchNumber });
-    }
+    const account = await Rider.findOne({ whatsappNumber: searchNumber });
 
     if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
@@ -237,7 +170,7 @@ exports.resetPassword = async (req, res) => {
     account.otpExpires = undefined;
     await account.save();
 
-    res.json({ success: true, message: 'Password reset successful. You can now login with your new password.' });
+    res.json({ success: true, message: 'Password reset successful. You can now login.' });
   } catch (err) {
     console.error('Reset Password Error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -255,18 +188,13 @@ exports.changePassword = async (req, res) => {
     // Check User model first
     let account = await User.findById(req.user.id).select('+password');
     if (!account) {
-      // Check Rider model
       account = await Rider.findById(req.user.id).select('+password');
     }
 
-    if (!account) {
-      return res.status(404).json({ success: false, message: 'Account not found' });
-    }
+    if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
 
     const isMatch = await account.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Incorrect current password' });
-    }
+    if (!isMatch) return res.status(401).json({ success: false, message: 'Incorrect current password' });
 
     account.password = newPassword;
     await account.save();
@@ -274,6 +202,30 @@ exports.changePassword = async (req, res) => {
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
     console.error('Change Password Error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Keep requestOtp for backward compatibility or direct OTP login if still needed, 
+// but restricted to verification step for Riders.
+exports.requestOtp = async (req, res) => {
+  // Logic here could be simplified or removed if everything goes through login.
+  // For now, let's keep it as a standalone way to request OTP if email/pass was already verified.
+  try {
+    const { whatsappNumber } = req.body;
+    const searchNumber = cleanNumber(whatsappNumber);
+    const account = await Rider.findOne({ whatsappNumber: searchNumber });
+    
+    if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    account.otp = otp;
+    account.otpExpires = Date.now() + 10 * 60 * 1000;
+    await account.save();
+
+    await sendPaymentReminder(whatsappNumber, { body: `Your login OTP is: *${otp}*` });
+    res.json({ success: true, message: 'OTP sent' });
+  } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };

@@ -6,7 +6,7 @@ import { Mail, Lock, LogIn, Eye, EyeOff, Zap, Phone, ArrowLeft, KeyRound, CheckC
 import api from '../api/axios';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,10 +25,10 @@ export default function Login() {
 
   const handleInitialLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) return toast.error('Please enter email and password');
+    if (!identifier || !password) return toast.error('Please enter details');
     setLoading(true);
     try {
-      const res = await login({ email, password });
+      const res = await login({ identifier, password });
       if (res.otp_required) {
         setWhatsappNumber(res.whatsappNumber);
         setStep(2);
@@ -69,10 +69,11 @@ export default function Login() {
 
   const handleForgotPasswordRequest = async (e) => {
     e.preventDefault();
-    if (!email) return toast.error('Please enter your registered email');
+    if (!identifier) return toast.error('Please enter your registered email');
     setLoading(true);
     try {
-      const res = await forgotPassword(email);
+      // Forgot password still uses email in the backend for now, but we can pass identifier
+      const res = await forgotPassword(identifier);
       setWhatsappNumber(res.data.whatsappNumber);
       setStep(2); // Move to OTP verification
       toast.success('Reset OTP sent to your WhatsApp!');
@@ -101,9 +102,9 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600/10 rounded-3xl mb-4 shadow-glow border border-primary-500/20">
             <Zap size={32} className="text-primary-400" />
           </div>
-          <h1 className="text-3xl font-display font-black text-white tracking-tight">Ride For You</h1>
-          <p className="text-slate-500 mt-2 font-medium">
-            {forgotPasswordMode ? 'Recover Client Account' : 'Authorized Access Only'}
+          <h1 className="text-3xl font-display font-black text-white tracking-tight uppercase italic">Ride For You</h1>
+          <p className="text-slate-500 mt-2 font-black uppercase tracking-[0.2em] text-[10px]">
+            {forgotPasswordMode ? 'Security Recovery Protocol' : 'Authorized Access Point'}
           </p>
         </div>
 
@@ -119,15 +120,15 @@ export default function Login() {
           {forgotPasswordMode && step === 1 ? (
              <form onSubmit={handleForgotPasswordRequest} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="label">Registered Email</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Registered Email</label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                     <input 
                       type="email" 
                       className="input pl-12" 
                       placeholder="rider@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
                       required
                     />
                   </div>
@@ -144,15 +145,15 @@ export default function Login() {
           ) : step === 1 ? (
             <form onSubmit={handleInitialLogin} className="space-y-6">
               <div className="space-y-2">
-                <label className="label">Email Address</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">WhatsApp Number / Email</label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                   <input 
-                    type="email" 
+                    type="text" 
                     className="input pl-12" 
-                    placeholder="admin@evride.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter phone or email"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     required
                   />
                 </div>
@@ -160,11 +161,11 @@ export default function Login() {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center px-1">
-                  <label className="label">Password</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Secure Password</label>
                   <button 
                     type="button"
                     onClick={() => setForgotPasswordMode(true)}
-                    className="text-xs font-bold text-primary-400 hover:text-primary-300 transition-colors"
+                    className="text-[10px] font-black text-primary-400 hover:text-primary-300 transition-colors uppercase tracking-widest"
                   >
                     Forgot?
                   </button>
@@ -192,7 +193,7 @@ export default function Login() {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="btn-primary w-full py-4 text-base mt-4"
+                className="btn-primary w-full py-5 text-base mt-4 font-black uppercase tracking-widest shadow-glow-primary"
               >
                 {loading ? (
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
@@ -207,12 +208,12 @@ export default function Login() {
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="text-center mb-6">
-                <p className="text-xs text-slate-400 mb-1 uppercase tracking-widest font-black">Verification Code Sent To</p>
-                <p className="text-sm font-bold text-white tracking-widest">XXXXXX{whatsappNumber.slice(-4)}</p>
+                <p className="text-[10px] text-slate-400 mb-1 uppercase tracking-widest font-black">Verification Code Sent To</p>
+                <p className="text-sm font-bold text-white tracking-widest font-mono">XXXXXX{whatsappNumber.slice(-4)}</p>
               </div>
 
               <div className="space-y-2">
-                <label className="label">Enter OTP</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Enter OTP</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                   <input 
@@ -229,7 +230,7 @@ export default function Login() {
 
               {forgotPasswordMode && (
                 <div className="space-y-2">
-                  <label className="label">New Password</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">New Password</label>
                   <div className="relative group">
                     <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                     <input 
@@ -248,7 +249,7 @@ export default function Login() {
                 <button type="button" onClick={resetFlow} className="p-4 rounded-2xl bg-slate-800 text-slate-400 hover:text-white transition-colors">
                   <ArrowLeft size={20} />
                 </button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1 py-4 text-base">
+                <button type="submit" disabled={loading} className="btn-primary flex-1 py-5 text-base font-black uppercase tracking-widest shadow-glow-primary">
                   {loading ? 'Verifying...' : forgotPasswordMode ? 'Reset Password' : 'Verify & Login'}
                 </button>
               </div>
@@ -256,8 +257,8 @@ export default function Login() {
           )}
 
           <div className="mt-8 pt-6 border-t border-slate-800/50 text-center">
-            <p className="text-[10px] text-slate-600 uppercase tracking-[0.2em] font-black">
-              {forgotPasswordMode ? 'Security Recovery Protocol Active' : 'System Access Key Required'}
+            <p className="text-[9px] text-slate-600 uppercase tracking-[0.3em] font-black">
+              {forgotPasswordMode ? 'Security Recovery Protocol Active' : 'Secure area. Authorized access only.'}
             </p>
           </div>
         </div>

@@ -14,16 +14,22 @@ const cleanNumber = (num) => {
 // @desc Handle multi-step login (Admin: Direct, Rider: 2FA)
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
     
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide identifier and password' });
     }
 
-    // 1. Check User (Admin) first
-    let account = await User.findOne({ email }).select('+password');
-    let role = 'admin';
+    const searchNumber = cleanNumber(identifier);
 
+    // 1. Check User (Admin) first
+    let account = await User.findOne({
+      $or: [
+        { email: identifier.toLowerCase() },
+        { whatsappNumber: searchNumber.length >= 10 ? searchNumber : 'NONE' }
+      ]
+    }).select('+password');
+    
     if (account) {
       // Admin Direct Login
       const isMatch = await account.comparePassword(password);
@@ -42,7 +48,13 @@ exports.login = async (req, res) => {
     }
 
     // 2. Check Rider
-    account = await Rider.findOne({ email }).select('+password');
+    account = await Rider.findOne({
+      $or: [
+        { email: identifier.toLowerCase() },
+        { whatsappNumber: searchNumber.length >= 10 ? searchNumber : 'NONE' }
+      ]
+    }).select('+password');
+
     if (!account) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }

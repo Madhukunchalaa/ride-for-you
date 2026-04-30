@@ -4,6 +4,7 @@ const { generateUPIQRCode } = require('../utils/qrGenerator');
 const razorpay = require('../config/razorpay');
 
 const SystemConfig = require('../models/SystemConfig');
+const { createInvoiceRecord } = require('../utils/invoiceHelper');
 
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp

@@ -4,7 +4,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 
 export default function WhatsAppCRM() {
-  const [pastRidersCount, setPastRidersCount] = useState(0);
+  const [totalRecipients, setTotalRecipients] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [stats, setStats] = useState(null);
@@ -16,9 +16,15 @@ export default function WhatsAppCRM() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/riders');
-      const pastRiders = response.data.data.filter(r => r.riderStatus === 'inactive');
-      setPastRidersCount(pastRiders.length);
+      const [ridersRes, customersRes] = await Promise.all([
+        api.get('/riders'),
+        api.get('/customers')
+      ]);
+      
+      const pastRiders = (ridersRes.data.data || []).filter(r => r.riderStatus === 'inactive');
+      const activeLeads = (customersRes.data.data || []).filter(c => c.leadStatus !== 'Converted');
+      
+      setTotalRecipients(pastRiders.length + activeLeads.length);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load stats');
@@ -28,12 +34,12 @@ export default function WhatsAppCRM() {
   };
 
   const handleBulkReengage = async () => {
-    if (pastRidersCount === 0) {
-      toast.error('No past riders found to message.');
+    if (totalRecipients === 0) {
+      toast.error('No recipients found to message.');
       return;
     }
 
-    if (!confirm(`Are you sure you want to send a re-engagement message to all ${pastRidersCount} past riders?`)) {
+    if (!confirm(`Are you sure you want to send a re-engagement message to all ${totalRecipients} contacts (Past Riders + Customers)?`)) {
       return;
     }
 
@@ -44,7 +50,7 @@ export default function WhatsAppCRM() {
       const response = await api.post('/whatsapp/bulk-reengage');
       
       setStats(response.data);
-      toast.success(`Successfully sent to ${response.data.successCount} riders!`, { id: 'bulk-send' });
+      toast.success(`Successfully sent to ${response.data.successCount} contacts!`, { id: 'bulk-send' });
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Bulk messaging failed', { id: 'bulk-send' });
@@ -84,9 +90,9 @@ export default function WhatsAppCRM() {
 
             <div>
               <h3 className="text-4xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tighter">
-                {loading ? '...' : pastRidersCount}
+                {loading ? '...' : totalRecipients}
               </h3>
-              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-1">Total Past Riders Available</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-1">Total Leads & Past Riders</p>
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-dark-200/50 rounded-2xl border border-slate-100 dark:border-slate-800/50">
@@ -98,7 +104,7 @@ export default function WhatsAppCRM() {
 
             <button 
               onClick={handleBulkReengage}
-              disabled={isSending || loading || pastRidersCount === 0}
+              disabled={isSending || loading || totalRecipients === 0}
               className="w-full h-16 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl flex items-center justify-center gap-3 shadow-glow-primary transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
             >
               {isSending ? (
@@ -106,14 +112,14 @@ export default function WhatsAppCRM() {
               ) : (
                 <>
                   <Send size={24} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  <span className="text-sm font-black uppercase tracking-[0.2em]">Re-engage All Past Riders</span>
+                  <span className="text-sm font-black uppercase tracking-[0.2em]">Re-engage All Contacts</span>
                 </>
               )}
             </button>
 
-            {pastRidersCount === 0 && !loading && (
+            {totalRecipients === 0 && !loading && (
               <p className="text-[10px] text-orange-500 font-bold text-center uppercase tracking-widest animate-pulse">
-                No inactive riders found to send messages.
+                No inactive contacts found to send messages.
               </p>
             )}
           </div>

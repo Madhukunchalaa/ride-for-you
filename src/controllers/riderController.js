@@ -3,6 +3,8 @@ const { sendPaymentReminder } = require('../utils/whatsapp');
 const { generateUPIQRCode } = require('../utils/qrGenerator');
 const razorpay = require('../config/razorpay');
 
+const SystemConfig = require('../models/SystemConfig');
+
 // @POST /api/riders/:id/send-reminder
 // @desc Send a manual payment reminder via WhatsApp
 const axios = require('axios');
@@ -22,7 +24,6 @@ exports.sendReminder = async (req, res) => {
     }
 
     // 1. Create REAL Razorpay Payment Link
-    const SystemConfig = require('../models/SystemConfig');
     const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
     const defaultAmount = config ? config.value : 2000;
 

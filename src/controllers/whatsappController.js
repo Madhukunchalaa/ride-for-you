@@ -1,5 +1,6 @@
 const twilio = require('twilio');
 const Rider = require('../models/Rider');
+const Customer = require('../models/customer');
 const { sendReengageMessage } = require('../utils/whatsapp');
 
 
@@ -37,21 +38,27 @@ exports.handleIncoming = async (req, res) => {
 exports.sendBulkReengage = async (req, res) => {
   try {
     const pastRiders = await Rider.find({ riderStatus: 'inactive' });
+    const customers = await Customer.find({ leadStatus: { $ne: 'Converted' } }); // Re-engage non-converted leads
     
-    if (pastRiders.length === 0) {
-      return res.status(200).json({ success: true, message: 'No past riders found to re-engage.' });
+    const recipients = [
+      ...pastRiders.map(r => ({ name: r.name, phone: r.whatsappNumber, id: r._id, type: 'rider' })),
+      ...customers.map(c => ({ name: c.name, phone: c.phone, id: c._id, type: 'customer' }))
+    ];
+
+    if (recipients.length === 0) {
+      return res.status(200).json({ success: true, message: 'No recipients found to re-engage.' });
     }
 
-    console.log(`🚀 Bulk Re-engage: Sending to ${pastRiders.length} riders...`);
+    console.log(`🚀 Bulk Re-engage: Sending to ${recipients.length} recipients...`);
 
     const results = [];
-    for (const rider of pastRiders) {
+    for (const person of recipients) {
       try {
-        await sendReengageMessage(rider.whatsappNumber, rider.name);
-        results.push({ id: rider._id, status: 'success' });
+        await sendReengageMessage(person.phone, person.name);
+        results.push({ id: person.id, status: 'success', type: person.type });
       } catch (err) {
-        console.error(`❌ Failed to send to ${rider.name}:`, err.message);
-        results.push({ id: rider._id, status: 'failed', error: err.message });
+        console.error(`❌ Failed to send to ${person.name}:`, err.message);
+        results.push({ id: person.id, status: 'failed', error: err.message, type: person.type });
       }
     }
 

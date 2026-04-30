@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import Pagination from "../components/Pagination";
-import { Users, Search, Loader2, ShieldCheck, Mail, Phone, MapPin, MessageSquare, Tag, FileText } from 'lucide-react';
+import { Users, Search, Loader2, ShieldCheck, Mail, Phone, MapPin, MessageSquare, Tag, FileText, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Customer = () => {
@@ -9,6 +9,17 @@ const Customer = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        message: '',
+        leadStatus: 'New',
+        notes: ''
+    });
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -42,6 +53,33 @@ const Customer = () => {
         } catch (error) {
             console.error("Failed to update", error);
             toast.error('Failed to update');
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            const response = await api.post('/customers', formData);
+            if (response.data.success) {
+                setCustomers(prev => [response.data.data, ...prev]);
+                setIsModalOpen(false);
+                setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    city: '',
+                    message: '',
+                    leadStatus: 'New',
+                    notes: ''
+                });
+                toast.success('Customer added successfully');
+            }
+        } catch (error) {
+            console.error("Failed to add customer", error);
+            toast.error(error.response?.data?.message || 'Failed to add customer');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -86,6 +124,13 @@ const Customer = () => {
                         <ShieldCheck size={16} className="text-primary-500" /> Lead Management System
                     </p>
                 </div>
+                <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
+                >
+                    <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                    <span>Add New Customer</span>
+                </button>
             </div>
 
             {/* Controls */}
@@ -198,6 +243,130 @@ const Customer = () => {
                 totalItems={filteredCustomers.length}
                 itemsPerPage={itemsPerPage}
             />
+
+            {/* Add Customer Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-dark-100 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+                        <div className="sticky top-0 bg-white/80 dark:bg-dark-100/80 backdrop-blur-md p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between z-10">
+                            <div>
+                                <h3 className="text-2xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Add New Customer</h3>
+                                <p className="text-[10px] text-primary-500 font-bold uppercase tracking-widest mt-1">Manual Entry into Lead System</p>
+                            </div>
+                            <button 
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        className="input h-12"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        placeholder="Ex: John Doe"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                                    <input 
+                                        type="tel" 
+                                        required
+                                        className="input h-12"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                        placeholder="+91 XXXXX XXXXX"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+                                    <input 
+                                        type="email" 
+                                        className="input h-12"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                        placeholder="customer@example.com"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">City / Location</label>
+                                    <input 
+                                        type="text" 
+                                        className="input h-12"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({...formData, city: e.target.value})}
+                                        placeholder="Ex: Hyderabad"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Requirements / Message</label>
+                                <textarea 
+                                    className="input min-h-[100px] py-4 resize-none"
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                    placeholder="What is the customer looking for?"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Lead Status</label>
+                                    <select 
+                                        className="input h-12 appearance-none"
+                                        value={formData.leadStatus}
+                                        onChange={(e) => setFormData({...formData, leadStatus: e.target.value})}
+                                    >
+                                        <option value="New">New</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Interested">Interested</option>
+                                        <option value="Not Interested">Not Interested</option>
+                                        <option value="Converted">Converted</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Initial Notes</label>
+                                    <input 
+                                        type="text" 
+                                        className="input h-12"
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                                        placeholder="Any quick remarks?"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="w-full btn-secondary h-14"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isSubmitting}
+                                    className="w-full btn-primary h-14 flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? <Loader2 size={24} className="animate-spin" /> : <> <ShieldCheck size={20} /> Save Customer </>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

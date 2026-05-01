@@ -43,7 +43,7 @@ export default function Hala() {
 
   // Form State
   const [formData, setFormData] = useState({
-    billingMonth: selectedMonth,
+    riderName: '',
     invoiceType: 'RENT',
     invoiceNum: '',
     billAmount: '',
@@ -91,7 +91,7 @@ export default function Hala() {
       });
       setIsModalOpen(false);
       setFormData({
-        billingMonth: selectedMonth,
+        riderName: '',
         invoiceType: 'RENT',
         invoiceNum: '',
         billAmount: '',
@@ -249,6 +249,7 @@ export default function Hala() {
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-dark-200/20">
                     <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Type</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Rider / Source</th>
                     <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Invoice Num</th>
                     <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Amount</th>
                     <th className="p-6 text-xs font-black text-primary-600 dark:text-primary-500 uppercase tracking-widest">Actual</th>
@@ -270,6 +271,9 @@ export default function Hala() {
                           }`}>
                             {inv.invoiceType}
                           </span>
+                        </td>
+                        <td className="p-6">
+                          <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{inv.riderName || 'N/A'}</p>
                         </td>
                         <td className="p-6">
                           <p className="text-xs font-mono text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">{inv.invoiceNum}</p>
@@ -317,7 +321,7 @@ export default function Hala() {
         title={`Add ${selectedMonth} Billing Entry`}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Invoice Type</label>
               <select 
@@ -332,6 +336,18 @@ export default function Hala() {
                 <option value="REPAIR & DAMAGE">REPAIR & DAMAGE</option>
                 <option value="OTHERS">OTHERS</option>
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider / Source Name</label>
+              <input 
+                name="riderName"
+                type="text" 
+                required
+                placeholder="Ex: Rahul Kumar" 
+                className="input h-12 uppercase"
+                value={formData.riderName}
+                onChange={handleInputChange}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Invoice Number</label>

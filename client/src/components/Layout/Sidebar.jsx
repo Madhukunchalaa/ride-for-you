@@ -24,7 +24,7 @@ const menuItems = [
   { path: '/app/riders', label: 'Riders', icon: Users },
   { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
   { path: '/app/returns', label: 'Returns', icon: RotateCcw },
-  { path: '/app/hala', label: 'Hala Fleet', icon: Bike },
+  { path: '/app/hala', label: 'Hala Details', icon: Bike },
 
   { path: '/app/payments', label: 'Payments', icon: CreditCard },
   { path: '/app/reports', label: 'Intelligence', icon: TrendingUp },

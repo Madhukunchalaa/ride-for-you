@@ -9,7 +9,7 @@ export default function Layout() {
   const titleMap = {
     '/dashboard': 'Dashboard Overview',
     '/riders': 'Riders Management',
-    '/hala': 'Hala Fleet Management',
+    '/hala': 'Hala Details Management',
     '/payments': 'Payments Tracking',
   };
 

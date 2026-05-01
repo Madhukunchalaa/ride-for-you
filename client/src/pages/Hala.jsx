@@ -59,7 +59,12 @@ export default function Hala() {
         api.get(`/invoices?month=${selectedMonth}`),
         api.get(`/analytics/billing?month=${selectedMonth}`)
       ]);
-      setInvoices(invRes.data.data);
+      
+      // Filter out ANY invoice that is linked to a rider (automatic invoices)
+      const halaOnly = invRes.data.data.filter(inv => !inv.riderId);
+      setInvoices(halaOnly);
+      
+      // We should also filter distribution if it's coming from the same set
       setDistribution(distRes.data.data);
     } catch (err) {
       console.error(err);
@@ -119,7 +124,7 @@ export default function Hala() {
   };
 
   const totalBillAmount = invoices.reduce((sum, inv) => sum + (inv.billAmount || 0), 0);
-  const totalActualRent = invoices.reduce((sum, inv) => sum + (inv.actualRent || 0), 0);
+  const totalActualPayment = invoices.reduce((sum, inv) => sum + (inv.actualRent || 0), 0);
   const totalSecurityDeposit = invoices.reduce((sum, inv) => sum + (inv.securityDeposit || 0), 0);
 
   const totalPages = Math.ceil(invoices.length / itemsPerPage);
@@ -216,8 +221,8 @@ export default function Hala() {
           <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-8 rounded-[2.5rem] shadow-glow-primary relative overflow-hidden group">
             <TrendingUp size={80} className="absolute -right-4 -bottom-4 text-white/10 group-hover:scale-125 transition-transform duration-700" />
             <div className="relative z-10">
-              <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.3em]">Total Clearance</p>
-              <h4 className="text-4xl font-display font-black text-white mt-2">₹ {totalActualRent.toLocaleString()}</h4>
+              <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.3em]">Hala Total Clearance</p>
+              <h4 className="text-4xl font-display font-black text-white mt-2">₹ {totalActualPayment.toLocaleString()}</h4>
               <p className="text-xs text-white/50 mt-4 font-bold uppercase tracking-widest flex items-center gap-2">
                 <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> {selectedMonth} Status: Validated
               </p>
@@ -248,12 +253,12 @@ export default function Hala() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-dark-200/20">
-                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Type</th>
-                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Rider / Source</th>
-                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Invoice Num</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Category</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Source / Description</th>
+                    <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Ref Num</th>
                     <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Amount</th>
-                    <th className="p-6 text-xs font-black text-primary-600 dark:text-primary-500 uppercase tracking-widest">Actual</th>
-                    <th className="p-6 text-xs font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">SD</th>
+                    <th className="p-6 text-xs font-black text-primary-600 dark:text-primary-500 uppercase tracking-widest">Paid Amount</th>
+                    <th className="p-6 text-xs font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">Security Deposit</th>
                     <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
@@ -318,12 +323,12 @@ export default function Hala() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={`Add ${selectedMonth} Billing Entry`}
+        title={`Add Hala Details - ${selectedMonth}`}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Invoice Type</label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
               <select 
                 name="invoiceType"
                 className="input h-12 appearance-none"
@@ -331,31 +336,31 @@ export default function Hala() {
                 onChange={handleInputChange}
                 required
               >
-                <option value="RENT">RENT</option>
+                <option value="RENT">HALA RENT</option>
                 <option value="RECOVERY">RECOVERY</option>
-                <option value="REPAIR & DAMAGE">REPAIR & DAMAGE</option>
-                <option value="OTHERS">OTHERS</option>
+                <option value="REPAIR & DAMAGE">REPAIR / PARTS</option>
+                <option value="OTHERS">PLATFORM FEES / OTHERS</option>
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rider / Source Name</label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Source Details</label>
               <input 
                 name="riderName"
                 type="text" 
                 required
-                placeholder="Ex: Rahul Kumar" 
+                placeholder="Ex: Payout to Hala" 
                 className="input h-12 uppercase"
                 value={formData.riderName}
                 onChange={handleInputChange}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Invoice Number</label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Ref / Invoice ID</label>
               <input 
                 name="invoiceNum"
                 type="text" 
                 required
-                placeholder="Ex: HLSTS25260813" 
+                placeholder="Ex: HALA-2024-001" 
                 className="input h-12 uppercase"
                 value={formData.invoiceNum}
                 onChange={handleInputChange}
@@ -377,7 +382,7 @@ export default function Hala() {
               />
             </div>
             <div className="space-y-2 group">
-              <label className="text-xs font-black text-primary-500 uppercase tracking-widest ml-1">Actually Rent (₹)</label>
+              <label className="text-xs font-black text-primary-500 uppercase tracking-widest ml-1">Actual Payment (₹)</label>
               <input 
                 name="actualRent"
                 type="number" 
@@ -389,7 +394,7 @@ export default function Hala() {
               />
             </div>
             <div className="space-y-2 group">
-              <label className="text-xs font-black text-emerald-500 uppercase tracking-widest ml-1">SD / Deposit (₹)</label>
+              <label className="text-xs font-black text-emerald-500 uppercase tracking-widest ml-1">Security Deposit (₹)</label>
               <input 
                 name="securityDeposit"
                 type="number" 

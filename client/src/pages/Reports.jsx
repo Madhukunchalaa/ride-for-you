@@ -128,7 +128,7 @@ export default function Reports() {
                   }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '20px' }} />
-                <Bar dataKey="earnings" name="Rider Revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="earnings" name="Gross Revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
                 <Bar dataKey="halaPayments" name="Hala Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
                 <Bar dataKey="profit" name="Net Profit" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={20} />
               </BarChart>

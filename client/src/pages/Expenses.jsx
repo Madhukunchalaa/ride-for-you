@@ -105,7 +105,7 @@ export default function Expenses() {
   };
 
   const chartData = [
-    { name: 'Rider Revenue', value: comparison.userRevenue },
+    { name: 'Gross Revenue', value: comparison.userRevenue },
     { name: 'Hala Amount', value: comparison.halaAmount },
     { name: 'Admin Spends', value: comparison.adminSpends },
   ].filter(d => d.value > 0);

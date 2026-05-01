@@ -56,6 +56,14 @@ const Customer = () => {
         }
     };
 
+    const handleManualWhatsApp = (customer) => {
+        const phone = (customer.phone || "").replace(/[^0-9]/g, '');
+        const cleanPhone = phone.length === 10 ? '91' + phone : phone;
+        const message = `Hello *${customer.name}*,\n\nThis is *Ride For You*. We received your inquiry regarding our EV rentals. How can we help you today?\n\nThank you!`;
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -177,8 +185,15 @@ const Customer = () => {
                                             <p className="text-xs text-slate-500 flex items-center gap-2 font-bold">
                                                 <Mail size={12} className="text-primary-500/70" /> {customer.email}
                                             </p>
-                                            <p className="text-xs text-slate-500 flex items-center gap-2 font-bold">
+                                            <p className="text-xs text-slate-500 flex items-center gap-2 font-bold group/wa">
                                                 <Phone size={12} className="text-primary-500/70" /> {customer.phone}
+                                                <button 
+                                                    onClick={() => handleManualWhatsApp(customer)}
+                                                    className="p-1 rounded-md hover:bg-emerald-500/10 text-emerald-500 opacity-0 group-hover/wa:opacity-100 transition-opacity"
+                                                    title="Send WhatsApp"
+                                                >
+                                                    <MessageSquare size={12} />
+                                                </button>
                                             </p>
                                         </td>
                                         <td className="p-6">

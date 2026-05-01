@@ -93,6 +93,14 @@ export default function Riders() {
     }
   };
 
+  const handleManualWhatsApp = (rider) => {
+    const phone = (rider.whatsappNumber || "").replace(/[^0-9]/g, '');
+    const cleanPhone = phone.length === 10 ? '91' + phone : phone;
+    const message = `Hello *${rider.name}*,\n\nThis is a reminder from *Ride For You* regarding your vehicle *${rider.vehicleNumber}*.\n\nYour weekly rental payment is due. Please use your payment link to pay and avoid any late fees. If you haven't received the link, please let us know.\n\nThank you!`;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   const handleDeleteRider = async (id) => {
     if (confirm('Are you sure you want to end this rental and archive the rider?')) {
       try {
@@ -679,6 +687,9 @@ export default function Riders() {
                                 <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
                                   {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
                                   Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
+                                </button>
+                                <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                  <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
                                 </button>
                                 <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
                                   <RotateCcw size={16} className="text-blue-500" /> Mark as Returned

@@ -133,12 +133,29 @@ export default function WhatsAppCRM() {
               Message Preview (WhatsApp)
             </h4>
             
-            <div className="bg-slate-800 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-lg">
-              <p className="text-slate-200 text-sm leading-relaxed font-medium">
-                Hello <span className="text-emerald-400 font-bold">{"{Rider Name}"}</span>, we haven't seen you in a while! 🏍️ 
-                Your favorite EV rentals at <span className="font-bold">*Ride For You*</span> are ready and waiting for your next trip. 
-                Want to get back on the road today?
-              </p>
+            <div className="bg-slate-800 rounded-2xl border-l-4 border-emerald-500 shadow-lg overflow-hidden">
+              <div className="aspect-video w-full bg-slate-700 flex items-center justify-center relative group">
+                <img 
+                  src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2000&auto=format&fit=crop" 
+                  alt="EV Bike" 
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Media Header (Image)</span>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-3">
+                <p className="text-slate-200 text-sm leading-relaxed font-medium">
+                  Hello <span className="text-emerald-400 font-bold">{"{Name}"}</span>, we haven't seen you in a while! 🏍️ 
+                  Our new EV bikes are here and ready for you.
+                </p>
+                <div className="pt-2 border-t border-slate-700/50">
+                   <p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest">
+                     🔗 Check them out: https://rideforyouev.com
+                   </p>
+                </div>
+              </div>
             </div>
             
             <div className="mt-6 flex items-center gap-4 text-slate-500">

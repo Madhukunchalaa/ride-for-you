@@ -52,9 +52,11 @@ exports.sendBulkReengage = async (req, res) => {
     console.log(`🚀 Bulk Re-engage: Sending to ${recipients.length} recipients...`);
 
     const results = [];
+    const websiteLink = process.env.FRONTEND_URL || 'https://rideforyouev.com';
+
     for (const person of recipients) {
       try {
-        await sendReengageMessage(person.phone, person.name);
+        await sendReengageMessage(person.phone, person.name, websiteLink);
         results.push({ id: person.id, status: 'success', type: person.type });
       } catch (err) {
         console.error(`❌ Failed to send to ${person.name}:`, err.message);

@@ -46,8 +46,10 @@ const sendPaymentReminder = async (to, options = {}) => {
       console.log(`📋 Sending Template Message [SID: ${sid}] to ${finalTo}`);
       messageConfig.contentSid = sid;
       if (options.variables) {
-        // Twilio expects a JSON string or object for variables
         messageConfig.contentVariables = JSON.stringify(options.variables);
+      }
+      if (options.mediaUrl) {
+        messageConfig.mediaUrl = [options.mediaUrl];
       }
     } else {
       // Session message (Free-form)
@@ -73,15 +75,20 @@ const sendPaymentReminder = async (to, options = {}) => {
 
 
 /**
- * Sends a Re-engagement Template to Past Riders.
+ * Sends a Re-engagement Template to Past Riders & Leads.
  * @param {string} to - Recipient number.
- * @param {string} name - Rider name.
+ * @param {string} name - Recipient name.
+ * @param {string} link - Website link (optional).
  */
-const sendReengageMessage = async (to, name) => {
+const sendReengageMessage = async (to, name, link = 'https://rideforyouev.com') => {
   const sid = process.env.TWILIO_REENGAGE_CONTENT_SID;
   return sendPaymentReminder(to, {
     contentSid: sid,
-    variables: { 1: name } // {{1}} is the name
+    mediaUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2000&auto=format&fit=crop',
+    variables: { 
+      1: name,
+      2: link
+    }
   });
 };
 

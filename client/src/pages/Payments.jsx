@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, Download, Search, Calendar, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '../api/axios';
+import { exportToCSV } from '../utils/exportUtils';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
 
@@ -71,7 +72,10 @@ export default function Payments() {
           <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Payments Tracking</h2>
           <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold">Monitor rental transactions and upcoming dues</p>
         </div>
-        <button className="btn-secondary px-6 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold bg-white dark:bg-dark-100/50 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 shadow-sm">
+        <button 
+          onClick={() => exportToCSV(data.riders, 'Payments_Report')}
+          className="btn-secondary px-6 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold bg-white dark:bg-dark-100/50 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 shadow-sm"
+        >
           <Download size={18} /> Export Reports
         </button>
       </div>

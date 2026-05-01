@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle, MessageSquare, Download } from 'lucide-react';
 
 import api from '../api/axios';
+import { exportToCSV } from '../utils/exportUtils';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
@@ -332,18 +333,27 @@ export default function Riders() {
           {isRecoveryPage ? 'Defaulters & High Risk Database' : isReturnsPage ? 'Inventory of Returned Vehicles' : 'Secure Workforce Database'}
         </p>
         </div>
-        {(!isRecoveryPage && !isReturnsPage) && (
+        <div className="flex items-center gap-3">
           <button 
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-            className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
+            onClick={() => exportToCSV(filteredRiders, 'Riders_List')}
+            className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm"
+            title="Export filtered list"
           >
-            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span>Add New Rider</span>
+            <Download size={20} />
           </button>
-        )}
+          {(!isRecoveryPage && !isReturnsPage) && (
+            <button 
+              onClick={() => {
+                resetForm();
+                setIsModalOpen(true);
+              }}
+              className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
+            >
+              <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span>Add New Rider</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tab Controls */}
@@ -529,14 +539,17 @@ export default function Riders() {
                     >
                       <MoreVertical size={20} />
                     </button>
-                    {openActionMenu === rider._id && (
+                    {openActionMenu === String(rider._id) && (
                       <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom-2">
-                        <button onClick={() => handlePayment(rider)} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                        <button onClick={() => { handlePayment(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
                           <CreditCard size={16} className="text-primary-500" /> Pay Now
                         </button>
-                        <button onClick={() => handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid')} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                        <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
                           {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
                           Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
+                        </button>
+                        <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50">
+                          <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
                         </button>
                         <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
                           <RotateCcw size={16} className="text-blue-500" /> Mark Returned
@@ -670,13 +683,13 @@ export default function Riders() {
                           
                           <div className="relative">
                             <button 
-                              onClick={() => setOpenActionMenu(openActionMenu === rider._id ? null : rider._id)}
-                              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${openActionMenu === rider._id ? 'bg-primary-500 text-black border-primary-500' : 'bg-slate-100 dark:bg-dark-200 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'}`}
+                              onClick={() => setOpenActionMenu(prev => prev === String(rider._id) ? null : String(rider._id))}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${openActionMenu === String(rider._id) ? 'bg-primary-500 text-black border-primary-500' : 'bg-slate-100 dark:bg-dark-200 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'}`}
                             >
-                              Actions <ChevronDown size={14} className={`${openActionMenu === rider._id ? 'rotate-180' : ''} transition-transform`} />
+                              Actions <ChevronDown size={14} className={`${openActionMenu === String(rider._id) ? 'rotate-180' : ''} transition-transform`} />
                             </button>
 
-                            {openActionMenu === rider._id && (
+                            {openActionMenu === String(rider._id) && (
                               <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in zoom-in-95 duration-200">
                                 <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-dark-200/50">
                                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2">Manage Rider</p>

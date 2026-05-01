@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import Pagination from "../components/Pagination";
-import { Users, Search, Loader2, ShieldCheck, Mail, Phone, MapPin, MessageSquare, Tag, FileText, Plus, X } from 'lucide-react';
+import { Users, Search, Loader2, ShieldCheck, Mail, Phone, MapPin, MessageSquare, Tag, FileText, Plus, X, Download } from 'lucide-react';
+import { exportToCSV } from '../utils/exportUtils';
 import toast from 'react-hot-toast';
 
 const Customer = () => {
@@ -132,13 +133,22 @@ const Customer = () => {
                         <ShieldCheck size={16} className="text-primary-500" /> Lead Management System
                     </p>
                 </div>
-                <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
-                >
-                    <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                    <span>Add New Customer</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => exportToCSV(customers, 'Customer_Leads')}
+                        className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm"
+                        title="Export Leads"
+                    >
+                        <Download size={20} />
+                    </button>
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary group"
+                    >
+                        <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                        <span>Add New Customer</span>
+                    </button>
+                </div>
             </div>
 
             {/* Controls */}

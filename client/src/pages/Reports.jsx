@@ -20,6 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 import api from '../api/axios';
+import { exportToCSV } from '../utils/exportUtils';
 
 export default function Reports() {
   const [range, setRange] = useState('monthly');
@@ -77,7 +78,10 @@ export default function Reports() {
             </button>
 
           </div>
-          <button className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm">
+          <button 
+            onClick={() => exportToCSV(data, 'Financial_Report')}
+            className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm"
+          >
             <Download size={20} />
           </button>
         </div>

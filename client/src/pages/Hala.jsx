@@ -12,7 +12,8 @@ import {
   ShieldCheck, 
   ChevronDown,
   PieChart as PieChartIcon,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -23,6 +24,7 @@ import {
   Legend 
 } from 'recharts';
 import api from '../api/axios';
+import { exportToCSV } from '../utils/exportUtils';
 import Modal from '../components/Modal';
 import Pagination from '../components/Pagination';
 
@@ -160,6 +162,13 @@ export default function Hala() {
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
           </div>
+          <button 
+            onClick={() => exportToCSV(invoices, `Hala_Ledger_${selectedMonth}`)}
+            className="p-2.5 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-primary-500 transition-all shadow-sm"
+            title="Export to Excel"
+          >
+            <Download size={20} />
+          </button>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="btn-primary flex items-center gap-2 px-6 py-2.5 shadow-glow-primary font-black uppercase text-xs tracking-widest"

@@ -46,6 +46,7 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     console.log(`🤖 Automated Reminder [${type}] to ${rider.whatsappNumber}...`);
 
     await sendPaymentReminder(rider.whatsappNumber, { 
+      templateName: 'payment_reminder_v1', // Explicitly name the Meta template
       contentSid: process.env.TWILIO_CONTENT_SID,
       variables: {
         1: rider.name,

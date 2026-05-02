@@ -1,94 +1,99 @@
 const twilio = require('twilio');
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const from = process.env.TWILIO_WHATSAPP_FROM;
-const contentSid = process.env.TWILIO_CONTENT_SID;
+const { metaApi } = require('../config/meta');
+const { way2chatsApi, way2chatsConfig } = require('../config/way2chats');
 
 /**
- * Sends a WhatsApp message (Template or Session based).
- * @param {string} to - Recipient WhatsApp number.
- * @param {Object} options - { body, variables, mediaUrl, contentSid }
+ * Sends a WhatsApp message using Way2Chats (default), Meta, or Twilio.
  */
 const sendPaymentReminder = async (to, options = {}) => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM;
+  const provider = process.env.WHATSAPP_PROVIDER || 'way2chats';
   
-  // Use provided contentSid or fallback to env
-  const sid = options.contentSid || process.env.TWILIO_CONTENT_SID;
-
-  let client;
-  if (accountSid && authToken && !authToken.includes('your_')) {
-    client = twilio(accountSid, authToken);
-  }
-
-  // Ensure number is in correct format (+91 for India)
   let cleaned = to.replace(/[^0-9]/g, '');
-  if (cleaned.length === 10) {
-    cleaned = '91' + cleaned;
-  }
-  const finalTo = `whatsapp:+${cleaned}`;
+  if (cleaned.length === 10) cleaned = '91' + cleaned;
 
-  if (!client) {
-    console.log('📝 [MOCK WHATSAPP] To:', finalTo, 'Options:', options);
-    return { sid: 'MOCK_SID_' + Date.now() };
+  if (provider === 'way2chats') {
+    return sendViaWay2Chats(cleaned, options);
+  } else if (provider === 'meta') {
+    return sendViaMeta(cleaned, options);
+  } else {
+    return sendViaTwilio(cleaned, options);
   }
+};
 
+/**
+ * Way2Chats API Sender
+ */
+const sendViaWay2Chats = async (to, options) => {
   try {
-    const messageConfig = {
-      from: from,
-      to: finalTo,
+    const { templateName, variables } = options;
+    
+    // Way2Chats uses a flat array for bodyParams
+    const bodyParams = variables ? Object.keys(variables)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(key => String(variables[key])) : [];
+
+    const payload = {
+      to: to,
+      phoneNoId: way2chatsConfig.phoneId,
+      type: 'template',
+      name: templateName || 'payment_reminder_v1',
+      language: 'en_US',
+      bodyParams: bodyParams
     };
 
-    // If contentSid (Template) is present, use it (Business standard)
-    if (sid && !options.body) {
-      console.log(`📋 Sending Template Message [SID: ${sid}] to ${finalTo}`);
-      messageConfig.contentSid = sid;
-      if (options.variables) {
-        messageConfig.contentVariables = JSON.stringify(options.variables);
-      }
-      if (options.mediaUrl) {
-        messageConfig.mediaUrl = [options.mediaUrl];
-      }
-    } else {
-      // Session message (Free-form)
-      console.log(`💬 Sending Session Message to ${finalTo}`);
-      messageConfig.body = options.body;
-      if (options.mediaUrl) {
-        messageConfig.mediaUrl = [options.mediaUrl];
-      }
-    }
-
-    const message = await client.messages.create(messageConfig);
-    console.log('✅ WhatsApp sent:', message.sid);
-    return message;
+    console.log(`📲 Sending Way2Chats Template [${payload.name}] to ${to}...`);
+    const response = await way2chatsApi.post('', payload);
+    console.log('✅ Way2Chats WhatsApp sent:', response.data.id || 'SUCCESS');
+    return response.data;
   } catch (err) {
-    console.error('❌ WhatsApp Error Details:', {
-      code: err.code,
-      message: err.message,
-      moreInfo: err.moreInfo
-    });
+    console.error('❌ Way2Chats WhatsApp Error:', err.response?.data || err.message);
     throw err;
   }
 };
 
-
 /**
- * Sends a Re-engagement Template to Past Riders & Leads.
- * @param {string} to - Recipient number.
- * @param {string} name - Recipient name.
- * @param {string} link - Website link (optional).
+ * Twilio Sender (Legacy/Fallback)
  */
-const sendReengageMessage = async (to, name, link = 'https://rideforyouev.com') => {
-  const sid = process.env.TWILIO_REENGAGE_CONTENT_SID;
-  return sendPaymentReminder(to, {
-    contentSid: sid,
-    mediaUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2000&auto=format&fit=crop',
-    variables: { 
-      1: name,
-      2: link
+const sendViaTwilio = async (to, options) => {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+  const sid = options.contentSid || process.env.TWILIO_CONTENT_SID;
+
+  if (!accountSid || !authToken || authToken.includes('your_')) {
+    console.log('📝 [MOCK TWILIO] To:', to, 'Options:', options);
+    return { sid: 'MOCK_SID_' + Date.now() };
+  }
+
+  const client = twilio(accountSid, authToken);
+  const finalTo = `whatsapp:+${to}`;
+
+  try {
+    const messageConfig = { from, to: finalTo };
+
+    if (sid && !options.body) {
+      messageConfig.contentSid = sid;
+      if (options.variables) {
+        messageConfig.contentVariables = JSON.stringify(options.variables);
+      }
+    } else {
+      messageConfig.body = options.body;
     }
+
+    const message = await client.messages.create(messageConfig);
+    console.log('✅ Twilio WhatsApp sent:', message.sid);
+    return message;
+  } catch (err) {
+    console.error('❌ Twilio WhatsApp Error:', err.message);
+    throw err;
+  }
+};
+
+const sendReengageMessage = async (to, name, link = 'https://rideforyouev.com') => {
+  return sendPaymentReminder(to, {
+    templateName: 'reengage_past_riders', // Meta Template Name
+    contentSid: process.env.TWILIO_REENGAGE_CONTENT_SID, // Twilio Fallback
+    variables: { 1: name, 2: link }
   });
 };
 

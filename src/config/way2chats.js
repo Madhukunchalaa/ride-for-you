@@ -9,7 +9,7 @@ const way2chatsConfig = {
 const way2chatsApi = axios.create({
   baseURL: way2chatsConfig.url,
   headers: {
-    'x-api-key': way2chatsConfig.apiKey,
+    'Authorization': `Bearer ${way2chatsConfig.apiKey}`,
     'Content-Type': 'application/json'
   }
 });

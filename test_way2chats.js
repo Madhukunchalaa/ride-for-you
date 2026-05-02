@@ -11,12 +11,12 @@ const testWay2Chats = async () => {
 
   try {
     const result = await sendPaymentReminder(testNumber, {
-      templateName: 'payment_reminder_v1', // Using the template you will create
+      templateName: 'payment_reminder_v1', 
       variables: {
         1: 'Madhu',
         2: 'AP01-1234',
         3: '05 May',
-        4: 'https://rzp.io/rzp/test'
+        4: 'https://rideforyouev.com/pay/test_link'
       }
     });
     console.log('✨ Test Result:', JSON.stringify(result, null, 2));

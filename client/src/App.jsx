@@ -36,11 +36,47 @@ const PublicRoute = ({ children }) => {
   return !user ? children : <Navigate to="/app/dashboard" />;
 };
 
+import { useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
+// Helper component for idle timeout (15 minutes)
+const IdleTimer = ({ children }) => {
+  const { user, logout } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+
+    let timeout;
+    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 Minutes
+
+    const resetTimer = () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        logout();
+        toast('Session expired due to inactivity', { icon: '🔐' });
+      }, INACTIVITY_LIMIT);
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [user, logout]);
+
+  return children;
+};
+
 function App() {
   return (
     <ThemeProvider>
       <Router>
-        <Routes>
+        <IdleTimer>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -73,6 +109,7 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </IdleTimer>
       </Router>
     </ThemeProvider>
   );

@@ -76,39 +76,24 @@ exports.sendReminder = async (req, res) => {
         4: paymentLink
       };
 
+      // 3. Send WhatsApp (Using the new PREMIUM QR Template!)
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(paymentLink)}&color=000000&bgcolor=ffffff&qzone=2`;
+      
       const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
-        templateName: templateName || 'payment_reminder_v1',
-        contentSid: process.env.TWILIO_CONTENT_SID,
-        variables: customVariables || defaultVariables,
-        // For Rejoinder Promo, we add the bike image link as the header
-        ...(templateName === 'rejoiner_promo_v1' && { 
-          headerImage: 'https://rideforyouev.com/assets/bike-promo.jpg' 
-        })
+        templateName: templateName || 'payment_premium_v1',
+        variables: {
+          1: rider.name,
+          2: rider.rentalRate || 800, // Use locked rate
+          3: paymentLink
+        },
+        headerImage: qrUrl
       });
       
       console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);
-      
-      // 4. Follow up with QR code image! ⚡
-      try {
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
-        await sendPaymentReminder(rider.whatsappNumber, { 
-          templateName: 'payment_reminder_v1', // Re-use the template or send as media
-          variables: {
-            1: rider.name,
-            2: 'SCAN & PAY QR',
-            3: 'NOW',
-            4: paymentLink
-          },
-          headerImage: qrUrl
-        });
-        console.log('✅ QR Follow-up sent');
-      } catch (qrErr) {
-        console.log('ℹ️ QR Follow-up skipped:', qrErr.message);
-      }
 
       res.status(200).json({
         success: true,
-        message: `${templateName || 'Reminder'} sent to ${rider.name}`
+        message: `Premium Payment request sent to ${rider.name}`
       });
 
     } catch (waErr) {

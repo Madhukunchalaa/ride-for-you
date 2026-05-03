@@ -367,12 +367,6 @@ export default function Riders() {
           >
             Returned
           </button>
-          <button 
-            onClick={() => setActiveTab('inactive')} 
-            className={`px-6 py-2 rounded-xl font-bold text-sm transition-all ${activeTab === 'inactive' ? 'bg-white dark:bg-slate-800 shadow-md text-primary-600 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            Past Riders
-          </button>
         </div>
       )}
 

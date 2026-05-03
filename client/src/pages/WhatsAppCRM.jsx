@@ -21,10 +21,13 @@ export default function WhatsAppCRM() {
         api.get('/customers')
       ]);
       
-      const pastRiders = (ridersRes.data.data || []).filter(r => r.riderStatus === 'inactive');
+      // Include both inactive and returned riders for re-engagement
+      const reengageRiders = (ridersRes.data.data || []).filter(r => 
+        r.riderStatus === 'inactive' || r.riderStatus === 'returned'
+      );
       const activeLeads = (customersRes.data.data || []).filter(c => c.leadStatus !== 'Converted');
       
-      setTotalRecipients(pastRiders.length + activeLeads.length);
+      setTotalRecipients(reengageRiders.length + activeLeads.length);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load stats');
@@ -92,12 +95,12 @@ export default function WhatsAppCRM() {
               <h3 className="text-4xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                 {loading ? '...' : totalRecipients}
               </h3>
-              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-1">Total Leads & Past Riders</p>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mt-1">Total Leads & Returned Riders</p>
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-dark-200/50 rounded-2xl border border-slate-100 dark:border-slate-800/50">
               <p className="text-xs text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
-                Clicking the button below will send a professional WhatsApp message to every past rider in your database. 
+                Clicking the button below will send a professional WhatsApp message to every past and returned rider in your database. 
                 Use this to announce new bike arrivals or special weekly rates.
               </p>
             </div>

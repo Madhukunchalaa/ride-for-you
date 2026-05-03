@@ -37,7 +37,8 @@ exports.handleIncoming = async (req, res) => {
  */
 exports.sendBulkReengage = async (req, res) => {
   try {
-    const pastRiders = await Rider.find({ riderStatus: 'inactive' });
+    // Include both 'inactive' (past) and 'returned' riders
+    const pastRiders = await Rider.find({ riderStatus: { $in: ['inactive', 'returned'] } });
     const customers = await Customer.find({ leadStatus: { $ne: 'Converted' } }); // Re-engage non-converted leads
     
     const recipients = [

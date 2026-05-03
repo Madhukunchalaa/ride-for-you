@@ -70,7 +70,8 @@ exports.login = async (req, res) => {
 
     await sendPaymentReminder(account.whatsappNumber, {
       templateName: 'otp',
-      variables: { 1: otp }
+      variables: { 1: otp },
+      buttons: [{ type: 'button', sub_type: 'url', text: otp }]
     });
 
     res.json({
@@ -150,7 +151,8 @@ exports.forgotPassword = async (req, res) => {
 
     await sendPaymentReminder(account.whatsappNumber, {
       templateName: 'otp',
-      variables: { 1: otp }
+      variables: { 1: otp },
+      buttons: [{ type: 'button', sub_type: 'url', text: otp }]
     });
 
     res.json({ 
@@ -239,7 +241,8 @@ exports.requestOtp = async (req, res) => {
 
     await sendPaymentReminder(whatsappNumber, { 
       templateName: 'otp',
-      variables: { 1: otp }
+      variables: { 1: otp },
+      buttons: [{ type: 'button', sub_type: 'url', text: otp }]
     });
     res.json({ success: true, message: 'OTP sent' });
   } catch (err) {

@@ -13,7 +13,7 @@ export default function Payments() {
   const [selectedRider, setSelectedRider] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 100;
 
   const fetchPayments = async () => {
     try {

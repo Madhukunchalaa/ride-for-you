@@ -36,7 +36,7 @@ export default function Expenses() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 100;
   
   const currentMonthStr = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);

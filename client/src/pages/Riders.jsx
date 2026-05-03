@@ -23,7 +23,7 @@ export default function Riders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 100;
   const location = useLocation();
   const isRecoveryPage = location.pathname.includes('/recovery');
   const isReturnsPage = location.pathname.includes('/returns');

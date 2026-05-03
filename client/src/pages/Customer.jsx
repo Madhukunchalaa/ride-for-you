@@ -22,7 +22,7 @@ const Customer = () => {
         notes: ''
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 100;
 
     useEffect(() => {
         const fetchCustomers = async () => {

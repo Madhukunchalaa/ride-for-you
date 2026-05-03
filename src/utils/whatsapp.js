@@ -100,9 +100,9 @@ const sendViaTwilio = async (to, options) => {
 
 const sendReengageMessage = async (to, name, link = 'https://rideforyouev.com') => {
   return sendPaymentReminder(to, {
-    templateName: 'reengage_past_riders', // Meta Template Name
-    contentSid: process.env.TWILIO_REENGAGE_CONTENT_SID, // Twilio Fallback
-    variables: { 1: name, 2: link }
+    templateName: 'rejoiner_direct_v1',
+    variables: { 1: name },
+    headerImage: 'https://rideforyouev.com/assets/fusion.png'
   });
 };
 

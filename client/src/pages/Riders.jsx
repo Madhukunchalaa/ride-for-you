@@ -23,7 +23,7 @@ export default function Riders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 100;
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const location = useLocation();
   const isRecoveryPage = location.pathname.includes('/recovery');
   const isReturnsPage = location.pathname.includes('/returns');
@@ -292,13 +292,14 @@ export default function Riders() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchTerm, startDate, endDate, dateFilterType]);
+  }, [activeTab, searchTerm, startDate, endDate, dateFilterType, itemsPerPage]);
 
   const clearFilters = () => {
     setStartDate('');
     setEndDate('');
     setSearchTerm('');
     setPaymentFilter('all');
+    setItemsPerPage(50);
     setShowFilters(false);
   };
 
@@ -447,6 +448,23 @@ export default function Riders() {
                     <option value="all">All Payments</option>
                     <option value="paid">Paid Only</option>
                     <option value="unpaid">Unpaid Only</option>
+                  </select>
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Rows Per Page</label>
+                <div className="relative">
+                  <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />
+                  <select 
+                    value={itemsPerPage === 999999 ? 'all' : itemsPerPage}
+                    onChange={(e) => setItemsPerPage(e.target.value === 'all' ? 999999 : Number(e.target.value))}
+                    className="input h-12 pl-12 appearance-none bg-slate-50 dark:bg-dark-200/50"
+                  >
+                    <option value={25}>25 Rows</option>
+                    <option value={50}>50 Rows</option>
+                    <option value={100}>100 Rows</option>
+                    <option value="all">All Rows</option>
                   </select>
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>

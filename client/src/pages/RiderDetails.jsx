@@ -32,6 +32,20 @@ export default function RiderDetails() {
   const [complaintText, setComplaintText] = useState('');
   const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
 
+  const calculateTenure = (deployDate, riderStatus, returnDate) => {
+    if (!deployDate) return 'N/A';
+    const start = new Date(deployDate);
+    const end = (riderStatus === 'returned' && returnDate) ? new Date(returnDate) : new Date();
+    
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const weeks = Math.floor(diffDays / 7);
+    const days = diffDays % 7;
+    
+    return `${weeks} Weeks ${days} Days`;
+  };
+
   const fetchRiderDetails = async () => {
     try {
       setLoading(true);
@@ -321,13 +335,32 @@ export default function RiderDetails() {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-black/20 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Total Weeks</p>
-                <p className="text-xl md:text-2xl font-display font-black text-white mt-1">{rider.totalWeeks || 0}</p>
+                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Active Tenure</p>
+                <p className="text-xl md:text-2xl font-display font-black text-white mt-1">
+                  {calculateTenure(rider.deployDate, rider.riderStatus, rider.returnDate)}
+                </p>
               </div>
               <div className="bg-black/20 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Bikes Used</p>
-                <p className="text-xl md:text-2xl font-display font-black text-white mt-1">{rider.bikesUsed?.length || 1}</p>
+                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Payment Status</p>
+                <p className="text-xl md:text-2xl font-display font-black text-white mt-1">
+                  Week {(rider.totalWeeks || 0) + 1} <span className="text-[10px]">RUNNING</span>
+                </p>
               </div>
+            </div>
+            <div className="mt-4 p-4 bg-white/10 rounded-2xl border border-white/5">
+              <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Subscription Progress</p>
+              <div className="flex items-center gap-1">
+                {[...Array(Math.max((rider.totalWeeks || 0) + 1, 4))].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`h-1.5 flex-1 rounded-full ${i < (rider.totalWeeks || 0) ? 'bg-emerald-400' : i === (rider.totalWeeks || 0) ? 'bg-white/40 animate-pulse' : 'bg-white/10'}`} 
+                    title={`Week ${i + 1}`}
+                  />
+                ))}
+              </div>
+              <p className="text-[8px] font-bold text-white/50 mt-2 uppercase tracking-widest">
+                {rider.totalWeeks || 0} Weeks Paid • Currently in Week {(rider.totalWeeks || 0) + 1}
+              </p>
             </div>
           </div>
         </div>
@@ -377,26 +410,42 @@ export default function RiderDetails() {
 
           {/* Payment & Invoice History */}
           <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800/50 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 bg-slate-50/50 dark:bg-transparent">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                <Receipt size={20} />
+            <div className="p-6 md:p-8 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-transparent">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                  <Receipt size={20} />
+                </div>
+                <h3 className="text-lg font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Payment Timeline</h3>
               </div>
-              <h3 className="text-lg font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Invoice Ledger</h3>
+              <div className="text-right">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Collected</p>
+                <p className="text-sm font-black text-emerald-500">₹{(rider.invoices?.reduce((sum, inv) => sum + (inv.actualRent || 0), 0) || 0).toLocaleString()}</p>
+              </div>
             </div>
             <div className="max-h-[300px] overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-100/40 dark:bg-slate-900/30 sticky top-0 backdrop-blur-sm">
                   <tr>
-                    <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Invoice</th>
-                    <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th>
+                    <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Billing Period</th>
+                    <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Date</th>
+                    <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
                     <th className="p-4 md:p-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                  {rider.invoices?.length > 0 ? rider.invoices.map((inv) => (
+                  {rider.invoices?.length > 0 ? rider.invoices.map((inv, idx) => (
                     <tr key={inv._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
-                      <td className="p-4 md:p-6 font-mono text-[10px] md:text-xs text-slate-900 dark:text-white uppercase tracking-wider font-bold">{inv.invoiceNum}</td>
-                      <td className="p-4 md:p-6 text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold">{new Date(inv.createdAt).toLocaleDateString('en-GB')}</td>
+                      <td className="p-4 md:p-6 font-bold text-[10px] md:text-xs text-slate-900 dark:text-white uppercase">
+                        Week {rider.invoices.length - idx} Subscription
+                      </td>
+                      <td className="p-4 md:p-6 text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold">
+                        {new Date(inv.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="p-4 md:p-6">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase tracking-widest border border-emerald-500/20">
+                          Paid
+                        </span>
+                      </td>
                       <td className="p-4 md:p-6 text-right font-black text-slate-900 dark:text-white text-sm">
                         <div className="flex items-center justify-end gap-2 md:gap-4">
                           <span className="text-xs md:text-sm whitespace-nowrap">₹{inv.actualRent?.toLocaleString()}</span>
@@ -412,7 +461,7 @@ export default function RiderDetails() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan="3" className="p-10 md:p-12 text-center text-slate-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">No linked invoices found</td>
+                      <td colSpan="4" className="p-10 md:p-12 text-center text-slate-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">No linked payments found</td>
                     </tr>
                   )}
                 </tbody>

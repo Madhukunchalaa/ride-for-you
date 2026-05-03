@@ -271,18 +271,11 @@ export default function Riders() {
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
-      const targetDate = new Date(dateVal);
-      targetDate.setHours(0, 0, 0, 0);
-
-      const start = startDate ? new Date(startDate) : null;
-      if (start) start.setHours(0, 0, 0, 0);
-
-      const end = endDate ? new Date(endDate) : null;
-      if (end) end.setHours(23, 59, 59, 999);
-
-      if (start && end) return targetDate >= start && targetDate <= end;
-      if (start) return targetDate >= start;
-      if (end) return targetDate <= end;
+      // Normalize to YYYY-MM-DD for string comparison
+      const targetDateStr = new Date(dateVal).toISOString().split('T')[0];
+      
+      if (startDate && targetDateStr < startDate) return false;
+      if (endDate && targetDateStr > endDate) return false;
       return true;
     })();
 
@@ -506,10 +499,15 @@ export default function Riders() {
                       <p className="text-xs font-bold text-slate-900 dark:text-white">{formatDate(rider.returnDate)}</p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Payment Status</p>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${rider.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}>
-                        {rider.paymentStatus || 'unpaid'}
-                      </span>
+                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Subscription</p>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-[10px] font-black uppercase tracking-widest text-primary-500`}>
+                          Week {(rider.totalWeeks || 0) + 1} Running
+                        </span>
+                        <span className={`text-[8px] font-bold uppercase tracking-widest ${rider.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
+                          {rider.totalWeeks || 0} Weeks Paid
+                        </span>
+                      </div>
                    </div>
                 </div>
 
@@ -631,15 +629,20 @@ export default function Riders() {
                         </div>
                       </td>
                       <td className="p-6">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                          rider.riderStatus === 'active' 
-                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
-                          : rider.riderStatus === 'returned'
-                          ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
-                          : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
-                        }`}>
-                          {rider.riderStatus}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit ${
+                            rider.riderStatus === 'active' 
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
+                            : rider.riderStatus === 'returned'
+                            ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
+                            : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
+                          }`}>
+                            {rider.riderStatus}
+                          </span>
+                          <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 mt-2 uppercase tracking-tighter">
+                            Week {(rider.totalWeeks || 0) + 1} Running
+                          </span>
+                        </div>
                       </td>
                       <td className="p-6">
                         <div className="flex flex-col gap-1">
@@ -650,7 +653,7 @@ export default function Riders() {
                             ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
                             : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
                           } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
-                            {rider.isRecoveryBucket ? 'RECOVERY' : (rider.paymentStatus || 'unpaid')}
+                            {rider.isRecoveryBucket ? 'RECOVERY' : `${rider.totalWeeks || 0} WEEKS PAID`}
                           </span>
                           {rider.autoReminderEnabled && !rider.isRecoveryBucket && rider.paymentStatus === 'unpaid' && (
                             <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1 ml-1">

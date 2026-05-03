@@ -37,9 +37,17 @@ const sendViaWay2Chats = async (to, options) => {
       phoneNoId: way2chatsConfig.phoneId,
       type: 'template',
       name: templateName || 'payment_reminder_v1',
-      language: 'en',
+      language: options.language || 'en',
       bodyParams: bodyParams,
-      ...(options.buttons && { buttons: options.buttons })
+      ...(options.buttons && { buttons: options.buttons }),
+      ...(options.headerImage && { 
+        headerParams: [
+          {
+            type: 'image',
+            url: options.headerImage
+          }
+        ]
+      })
     };
 
     console.log(`📲 Sending Way2Chats Template [${payload.name}] to ${to}...`);

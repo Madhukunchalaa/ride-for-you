@@ -76,31 +76,20 @@ exports.sendReminder = async (req, res) => {
         4: paymentLink
       };
 
-      // 3. Send WhatsApp (Using the APPROVED template!)
+      // 3. Send WhatsApp (Using the PREMIUM ALL-IN-ONE QR Template!)
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(paymentLink)}`;
+      
       const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
-        templateName: templateName || 'payment_reminder_v1',
+        templateName: templateName || 'payment_premium_v1',
         variables: {
           1: rider.name,
-          2: rider.vehicleNumber,
-          3: formattedDate,
-          4: paymentLink
-        }
+          2: rider.rentalRate || 800, // Use the locked rider rate
+          3: paymentLink
+        },
+        headerImage: qrUrl
       });
       
       console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);
-      
-      // 4. Follow up with QR code image! ⚡
-      try {
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(paymentLink)}`;
-        await sendPaymentReminder(rider.whatsappNumber, { 
-          templateName: 'rejoiner_direct_v1', // Use a template that supports images
-          variables: { 1: 'SCAN & PAY QR' },
-          headerImage: qrUrl
-        });
-        console.log('✅ QR Follow-up sent');
-      } catch (qrErr) {
-        console.log('ℹ️ QR Follow-up skipped:', qrErr.message);
-      }
 
       res.status(200).json({
         success: true,

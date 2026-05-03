@@ -18,7 +18,12 @@ const SystemConfigSchema = new mongoose.Schema({
   updatedBy: {
     type: String,
     default: 'system'
-  }
+  },
+  history: [{
+    value: mongoose.Schema.Types.Mixed,
+    updatedAt: { type: Date, default: Date.now },
+    updatedBy: { type: String, default: 'admin' }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('SystemConfig', SystemConfigSchema);

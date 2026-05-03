@@ -326,6 +326,19 @@ export default function RiderDetails() {
             </div>
             <div className="bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-lg">
               <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+                  <CreditCard size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Locked Rental Rate</p>
+                  <p className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">
+                    ₹{(rider.rentalRate || 2000).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold ml-1">/ WEEK</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-lg">
+              <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20">
                   <Clock size={24} />
                 </div>

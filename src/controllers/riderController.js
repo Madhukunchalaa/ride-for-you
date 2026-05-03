@@ -25,10 +25,13 @@ exports.sendReminder = async (req, res) => {
     }
 
     // 1. Create REAL Razorpay Payment Link
-    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-    const defaultAmount = config ? config.value : 2000;
+    let weeklyRate = rider.rentalRate;
+    if (!weeklyRate) {
+      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+      weeklyRate = config ? Number(config.value) : 2000;
+    }
 
-    const amountVal = defaultAmount * 100; // in paise
+    const amountVal = weeklyRate * 100; // in paise
     const uniqueLinkId = `ride_${rider._id}_${Date.now()}`;
 
     const response = await razorpay.paymentLink.create({
@@ -192,6 +195,9 @@ exports.addRider = async (req, res) => {
       rider.reminderEscalationStage = 0;
       rider.isRecoveryBucket = false;
       
+      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+      rider.rentalRate = config ? Number(config.value) : 2000;
+
       await rider.save();
       
       return res.status(200).json({
@@ -214,6 +220,9 @@ exports.addRider = async (req, res) => {
       autoReminderTime: autoReminderTime || '10:00',
       bikesUsed: [vehicleNumber.toUpperCase()]
     });
+
+    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+    newRider.rentalRate = config ? Number(config.value) : 2000;
 
     if (riderStatus === 'recovery') {
       newRider.isRecoveryBucket = true;
@@ -326,9 +335,13 @@ exports.updateStatus = async (req, res) => {
           rider.bikesUsed.push(rider.vehicleNumber);
         }
 
-        const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-        const defaultAmount = config ? config.value : 2000;
-        await createInvoiceRecord(rider, req.body.amount || defaultAmount);
+        let riderRate = rider.rentalRate;
+        if (!riderRate) {
+          const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+          riderRate = config ? config.value : 2000;
+        }
+
+        await createInvoiceRecord(rider, req.body.amount || riderRate);
       }
       rider.paymentStatus = paymentStatus;
     }
@@ -347,6 +360,14 @@ exports.updateStatus = async (req, res) => {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = true;
         rider.reminderEscalationStage = 3;
+
+        // Trigger Recovery Template
+        try {
+          const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+          await sendAutomatedPaymentLink(rider, 'warning');
+        } catch (warnErr) {
+          console.warn('Recovery message failed:', warnErr.message);
+        }
       } else if (riderStatus === 'active') {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = false;

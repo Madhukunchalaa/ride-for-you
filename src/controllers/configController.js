@@ -12,7 +12,11 @@ exports.getConfig = async (req, res) => {
     // Provide defaults if not in DB
     if (!configMap.WEEKLY_RENTAL_AMOUNT) configMap.WEEKLY_RENTAL_AMOUNT = 2000;
     
-    res.status(200).json({ success: true, data: configMap });
+    res.status(200).json({ 
+      success: true, 
+      data: configMap,
+      fullConfigs: configs 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -30,6 +34,13 @@ exports.updateConfig = async (req, res) => {
     let config = await SystemConfig.findOne({ key: key.toUpperCase() });
     
     if (config) {
+      // Save old value to history
+      config.history.push({
+        value: config.value,
+        updatedAt: config.updatedAt,
+        updatedBy: config.updatedBy
+      });
+
       config.value = value;
       if (description) config.description = description;
       config.updatedBy = 'admin';
@@ -39,7 +50,8 @@ exports.updateConfig = async (req, res) => {
         key: key.toUpperCase(),
         value,
         description,
-        updatedBy: 'admin'
+        updatedBy: 'admin',
+        history: []
       });
     }
 

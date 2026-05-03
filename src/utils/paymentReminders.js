@@ -9,11 +9,14 @@ const SystemConfig = require('../models/SystemConfig');
  */
 const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
   try {
-    // Fetch Dynamic Amount from Settings
-    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-    const defaultAmount = config ? config.value : 2000;
+    // Fetch Dynamic Amount
+    let weeklyRate = rider.rentalRate;
+    if (!weeklyRate) {
+      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+      weeklyRate = config ? config.value : 2000;
+    }
     
-    const amountVal = defaultAmount * 100; // in paise
+    const amountVal = weeklyRate * 100; // in paise
     const uniqueLinkId = `auto_${type}_${rider._id}_${Date.now()}`;
 
     // Create Razorpay Link
@@ -46,9 +49,13 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     console.log(`🤖 Automated Reminder [${type}] to ${rider.whatsappNumber}...`);
 
     await sendPaymentReminder(rider.whatsappNumber, { 
-      templateName: 'payment_reminder_v1', // Explicitly name the Meta template
+      templateName: (type === 'warning' || type === 'final') ? 'recovery_warning_v1' : 'payment_reminder_v1',
       contentSid: process.env.TWILIO_CONTENT_SID,
-      variables: {
+      variables: (type === 'warning' || type === 'final') ? {
+        1: rider.name,
+        2: rider.vehicleNumber,
+        3: '7989776255' // Recovery Dept Contact
+      } : {
         1: rider.name,
         2: rider.vehicleNumber,
         3: formattedDate,

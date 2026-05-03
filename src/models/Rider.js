@@ -87,6 +87,9 @@ const riderSchema = new mongoose.Schema(
     },
     lastAutomatedReminderDate: {
       type: Date
+    },
+    rentalRate: {
+      type: Number // Locked rate at the time of onboarding
     }
   },
   { timestamps: true }

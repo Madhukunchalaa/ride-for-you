@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { FiSettings, FiSave, FiInfo } from 'react-icons/fi';
 
 const Settings = () => {
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [configs, setConfigs] = useState({
@@ -19,6 +20,8 @@ const Settings = () => {
       const { data } = await api.get('/config');
       if (data.success) {
         setConfigs(data.data);
+        const rentConfig = data.fullConfigs?.find(c => c.key === 'WEEKLY_RENTAL_AMOUNT');
+        if (rentConfig) setHistory(rentConfig.history || []);
       }
     } catch (err) {
       toast.error('Failed to load settings');
@@ -38,6 +41,7 @@ const Settings = () => {
       if (data.success) {
         toast.success('Settings updated successfully');
         setConfigs(prev => ({ ...prev, [key]: value }));
+        fetchConfig(); // Refresh history
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed');
@@ -82,7 +86,7 @@ const Settings = () => {
                 <div>
                   <h3 className="font-medium text-gray-900">Weekly Rental Amount</h3>
                   <p className="text-sm text-gray-500 max-w-md">
-                    This amount will be used automatically whenever you create a payment link or send an automated reminder.
+                    Changing this will **only affect new riders** added from now on. Existing riders will keep their original rental rate.
                   </p>
                 </div>
               </div>
@@ -106,6 +110,35 @@ const Settings = () => {
                 </button>
               </div>
             </div>
+
+            {/* Price Change History */}
+            {history.length > 0 && (
+              <div className="mt-6 border-t pt-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <FiSave size={14} /> Price Change History
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-500">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2">Date</th>
+                        <th className="px-4 py-2">Previous Rate</th>
+                        <th className="px-4 py-2">Updated By</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {[...history].reverse().map((entry, idx) => (
+                        <tr key={idx} className="bg-white">
+                          <td className="px-4 py-2 font-medium">{new Date(entry.updatedAt).toLocaleDateString()}</td>
+                          <td className="px-4 py-2 text-indigo-600 font-semibold">₹{entry.value}</td>
+                          <td className="px-4 py-2 capitalize">{entry.updatedBy}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -170,9 +203,11 @@ const Settings = () => {
         <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 text-amber-800 text-sm">
           <FiInfo className="shrink-0 mt-0.5" />
           <p>
-            <strong>Note:</strong> Changing the rental amount will not affect already sent payment links. It will only apply to new links generated from now on.
+            <strong>Professional Mode:</strong> Your system now uses **Immutability Protection**. Changing the rate above will only apply to new riders. Existing active riders will continue to be billed at their original rates to avoid confusion.
           </p>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

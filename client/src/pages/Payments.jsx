@@ -164,7 +164,7 @@ export default function Payments() {
                     <td className="p-8 font-bold text-slate-500 dark:text-slate-400">
                       {new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="p-8 text-slate-900 dark:text-white font-black">₹{(data.stats.weeklyRate || 2000).toLocaleString()}</td>
+                    <td className="p-8 text-slate-900 dark:text-white font-black">₹{(rider.rentalRate || data.stats.weeklyRate || 2000).toLocaleString()}</td>
                     <td className="p-8">
                       <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
                         rider.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'
@@ -232,7 +232,7 @@ export default function Payments() {
             <div className="p-6 bg-dark-200 border border-slate-800 rounded-3xl space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Rental Amount</span>
-                <span className="text-lg font-black text-white">₹{(data.stats.weeklyRate || 2000).toLocaleString()}</span>
+                <span className="text-lg font-black text-white">₹{(unpaidRiders.find(r => r._id === selectedRider)?.rentalRate || data.stats.weeklyRate || 2000).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Payment Method</span>

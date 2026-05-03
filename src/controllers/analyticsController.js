@@ -32,12 +32,14 @@ exports.getDashboardStats = async (req, res) => {
     const adminProfit = totalRevenue - totalHalaExpenses;
 
     // Pending Dues (based on unpaid active riders)
-    const totalUnpaidRiders = await Rider.countDocuments({ 
+    const unpaidActiveRiders = await Rider.find({ 
       paymentStatus: 'unpaid', 
       riderStatus: 'active' 
     });
-    const weeklyRate = await getWeeklyRate();
-    const pendingDues = totalUnpaidRiders * weeklyRate;
+    const globalWeeklyRate = await getWeeklyRate();
+    const pendingDues = unpaidActiveRiders.reduce((acc, rider) => {
+      return acc + (rider.rentalRate || globalWeeklyRate);
+    }, 0);
 
     // 3. 7-Day Trends
     const sevenDaysAgo = new Date();
@@ -185,16 +187,30 @@ exports.getPaymentAnalytics = async (req, res) => {
   try {
     const activeRiders = await Rider.find({ riderStatus: 'active' }).sort({ returnDate: 1 });
     
-    const totalPaid = activeRiders.filter(r => r.paymentStatus === 'paid').length;
-    const totalUnpaid = activeRiders.filter(r => r.paymentStatus === 'unpaid').length;
+    const globalWeeklyRate = await getWeeklyRate();
     
-    const weeklyRate = await getWeeklyRate();
+    let totalCollected = 0;
+    let pendingDues = 0;
+    let successfulCount = 0;
+    let upcomingTotal = 0;
+
+    activeRiders.forEach(rider => {
+      const rate = rider.rentalRate || globalWeeklyRate;
+      upcomingTotal += rate;
+      if (rider.paymentStatus === 'paid') {
+        totalCollected += rate;
+        successfulCount++;
+      } else {
+        pendingDues += rate;
+      }
+    });
+
     const stats = {
-      totalCollected: totalPaid * weeklyRate,
-      pendingDues: totalUnpaid * weeklyRate,
-      successfulCount: totalPaid,
-      upcomingTotal: activeRiders.length * weeklyRate,
-      weeklyRate // Send the rate so frontend can display it
+      totalCollected,
+      pendingDues,
+      successfulCount,
+      upcomingTotal,
+      weeklyRate: globalWeeklyRate
     };
 
     res.status(200).json({

@@ -2,7 +2,7 @@ require('dotenv').config();
 const { sendPaymentReminder } = require('./src/utils/whatsapp');
 
 const testOtpFinal = async () => {
-  const testNumber = '7095682464';
+  const testNumber = '7989776255';
   const otpCode = '987654';
   console.log(`🚀 Final OTP Test [otp] to ${testNumber}...`);
   

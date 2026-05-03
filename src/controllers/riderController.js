@@ -87,6 +87,24 @@ exports.sendReminder = async (req, res) => {
       });
       
       console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);
+      
+      // 4. Follow up with QR code image! ⚡
+      try {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+        await sendPaymentReminder(rider.whatsappNumber, { 
+          templateName: 'payment_reminder_v1', // Re-use the template or send as media
+          variables: {
+            1: rider.name,
+            2: 'SCAN & PAY QR',
+            3: 'NOW',
+            4: paymentLink
+          },
+          headerImage: qrUrl
+        });
+        console.log('✅ QR Follow-up sent');
+      } catch (qrErr) {
+        console.log('ℹ️ QR Follow-up skipped:', qrErr.message);
+      }
 
       res.status(200).json({
         success: true,

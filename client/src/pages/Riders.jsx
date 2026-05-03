@@ -138,7 +138,7 @@ export default function Riders() {
       setIsSubmitting(false);
     }
   };
-
+  const [formData, setFormData] = useState({
     name: '',
     whatsappNumber: '',
     riderStatus: 'active',

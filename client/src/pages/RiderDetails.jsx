@@ -244,6 +244,28 @@ export default function RiderDetails() {
             <Send size={18} />
             <span className="font-black uppercase tracking-widest text-xs">WhatsApp</span>
           </a>
+          {(rider.riderStatus === 'returned' || rider.riderStatus === 'inactive') && (
+            <button 
+              onClick={async () => {
+                try {
+                  toast.loading('Sending image promo...');
+                  await api.post(`/riders/${rider._id}/send-reminder`, { 
+                    templateName: 'rejoiner_promo_v1',
+                    variables: { 1: rider.name }
+                  });
+                  toast.dismiss();
+                  toast.success('Promo sent successfully!');
+                } catch (err) {
+                  toast.dismiss();
+                  toast.error('Failed to send promo');
+                }
+              }}
+              className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-2 px-6 py-3 shadow-glow-primary bg-indigo-600 hover:bg-indigo-500 border-indigo-500/50 text-white rounded-2xl transition-all"
+            >
+              <TrendingUp size={18} />
+              <span className="font-black uppercase tracking-widest text-xs">Send Promo</span>
+            </button>
+          )}
         </div>
       </div>
 

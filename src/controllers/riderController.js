@@ -59,44 +59,38 @@ exports.sendReminder = async (req, res) => {
     const paymentLink = response.short_url;
 
 
+    const { templateName, variables: customVariables } = req.body;
+
     // 2. Store Payment Link ID in Database
     rider.paymentLinkId = response.id;
-
     await rider.save();
 
-    // 3. Send WhatsApp (Using the newly APPROVED template!)
-    console.log(`📲 Sending Template [${process.env.TWILIO_CONTENT_SID}] to ${rider.whatsappNumber}...`);
-    console.log(`📊 Variables: 1:${rider.name}, 2:${rider.vehicleNumber}, 4:${paymentLink}`);
-    
+    // 3. Send WhatsApp
     try {
       const formattedDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
       
+      const defaultVariables = {
+        1: rider.name,
+        2: rider.vehicleNumber,
+        3: formattedDate,
+        4: paymentLink
+      };
+
       const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
+        templateName: templateName || 'payment_reminder_v1',
         contentSid: process.env.TWILIO_CONTENT_SID,
-        variables: {
-          1: rider.name,
-          2: rider.vehicleNumber,
-          3: formattedDate,
-          4: paymentLink
-        }
+        variables: customVariables || defaultVariables,
+        // For Rejoinder Promo, we add the bike image link as the header
+        ...(templateName === 'rejoiner_promo_v1' && { 
+          headerImage: 'https://rideforyouev.com/assets/bike-promo.jpg' 
+        })
       });
       
-      console.log('✅ Twilio API Response:', whatsappRes.sid);
-
-      // 4. (Optional) Follow up with QR code if session is open
-      try {
-        const mediaUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
-        await sendPaymentReminder(rider.whatsappNumber, { 
-          body: `You can also scan this QR code to pay instantly! ⚡`,
-          mediaUrl: mediaUrl 
-        });
-      } catch (qrErr) {
-        console.log('ℹ️ QR Follow-up skipped');
-      }
+      console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);
 
       res.status(200).json({
         success: true,
-        message: `Reminder sent to ${rider.name}`
+        message: `${templateName || 'Reminder'} sent to ${rider.name}`
       });
 
     } catch (waErr) {

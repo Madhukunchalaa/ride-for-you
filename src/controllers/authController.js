@@ -69,7 +69,8 @@ exports.login = async (req, res) => {
     await account.save();
 
     await sendPaymentReminder(account.whatsappNumber, {
-      body: `Your Ride For You login OTP is: *${otp}*. Valid for 10 minutes.`
+      templateName: 'otp',
+      variables: { 1: otp }
     });
 
     res.json({
@@ -148,7 +149,8 @@ exports.forgotPassword = async (req, res) => {
     await account.save();
 
     await sendPaymentReminder(account.whatsappNumber, {
-      body: `Your Ride For You password reset OTP is: *${otp}*. Valid for 10 minutes.`
+      templateName: 'otp',
+      variables: { 1: otp }
     });
 
     res.json({ 
@@ -235,7 +237,10 @@ exports.requestOtp = async (req, res) => {
     account.otpExpires = Date.now() + 10 * 60 * 1000;
     await account.save();
 
-    await sendPaymentReminder(whatsappNumber, { body: `Your login OTP is: *${otp}*` });
+    await sendPaymentReminder(whatsappNumber, { 
+      templateName: 'otp',
+      variables: { 1: otp }
+    });
     res.json({ success: true, message: 'OTP sent' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

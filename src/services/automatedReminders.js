@@ -100,7 +100,7 @@ const initAutomatedReminders = () => {
     }
   });
 
-  console.log('🚀 Automated Reminder Service Initialized (Hourly Check)');
+  console.log('🚀 Automated Reminder Service Initialized (Real-time Check)');
 };
 
 module.exports = { initAutomatedReminders };

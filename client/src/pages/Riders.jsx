@@ -146,7 +146,7 @@ export default function Riders() {
     deployDate: '',
     returnDate: '',
     autoReminderEnabled: true,
-    autoReminderTime: '10:00'
+    autoReminderTime: '00:00'
   });
 
   const fetchRiders = async (showLoading = true) => {
@@ -223,7 +223,7 @@ export default function Riders() {
       deployDate: '',
       returnDate: '',
       autoReminderEnabled: true,
-      autoReminderTime: '10:00'
+      autoReminderTime: '00:00'
     });
   };
 
@@ -238,7 +238,7 @@ export default function Riders() {
       deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
       returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
       autoReminderEnabled: rider.autoReminderEnabled ?? true,
-      autoReminderTime: rider.autoReminderTime || '10:00'
+      autoReminderTime: rider.autoReminderTime || '00:00'
     });
     setIsModalOpen(true);
   };

@@ -199,7 +199,7 @@ exports.addRider = async (req, res) => {
       rider.returnDate = returnDate;
       rider.paymentStatus = 'unpaid';
       rider.autoReminderEnabled = autoReminderEnabled !== undefined ? autoReminderEnabled : true;
-      rider.autoReminderTime = autoReminderTime || '10:00';
+      rider.autoReminderTime = autoReminderTime || '00:00';
       rider.reminderEscalationStage = 0;
       rider.isRecoveryBucket = false;
       
@@ -225,7 +225,7 @@ exports.addRider = async (req, res) => {
       deployDate,
       returnDate,
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
-      autoReminderTime: autoReminderTime || '10:00',
+      autoReminderTime: autoReminderTime || '00:00',
       bikesUsed: [vehicleNumber.toUpperCase()]
     });
 
@@ -287,6 +287,7 @@ exports.updateRider = async (req, res) => {
     if (returnDate) rider.returnDate = returnDate;
     if (autoReminderEnabled !== undefined) rider.autoReminderEnabled = autoReminderEnabled;
     if (autoReminderTime) rider.autoReminderTime = autoReminderTime;
+    else if (!rider.autoReminderTime) rider.autoReminderTime = '00:00';
     if (riderStatus) {
       rider.riderStatus = riderStatus;
       if (riderStatus === 'recovery') {

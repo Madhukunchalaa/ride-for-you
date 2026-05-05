@@ -15,23 +15,37 @@ exports.getDashboardStats = async (req, res) => {
     // 1. Basic Counts
     const activeRiders = await Rider.countDocuments({ riderStatus: 'active' });
     
-    // 2. Financial Calculations (Revenue vs Hala)
-    // Revenue = Total collected from riders (Invoices with riderId)
+    // 2. Financial Calculations (LAST 7 DAYS)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Weekly Revenue = Collected from riders in last 7 days
     const revenueStats = await Invoice.aggregate([
-      { $match: { riderId: { $ne: null } } },
+      { 
+        $match: { 
+          riderId: { $ne: null },
+          createdAt: { $gte: sevenDaysAgo }
+        } 
+      },
       { $group: { _id: null, total: { $sum: "$billAmount" } } }
     ]);
     const totalRevenue = revenueStats[0]?.total || 0;
 
-    // Hala Expenses = Total paid to Hala (Invoices without riderId)
+    // Weekly Hala Expenses = Paid to Hala in last 7 days
     const expenseStats = await Invoice.aggregate([
-      { $match: { riderId: { $eq: null } } },
+      { 
+        $match: { 
+          riderId: { $eq: null },
+          createdAt: { $gte: sevenDaysAgo }
+        } 
+      },
       { $group: { _id: null, total: { $sum: "$actualRent" } } }
     ]);
     const totalHalaExpenses = expenseStats[0]?.total || 0;
     const adminProfit = totalRevenue - totalHalaExpenses;
 
-    // Pending Dues (based on unpaid active riders)
+    // Pending Dues (This remains total outstanding as it's critical, but we can call it "Current Pending")
     const unpaidActiveRiders = await Rider.find({ 
       paymentStatus: 'unpaid', 
       riderStatus: 'active' 

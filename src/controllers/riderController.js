@@ -202,9 +202,14 @@ exports.addRider = async (req, res) => {
       rider.autoReminderTime = autoReminderTime || '00:00';
       rider.reminderEscalationStage = 0;
       rider.isRecoveryBucket = false;
+      rider.securityDeposit = Number(req.body.securityDeposit) || 0;
       
-      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-      rider.rentalRate = config ? Number(config.value) : 2000;
+      if (req.body.rentalRate) {
+        rider.rentalRate = Number(req.body.rentalRate);
+      } else {
+        const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+        rider.rentalRate = config ? Number(config.value) : 2000;
+      }
 
       await rider.save();
       
@@ -297,6 +302,13 @@ exports.updateRider = async (req, res) => {
         rider.isRecoveryBucket = false;
         rider.reminderEscalationStage = 0;
       }
+    }
+
+    if (req.body.securityDeposit !== undefined) {
+      rider.securityDeposit = Number(req.body.securityDeposit);
+    }
+    if (req.body.rentalRate !== undefined) {
+      rider.rentalRate = Number(req.body.rentalRate);
     }
 
 

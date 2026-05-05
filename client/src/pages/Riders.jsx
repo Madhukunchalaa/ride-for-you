@@ -146,7 +146,9 @@ export default function Riders() {
     deployDate: '',
     returnDate: '',
     autoReminderEnabled: true,
-    autoReminderTime: '00:00'
+    autoReminderTime: '00:00',
+    securityDeposit: '',
+    rentalRate: ''
   });
 
   const fetchRiders = async (showLoading = true) => {
@@ -223,7 +225,9 @@ export default function Riders() {
       deployDate: '',
       returnDate: '',
       autoReminderEnabled: true,
-      autoReminderTime: '00:00'
+      autoReminderTime: '00:00',
+      securityDeposit: '',
+      rentalRate: ''
     });
   };
 
@@ -238,7 +242,9 @@ export default function Riders() {
       deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
       returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
       autoReminderEnabled: rider.autoReminderEnabled ?? true,
-      autoReminderTime: rider.autoReminderTime || '00:00'
+      autoReminderTime: rider.autoReminderTime || '00:00',
+      securityDeposit: rider.securityDeposit || '',
+      rentalRate: rider.rentalRate || ''
     });
     setIsModalOpen(true);
   };
@@ -856,6 +862,31 @@ export default function Riders() {
                   <option value="recovery">Recovery</option>
                   <option value="inactive">Inactive</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Security Deposit (₹)</label>
+                <input 
+                  name="securityDeposit"
+                  type="number" 
+                  placeholder="Ex: 1000" 
+                  className="input h-12"
+                  value={formData.securityDeposit}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Weekly Rental Rate (₹)</label>
+                <input 
+                  name="rentalRate"
+                  type="number" 
+                  placeholder="Default: ₹2000" 
+                  className="input h-12"
+                  value={formData.rentalRate}
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
 

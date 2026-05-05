@@ -90,6 +90,10 @@ const riderSchema = new mongoose.Schema(
     },
     rentalRate: {
       type: Number // Locked rate at the time of onboarding
+    },
+    securityDeposit: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

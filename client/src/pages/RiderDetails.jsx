@@ -395,6 +395,19 @@ export default function RiderDetails() {
             </div>
             <div className="bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-lg">
               <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Deposit</p>
+                  <p className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">
+                    ₹{(rider.securityDeposit || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-lg">
+              <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20">
                   <Clock size={24} />
                 </div>

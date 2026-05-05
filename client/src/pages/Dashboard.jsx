@@ -9,7 +9,8 @@ import {
   Loader2,
   Calendar,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -54,12 +55,13 @@ export default function Dashboard() {
     { label: 'Active Fleet', value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
     { label: 'Pending Dues', value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
     { label: 'Weekly Revenue', value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
+    { label: 'Total SD', value: `₹${(data?.stats?.totalSD || 0).toLocaleString()}`, icon: ShieldCheck, color: 'text-indigo-400', bg: 'bg-indigo-600/10' },
   ];
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-dark-100 p-6 rounded-3xl md:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl hover:border-primary-500/30 transition-all group overflow-hidden relative">
             <div className="flex items-center gap-4">

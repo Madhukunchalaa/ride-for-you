@@ -55,6 +55,13 @@ exports.getDashboardStats = async (req, res) => {
       return acc + (rider.rentalRate || globalWeeklyRate);
     }, 0);
 
+    // Total Security Deposits (Global total for all active riders)
+    const sdStats = await Rider.aggregate([
+      { $match: { riderStatus: 'active' } },
+      { $group: { _id: null, total: { $sum: "$securityDeposit" } } }
+    ]);
+    const totalSD = sdStats[0]?.total || 0;
+
     // 3. 7-Day Trends
     // (sevenDaysAgo is already declared above)
     
@@ -121,7 +128,8 @@ exports.getDashboardStats = async (req, res) => {
           adminProfit,
           activeRiders,
           totalRevenue,
-          pendingDues
+          pendingDues,
+          totalSD
         },
         riderTrend,
         revenueTrend,

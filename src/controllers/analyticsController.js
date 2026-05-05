@@ -56,8 +56,7 @@ exports.getDashboardStats = async (req, res) => {
     }, 0);
 
     // 3. 7-Day Trends
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // (sevenDaysAgo is already declared above)
     
     // Rider Growth Trend
     const riderTrend = await Rider.aggregate([

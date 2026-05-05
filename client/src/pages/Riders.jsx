@@ -634,6 +634,12 @@ export default function Riders() {
                           {rider.vehicleNumber}
                         </span>
                       </td>
+                      <td className="p-6 text-sm text-slate-600 dark:text-slate-300 font-bold">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
+                          {formatDate(rider.deployDate)}
+                        </div>
+                      </td>
                       <td className="p-6">
                         <div className={`flex items-center gap-2 text-sm font-black w-fit px-3 py-1 rounded-lg ${isReturnsPage ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300' : 'bg-primary-500/10 text-primary-700 dark:text-primary-300'}`}>
                           <Calendar size={14} className={isReturnsPage ? 'text-blue-600 dark:text-blue-500' : 'text-primary-600 dark:text-primary-500'} />

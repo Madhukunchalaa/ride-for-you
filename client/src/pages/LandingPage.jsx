@@ -122,6 +122,7 @@ const LandingPage = () => {
             <a href="#about" className="hover:text-primary-400 transition-colors">About</a>
             <a href="#fleet" className="hover:text-primary-400 transition-colors">Fleet</a>
             <a href="#locations" className="hover:text-primary-400 transition-colors">Locations</a>
+            <Link to="/app/login" className="hover:text-primary-400 transition-colors">Login</Link>
             <a href="#contact" className="bg-white text-black px-8 py-3 rounded-full hover:bg-primary-400 hover:text-black transition-all hover:shadow-[0_0_20px_rgba(20,184,166,0.4)]">Get Started</a>
           </div>
 
@@ -177,6 +178,40 @@ const LandingPage = () => {
                   className="w-full grayscale hover:grayscale-0 transition-all duration-700 object-cover aspect-[4/3] lg:aspect-auto"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-32 relative border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-sm font-bold text-primary-500 uppercase tracking-[0.3em] mb-4">Our Vision</h2>
+                <h3 className="text-4xl lg:text-5xl font-black tracking-tighter font-display text-white">REVOLUTIONIZING <br/>LOCAL LOGISTICS.</h3>
+              </div>
+              <p className="text-lg text-slate-400 leading-relaxed font-medium">
+                Ride For You EV is a premium electric vehicle rental platform dedicated to empowering individual riders and logistics professionals with sustainable, high-performance mobility solutions. Founded on the principles of efficiency and eco-friendliness, we provide a seamless bridge between modern technology and urban transportation needs.
+              </p>
+              <div className="grid grid-cols-2 gap-6 pt-4">
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                  <h4 className="text-white font-black uppercase text-xs tracking-widest mb-2">Sustainability</h4>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-tight">Zero emission fleet for a cleaner future.</p>
+                </div>
+                <div className="p-6 bg-white/5 rounded-3xl border border-white/10">
+                  <h4 className="text-white font-black uppercase text-xs tracking-widest mb-2">Reliability</h4>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-tight">24/7 technical support and maintenance.</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative rounded-[3rem] overflow-hidden border border-white/10 aspect-video lg:aspect-square">
+              <img 
+                src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&q=80&w=2072" 
+                alt="Our Vision" 
+                className="w-full h-full object-cover grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-700"
+              />
             </div>
           </div>
         </div>
@@ -272,6 +307,25 @@ const LandingPage = () => {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* Locations Section */}
+      <section id="locations" className="py-32 relative bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <h2 className="text-sm font-bold text-primary-500 uppercase tracking-[0.3em] mb-4">Our Presence</h2>
+            <h3 className="text-4xl lg:text-5xl font-black tracking-tighter font-display text-white uppercase">HUB LOCATIONS.</h3>
+          </div>
+          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {['Jeedimetla', 'Uppal', 'Secunderabad', 'Gandimaisamma', 'Jubilee Hills'].map(city => (
+              <div key={city} className="p-8 bg-white/5 border border-white/10 rounded-3xl text-center group hover:bg-primary-500 hover:text-black transition-all duration-300">
+                <MapPin className="mx-auto mb-4 text-primary-400 group-hover:text-black transition-colors" />
+                <h4 className="text-lg font-black uppercase tracking-tight">{city}</h4>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 opacity-60">Full Support Hub</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -433,8 +487,7 @@ const LandingPage = () => {
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-1">Ownership & Management</h4>
               <p className="font-bold text-white text-sm">Pasireddy Balram Kumar <span className="text-slate-500 mx-2">|</span> <span className="text-primary-400 font-medium">Founder, YS Manpower Solutions</span></p>
               <div className="flex items-center gap-4 mt-2">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">GST: [Enter GST Number]</span>
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">MSME Registered</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">GST: 36PAAPS7046P1ZO</span>
               </div>
             </div>
             <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Ride For You EV. All Rights Reserved.</p>

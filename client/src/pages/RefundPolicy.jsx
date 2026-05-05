@@ -54,7 +54,7 @@ const RefundPolicy = () => {
             <section className="bg-white/5 border border-white/10 p-8 rounded-3xl">
               <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">3. Refund Processing</h2>
               <p>
-                All refunds will be processed via the original payment method (Cashfree/Razorpay). It usually takes 5-7 business days for the amount to reflect in your bank account after we initiate the refund.
+                All refunds will be Credited via the original payment method (Cashfree/Razorpay). It usually takes 7-10 business days for the amount to reflect in your bank account after we initiate the refund.
               </p>
             </section>
 

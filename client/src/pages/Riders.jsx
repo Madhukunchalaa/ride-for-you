@@ -592,8 +592,8 @@ export default function Riders() {
                   <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Rider Details</th>
                   <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Vehicle No.</th>
                   <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Deploy Date</th>
-                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Return Date</th>
-                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">{isReturnsPage ? 'Date Returned' : 'Next Return'}</th>
+                  <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">{isReturnsPage ? 'Total Tenure' : 'Status'}</th>
                   <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Payment</th>
                   <th className="p-6 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] text-center">Actions</th>
                 </tr>
@@ -634,33 +634,42 @@ export default function Riders() {
                           {rider.vehicleNumber}
                         </span>
                       </td>
-                      <td className="p-6 text-sm text-slate-600 dark:text-slate-300 font-bold">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
-                          {formatDate(rider.deployDate)}
-                        </div>
-                      </td>
                       <td className="p-6">
-                        <div className="flex items-center gap-2 text-sm text-primary-700 dark:text-primary-300 font-black bg-primary-500/10 w-fit px-3 py-1 rounded-lg">
-                          <Calendar size={14} className="text-primary-600 dark:text-primary-500" />
+                        <div className={`flex items-center gap-2 text-sm font-black w-fit px-3 py-1 rounded-lg ${isReturnsPage ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300' : 'bg-primary-500/10 text-primary-700 dark:text-primary-300'}`}>
+                          <Calendar size={14} className={isReturnsPage ? 'text-blue-600 dark:text-blue-500' : 'text-primary-600 dark:text-primary-500'} />
                           {formatDate(rider.returnDate)}
                         </div>
                       </td>
                       <td className="p-6">
-                        <div className="flex flex-col">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit ${
-                            rider.riderStatus === 'active' 
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
-                            : rider.riderStatus === 'returned'
-                            ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
-                            : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
-                          }`}>
-                            {rider.riderStatus}
-                          </span>
-                          <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 mt-2 uppercase tracking-tighter">
-                            Week {(rider.totalWeeks || 0) + 1} Running
-                          </span>
-                        </div>
+                        {isReturnsPage ? (
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-slate-900 dark:text-white uppercase">
+                              {(() => {
+                                const start = new Date(rider.deployDate);
+                                const end = new Date(rider.returnDate);
+                                const diff = Math.abs(end - start);
+                                const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                return `${Math.floor(days/7)}W ${days%7}D`;
+                              })()}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Total Tenure</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit ${
+                              rider.riderStatus === 'active' 
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
+                              : rider.riderStatus === 'returned'
+                              ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
+                              : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
+                            }`}>
+                              {rider.riderStatus}
+                            </span>
+                            <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 mt-2 uppercase tracking-tighter">
+                              Week {(rider.totalWeeks || 0) + 1} Running
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="p-6">
                         <div className="flex flex-col gap-1">

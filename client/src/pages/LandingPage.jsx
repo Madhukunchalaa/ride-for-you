@@ -122,7 +122,6 @@ const LandingPage = () => {
             <a href="#about" className="hover:text-primary-400 transition-colors">About</a>
             <a href="#fleet" className="hover:text-primary-400 transition-colors">Fleet</a>
             <a href="#locations" className="hover:text-primary-400 transition-colors">Locations</a>
-            <Link to="/app/login" className="hover:text-primary-400 transition-colors">Login</Link>
             <a href="#contact" className="bg-white text-black px-8 py-3 rounded-full hover:bg-primary-400 hover:text-black transition-all hover:shadow-[0_0_20px_rgba(20,184,166,0.4)]">Get Started</a>
           </div>
 

@@ -15,17 +15,26 @@ exports.getDashboardStats = async (req, res) => {
     // 1. Basic Counts
     const activeRiders = await Rider.countDocuments({ riderStatus: 'active' });
     
-    // 2. Financial Calculations (LAST 7 DAYS)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    // 2. Financial Calculations based on Timeframe
+    const { timeframe = 'weekly' } = req.query;
+    const startDate = new Date();
+    
+    if (timeframe === 'monthly') {
+      startDate.setDate(startDate.getDate() - 30);
+    } else if (timeframe === 'yearly') {
+      startDate.setDate(startDate.getDate() - 365);
+    } else {
+      // Default to weekly (7 days)
+      startDate.setDate(startDate.getDate() - 7);
+    }
+    startDate.setHours(0, 0, 0, 0);
 
     // Weekly Revenue = Collected from riders in last 7 days
     const revenueStats = await Invoice.aggregate([
       { 
         $match: { 
           riderId: { $ne: null },
-          createdAt: { $gte: sevenDaysAgo }
+          createdAt: { $gte: startDate }
         } 
       },
       { $group: { _id: null, total: { $sum: "$billAmount" } } }
@@ -37,7 +46,7 @@ exports.getDashboardStats = async (req, res) => {
       { 
         $match: { 
           riderId: { $eq: null },
-          createdAt: { $gte: sevenDaysAgo }
+          createdAt: { $gte: startDate }
         } 
       },
       { $group: { _id: null, total: { $sum: "$actualRent" } } }
@@ -67,7 +76,7 @@ exports.getDashboardStats = async (req, res) => {
     
     // Rider Growth Trend
     const riderTrend = await Rider.aggregate([
-      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+      { $match: { createdAt: { $gte: startDate } } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -81,7 +90,7 @@ exports.getDashboardStats = async (req, res) => {
     const revenueTrend = await Invoice.aggregate([
       { 
         $match: { 
-          createdAt: { $gte: sevenDaysAgo },
+          createdAt: { $gte: startDate },
           riderId: { $ne: null }
         } 
       },

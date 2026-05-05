@@ -26,11 +26,13 @@ import api from '../api/axios';
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState('weekly');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get('/analytics/dashboard');
+        setLoading(true);
+        const response = await api.get(`/analytics/dashboard?timeframe=${timeframe}`);
         setData(response.data.data);
       } catch (err) {
         console.error('Analytics Error:', err);
@@ -39,7 +41,7 @@ export default function Dashboard() {
       }
     };
     fetchStats();
-  }, []);
+  }, [timeframe]);
 
   if (loading) {
     return (
@@ -50,16 +52,41 @@ export default function Dashboard() {
     );
   }
 
+  const getTimeframeLabel = () => {
+    if (timeframe === 'monthly') return 'Monthly';
+    if (timeframe === 'yearly') return 'Yearly';
+    return 'Weekly';
+  };
+
   const stats = [
-    { label: 'Weekly Profit', value: `₹${(data?.stats?.adminProfit || 0).toLocaleString()}`, icon: DollarSign, color: 'text-sky-400', bg: 'bg-sky-600/10' },
+    { label: `${getTimeframeLabel()} Profit`, value: `₹${(data?.stats?.adminProfit || 0).toLocaleString()}`, icon: DollarSign, color: 'text-sky-400', bg: 'bg-sky-600/10' },
     { label: 'Active Fleet', value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
     { label: 'Pending Dues', value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
-    { label: 'Weekly Revenue', value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
+    { label: `${getTimeframeLabel()} Revenue`, value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
     { label: 'Total SD', value: `₹${(data?.stats?.totalSD || 0).toLocaleString()}`, icon: ShieldCheck, color: 'text-indigo-400', bg: 'bg-indigo-600/10' },
   ];
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
+      {/* Header with Filter */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Dashboard Overview</h2>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Real-time performance analytics</p>
+        </div>
+        <div className="flex items-center gap-3 bg-white dark:bg-dark-100 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <Calendar size={16} className="text-primary-500 ml-2" />
+          <select 
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+            className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4"
+          >
+            <option value="weekly">Weekly View</option>
+            <option value="monthly">Monthly View</option>
+            <option value="yearly">Yearly View</option>
+          </select>
+        </div>
+      </div>
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         {stats.map((stat) => (

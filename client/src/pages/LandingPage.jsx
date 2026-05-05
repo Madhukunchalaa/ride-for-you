@@ -485,7 +485,7 @@ const LandingPage = () => {
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex flex-col">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 mb-1">Ownership & Management</h4>
-              <p className="font-bold text-white text-sm">Pasireddy Balram Kumar <span className="text-slate-500 mx-2">|</span> <span className="text-primary-400 font-medium">Founder, YS Manpower Solutions</span></p>
+              <p className="font-bold text-white text-sm">Koneti Sumitra <span className="text-slate-500 mx-2">|</span> <span className="text-primary-400 font-medium">Founder, YS Manpower Solutions</span></p>
               <div className="flex items-center gap-4 mt-2">
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">GST: 36PAAPS7046P1ZO</span>
               </div>

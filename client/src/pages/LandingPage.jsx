@@ -363,7 +363,7 @@ const LandingPage = () => {
                     </div>
                     <div>
                       <h5 className="text-sm uppercase tracking-widest text-slate-500 font-black mb-1">Official Inquiry</h5>
-                      <p className="text-xl font-bold text-white">rideforyouev@gmail.com</p>
+                      <p className="text-xl font-bold text-white">support@rideforyouev.com</p>
                     </div>
                   </div>
                 </div>
@@ -468,7 +468,7 @@ const LandingPage = () => {
             <div>
               <h4 className="text-sm font-black uppercase tracking-widest text-white mb-6">Support</h4>
               <ul className="space-y-4 text-sm font-bold text-slate-500">
-                <li className="flex items-center gap-2"><Mail size={14} className="text-primary-500" /> rideforyouev@gmail.com</li>
+                <li className="flex items-center gap-2"><Mail size={14} className="text-primary-500" /> support@rideforyouev.com</li>
                 <li className="flex items-center gap-2"><Phone size={14} className="text-primary-500" /> +91 7989776255</li>
               </ul>
             </div>

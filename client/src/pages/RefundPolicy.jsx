@@ -68,7 +68,7 @@ const RefundPolicy = () => {
             <section className="bg-primary-500/10 border border-primary-500/20 p-8 rounded-3xl">
               <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4">5. Dispute Resolution</h2>
               <p>
-                In case of any discrepancies regarding refunds, please contact our support team at **rideforyouev@gmail.com** with your transaction details. We aim to resolve all issues within 48 hours.
+                In case of any discrepancies regarding refunds, please contact our support team at **support@rideforyouev.com** with your transaction details. We aim to resolve all issues within 48 hours.
               </p>
               <div className="mt-6 text-sm opacity-70 italic">Last Updated: April 25, 2026</div>
             </section>

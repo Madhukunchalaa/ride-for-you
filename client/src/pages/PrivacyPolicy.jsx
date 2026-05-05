@@ -100,9 +100,9 @@ const PrivacyPolicy = () => {
                 In accordance with Information Technology Act 2000 and rules made there under, the name and contact details of the Grievance Officer are provided below:
               </p>
               <div className="mt-4 space-y-1">
-                <p className="font-bold">Grievance Officer: Pasireddy Balram Kumar</p>
+                <p className="font-bold">Grievance Officer: Koneti Sumitra</p>
                 <p>Ride For You EV (YS Manpower Solutions)</p>
-                <p>Email: rideforyouev@gmail.com</p>
+                <p>Email: support@rideforyouev.com</p>
                 <p>Address: Plot No. 12, Phase 1, Jeedimetla Industrial Area, Hyderabad, TS 500055</p>
                 <p className="mt-2 text-sm opacity-70 italic">Last Updated: April 25, 2026</p>
               </div>

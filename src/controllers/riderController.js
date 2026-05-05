@@ -362,7 +362,12 @@ exports.updateStatus = async (req, res) => {
           riderRate = config ? config.value : 2000;
         }
 
-        await createInvoiceRecord(rider, req.body.amount || riderRate);
+        await createInvoiceRecord(
+          rider, 
+          req.body.amount || riderRate, 
+          'RENT', 
+          req.body.remarks || 'Weekly Rental Payment'
+        );
       }
       rider.paymentStatus = paymentStatus;
     }

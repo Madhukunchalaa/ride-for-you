@@ -13,8 +13,11 @@ export default function Riders() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDamageModalOpen, setIsDamageModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [damageRider, setDamageRider] = useState(null);
+  const [paymentRider, setPaymentRider] = useState(null);
   const [damageData, setDamageData] = useState({ amount: '', reason: '' });
+  const [paymentData, setPaymentData] = useState({ amount: '', remarks: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -729,9 +732,21 @@ export default function Riders() {
                                 <button onClick={() => { handlePayment(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
                                   <CreditCard size={16} className="text-primary-500" /> Create Payment Link
                                 </button>
-                                <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                <button 
+                                  onClick={() => { 
+                                    if (rider.paymentStatus === 'unpaid') {
+                                      setPaymentRider(rider);
+                                      setPaymentData({ amount: rider.rentalRate || 2000, remarks: 'Manual Cash Payment' });
+                                      setIsPaymentModalOpen(true);
+                                    } else {
+                                      handleUpdateStatus(rider._id, 'unpaid');
+                                    }
+                                    setOpenActionMenu(null); 
+                                  }} 
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors"
+                                >
                                   {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
-                                  Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
+                                  {rider.paymentStatus === 'paid' ? 'Mark as Unpaid' : 'Record Payment'}
                                 </button>
                                 <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
                                   <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
@@ -1015,6 +1030,92 @@ export default function Riders() {
                     CHARGE RIDER
                   </>
                 )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+      {/* Manual Payment Modal */}
+      <Modal 
+        isOpen={isPaymentModalOpen} 
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setPaymentData({ amount: '', remarks: '' });
+          setPaymentRider(null);
+        }}
+      >
+        <div className="bg-white dark:bg-dark-100 rounded-[2.5rem] w-full max-w-lg overflow-y-auto custom-scrollbar animate-slide-up shadow-2xl border border-emerald-500/20">
+          <div className="sticky top-0 bg-emerald-500/5 dark:bg-emerald-500/10 backdrop-blur-md p-8 border-b border-emerald-500/10 flex items-center justify-between z-10">
+            <div>
+              <h3 className="text-2xl font-display font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight flex items-center gap-2">
+                <CreditCard size={24} /> Record Payment
+              </h3>
+              <p className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Manual collection for {paymentRider?.name}</p>
+            </div>
+            <button 
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="p-2 hover:bg-emerald-500/10 rounded-xl transition-colors text-emerald-500"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSubmitting(true);
+              try {
+                await api.patch(`/riders/${paymentRider._id}/status`, {
+                  paymentStatus: 'paid',
+                  amount: Number(paymentData.amount),
+                  remarks: paymentData.remarks
+                });
+                toast.success('Payment recorded successfully');
+                setIsPaymentModalOpen(false);
+                fetchRiders();
+              } catch (err) {
+                toast.error('Failed to record payment');
+              } finally {
+                setIsSubmitting(false);
+              }
+            }} 
+            className="p-8 space-y-6"
+          >
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Collected Amount (₹)</label>
+              <input 
+                type="number" 
+                required
+                className="input h-14 text-lg"
+                placeholder="2000"
+                value={paymentData.amount}
+                onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Payment Remarks</label>
+              <textarea 
+                className="input min-h-[100px] py-4 resize-none"
+                placeholder="e.g. Received cash via GPay / Cash hand over"
+                value={paymentData.remarks}
+                onChange={(e) => setPaymentData({ ...paymentData, remarks: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button 
+                type="button"
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="w-full btn-secondary h-14 font-bold rounded-2xl"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full btn-primary h-14 bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-black font-black uppercase tracking-widest shadow-glow-emerald disabled:opacity-50"
+              >
+                {isSubmitting ? <Loader2 size={24} className="animate-spin mx-auto" /> : 'Confirm Payment'}
               </button>
             </div>
           </form>

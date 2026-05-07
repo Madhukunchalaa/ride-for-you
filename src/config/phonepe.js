@@ -70,6 +70,8 @@ const createPaymentLink = async ({ riderId, amount, description, mobileNumber, c
     const payload = {
       merchantOrderId: uniqueTxId,
       amount: Math.round(amount), // in paise
+      expireAfter: 1200,
+      disablePaymentRetry: true,
       paymentFlow: {
         type: "PG_CHECKOUT",
         message: description || `Weekly EV Rental - Rider ID: ${riderId}`,

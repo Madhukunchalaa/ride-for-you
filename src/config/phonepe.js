@@ -62,6 +62,11 @@ const createPaymentLink = async ({ riderId, amount, description, mobileNumber, c
     const endpoint = '/checkout/v2/pay';
     const uniqueTxId = `tx_${riderId.toString().slice(-12)}_${Date.now().toString().slice(-6)}`;
 
+    let cleanPhone = mobileNumber ? mobileNumber.trim().replace(/\s+/g, '') : '';
+    if (cleanPhone && !cleanPhone.startsWith('+91') && cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    }
+
     const payload = {
       merchantOrderId: uniqueTxId,
       amount: Math.round(amount), // in paise
@@ -71,6 +76,9 @@ const createPaymentLink = async ({ riderId, amount, description, mobileNumber, c
         merchantUrls: {
           redirectUrl: redirectUrl || process.env.PHONEPE_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`
         }
+      },
+      prefillUserLoginDetails: {
+        phoneNumber: cleanPhone
       }
     };
 

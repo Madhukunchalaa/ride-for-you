@@ -2,6 +2,7 @@ const Rider = require('../models/Rider');
 const { sendPaymentReminder } = require('../utils/whatsapp');
 const { generateUPIQRCode } = require('../utils/qrGenerator');
 const phonepe = require('../config/phonepe');
+const razorpay = require('../config/razorpay');
 
 const SystemConfig = require('../models/SystemConfig');
 const { createInvoiceRecord } = require('../utils/invoiceHelper');
@@ -24,7 +25,7 @@ exports.sendReminder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
 
-    // 1. Create REAL Razorpay Payment Link
+    // 1. Create REAL Payment Link based on Gateway selection
     let weeklyRate = rider.rentalRate;
     if (!weeklyRate) {
       const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
@@ -32,22 +33,54 @@ exports.sendReminder = async (req, res) => {
     }
 
     const amountVal = weeklyRate * 100; // in paise
+    const gateway = process.env.PAYMENT_GATEWAY || 'razorpay';
+    let responseId = '';
+    let responseUrl = '';
 
-    const response = await phonepe.createPaymentLink({
-      riderId: rider._id,
-      amount: amountVal,
-      mobileNumber: rider.whatsappNumber,
-      description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`
-    });
+    if (gateway === 'phonepe') {
+      const response = await phonepe.createPaymentLink({
+        riderId: rider._id,
+        amount: amountVal,
+        mobileNumber: rider.whatsappNumber,
+        description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`
+      });
+      responseId = response.id;
+      responseUrl = response.url;
+    } else {
+      // Default: Razorpay
+      const uniqueLinkId = `pl_${rider._id.toString().slice(-12)}_${Date.now().toString().slice(-6)}`;
+      const response = await razorpay.paymentLink.create({
+        amount: amountVal,
+        currency: "INR",
+        accept_partial: false,
+        description: `Weekly Rental - ${rider.vehicleNumber}`,
+        customer: {
+          name: rider.name,
+          contact: rider.whatsappNumber,
+        },
+        notify: {
+          sms: false,
+          email: false
+        },
+        reminder_enable: true,
+        notes: {
+          riderId: rider._id.toString(),
+          link_id: uniqueLinkId
+        },
+        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_method: "get"
+      });
+      responseId = response.id;
+      responseUrl = response.short_url;
+    }
 
     const paymentLink = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
-
 
     const { templateName, variables: customVariables } = req.body;
 
     // 2. Store Payment Link ID and URL in Database
-    rider.paymentLinkId = response.id;
-    rider.paymentLinkUrl = response.url;
+    rider.paymentLinkId = responseId;
+    rider.paymentLinkUrl = responseUrl;
     await rider.save();
 
     // 3. Send WhatsApp
@@ -478,15 +511,53 @@ exports.addDamage = async (req, res) => {
       remarks: reason
     });
 
-    // 2. Create PhonePe Link for Damage
-    const response = await phonepe.createPaymentLink({
-      riderId: rider._id,
-      amount: amount * 100, // in paise
-      mobileNumber: rider.whatsappNumber,
-      description: `Damage Charge: ${reason} - ${rider.vehicleNumber}`
-    });
+    // 2. Create Payment Link for Damage based on Gateway Selection
+    const gateway = process.env.PAYMENT_GATEWAY || 'razorpay';
+    let responseId = '';
+    let responseUrl = '';
 
-    const paymentLink = response.url;
+    if (gateway === 'phonepe') {
+      const response = await phonepe.createPaymentLink({
+        riderId: rider._id,
+        amount: amount * 100, // in paise
+        mobileNumber: rider.whatsappNumber,
+        description: `Damage Charge: ${reason} - ${rider.vehicleNumber}`
+      });
+      responseId = response.id;
+      responseUrl = response.url;
+    } else {
+      // Default: Razorpay
+      const uniqueLinkId = `pl_dmg_${rider._id.toString().slice(-12)}_${Date.now().toString().slice(-6)}`;
+      const response = await razorpay.paymentLink.create({
+        amount: amount * 100,
+        currency: "INR",
+        accept_partial: false,
+        description: `Damage Charge: ${reason} - ${rider.vehicleNumber}`,
+        customer: {
+          name: rider.name,
+          contact: rider.whatsappNumber,
+        },
+        notify: {
+          sms: false,
+          email: false
+        },
+        notes: {
+          riderId: rider._id.toString(),
+          link_id: uniqueLinkId
+        },
+        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_method: "get"
+      });
+      responseId = response.id;
+      responseUrl = response.short_url;
+    }
+
+    // Save link to DB so the shortened URL redirector can look it up
+    rider.paymentLinkId = responseId;
+    rider.paymentLinkUrl = responseUrl;
+    await rider.save();
+
+    const paymentLink = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
 
     // 3. Send WhatsApp Notification
     if (rider.whatsappNumber) {

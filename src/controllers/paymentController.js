@@ -1,200 +1,138 @@
 const crypto = require('crypto');
 const Rider = require('../models/Rider');
-const razorpay = require('../config/razorpay');
-
-// @POST /api/payments/create-order
-// @desc Create a Razorpay order for a rider's weekly payment
-exports.createOrder = async (req, res) => {
-  try {
-    const { riderId, amount } = req.body;
-
-    const rider = await Rider.findById(riderId);
-    if (!rider) {
-      return res.status(404).json({ success: false, message: 'Rider not found' });
-    }
-
-    const finalAmount = rider.whatsappNumber === '7095682464' ? 1 : (amount || 2000);
-
-    const options = {
-      amount: finalAmount * 100, // amount in the smallest currency unit (paise for INR)
-      currency: "INR",
-      receipt: `receipt_rider_${riderId}_${Date.now()}`,
-    };
-
-    const order = await razorpay.orders.create(options);
-
-    res.status(200).json({
-      success: true,
-      order
-    });
-  } catch (err) {
-    console.error('Razorpay Order Error:', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// @POST /api/payments/verify
-// @desc Verify Razorpay payment signature
-exports.verifyPayment = async (req, res) => {
-  try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, riderId } = req.body;
-
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
-      .digest("hex");
-
-    if (expectedSignature === razorpay_signature) {
-      // Payment is verified
-      const rider = await Rider.findById(riderId);
-      if (rider && rider.paymentStatus === 'unpaid') {
-        const nextWeek = new Date(rider.returnDate || Date.now());
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        rider.returnDate = nextWeek;
-        rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-        rider.paymentStatus = 'paid';
-        
-        if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
-          rider.bikesUsed.push(rider.vehicleNumber);
-        }
-        await rider.save();
-
-        // Create Invoice Record
-        const { createInvoiceRecord } = require('../utils/invoiceHelper');
-        await createInvoiceRecord(rider, req.body.amount || 2000);
-      }
-
-      res.status(200).json({ success: true, message: "Payment verified successfully" });
-    } else {
-      res.status(400).json({ success: false, message: "Invalid signature" });
-    }
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
+const phonepe = require('../config/phonepe');
 
 // @POST /api/payments/create-link
-// @desc Create a Cashfree Payment Link for WhatsApp
-const axios = require('axios');
-const { getCashfreeConfig } = require('../config/cashfree');
-
+// @desc Create a PhonePe Payment Link for WhatsApp/Frontend redirect
 exports.createPaymentLink = async (req, res) => {
   try {
     const { riderId, amount } = req.body;
     const rider = await Rider.findById(riderId);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
     
-    const amountVal = (amount || 2000) * 100; // in paise
-    const uniqueLinkId = `ride_${riderId}_${Date.now()}`;
-    
-    const response = await razorpay.paymentLink.create({
-      amount: amountVal,
-      currency: "INR",
-      accept_partial: false,
-      description: `Weekly Rental - ${rider.vehicleNumber}`,
-      customer: {
-        name: rider.name,
-        contact: rider.whatsappNumber,
-      },
-      notify: {
-        sms: false,
-        email: false
-      },
-      reminder_enable: true,
-      notes: {
-        riderId: riderId,
-        link_id: uniqueLinkId
-      },
-      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
-      callback_method: "get"
+    // Amount in paise (multiply by 100)
+    const amountVal = (amount || 2000) * 100;
 
+    const response = await phonepe.createPaymentLink({
+      riderId: rider._id,
+      amount: amountVal,
+      mobileNumber: rider.whatsappNumber,
+      description: `Weekly Rental - ${rider.vehicleNumber}`
     });
 
-    const paymentUrl = response.short_url;
-
-    // Save ID
-    rider.paymentLinkId = response.id; // Razorpay PL ID
+    // Save PhonePe Transaction ID and full checkout URL
+    rider.paymentLinkId = response.id;
+    rider.paymentLinkUrl = response.url;
     await rider.save();
 
-    res.status(200).json({ success: true, url: paymentUrl, id: response.id });
+    // Generate beautiful clean short redirect URL for WhatsApp/Frontend
+    const shortUrl = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
+
+    res.status(200).json({ success: true, url: shortUrl, id: response.id });
   } catch (err) {
-    console.error('❌ Razorpay Link Error:', err);
+    console.error('❌ PhonePe Link Error:', err);
     res.status(500).json({ 
       success: false, 
-      message: err.message || 'Failed to create Razorpay link'
+      message: err.message || 'Failed to create PhonePe link'
     });
   }
 };
 
-const { sendPaymentReminder } = require('../utils/whatsapp');
-
 // @POST /api/payments/webhook
-// @desc Handle Cashfree Webhooks for automatic database updates
+// @desc Handle PhonePe Server-to-Server (S2S) callbacks for automatic database updates
 exports.webhookHandler = async (req, res) => {
-  console.log('🔔 [RAZORPAY WEBHOOK] Received Event:', req.body.event);
+  console.log('🔔 [PHONEPE WEBHOOK] Callback received.');
 
   try {
-    const { event, payload } = req.body;
+    const { response } = req.body;
+    if (!response) {
+      console.error('❌ [PHONEPE WEBHOOK] No base64 response payload found.');
+      return res.status(400).send('No response data');
+    }
 
-    // Handle Payment Link Success
-    if (event === 'payment_link.paid') {
-      const data = payload.payment_link.entity;
-      const amount = data.amount_paid / 100;
-      const riderId = data.notes?.riderId;
+    // 1. Verify webhook checksum for security
+    const xVerifyHeader = req.headers['x-verify'];
+    if (xVerifyHeader) {
+      const expectedVerify = crypto
+        .createHash('sha256')
+        .update(response + phonepe.SALT_KEY)
+        .digest('hex') + '###' + phonepe.SALT_INDEX;
 
-      console.log(`🔍 [WEBHOOK] Processing Razorpay Link: ${data.id}, Rider: ${riderId}, Amount: ${amount}`);
+      if (xVerifyHeader !== expectedVerify) {
+        console.error('❌ [PHONEPE WEBHOOK] Webhook verification signature mismatch!');
+        return res.status(401).send('Unauthorized signature');
+      }
+      console.log('✅ [PHONEPE WEBHOOK] Signature successfully verified.');
+    } else {
+      console.warn('⚠️ [PHONEPE WEBHOOK] No x-verify header provided, skipping signature verification.');
+    }
 
-      if (!riderId) {
-        console.error('❌ [WEBHOOK] No riderId in link notes');
-        return res.status(200).send('OK');
+    // 2. Decode Base64 Payload
+    const decoded = JSON.parse(Buffer.from(response, 'base64').toString('utf-8'));
+    console.log('🔔 [PHONEPE WEBHOOK] Decoded payload:', JSON.stringify(decoded, null, 2));
+
+    if (decoded.success && decoded.code === 'PAYMENT_SUCCESS') {
+      const { transactionId, amount: amountInPaise } = decoded.data;
+      const amount = amountInPaise / 100;
+
+      console.log(`🔍 [PHONEPE WEBHOOK] Processing successful payment. TX ID: ${transactionId}, Amount: ${amount}`);
+
+      // Find Rider by paymentLinkId (the PhonePe transactionId)
+      const rider = await Rider.findOne({ paymentLinkId: transactionId });
+      if (!rider) {
+        console.error(`❌ [PHONEPE WEBHOOK] No rider found with paymentLinkId matching ${transactionId}`);
+        return res.status(200).send('OK'); // Return 200 so PhonePe stops retrying
       }
 
-      const rider = await Rider.findById(riderId);
-      if (rider) {
-        if (rider.paymentStatus === 'unpaid') {
-          const nextWeek = new Date(rider.returnDate || Date.now());
-          nextWeek.setDate(nextWeek.getDate() + 7);
-          
-          rider.returnDate = nextWeek;
-          rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-          rider.paymentStatus = 'paid';
-          
-          if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
-            rider.bikesUsed.push(rider.vehicleNumber);
-          }
-          
-          await rider.save();
+      if (rider.paymentStatus === 'unpaid') {
+        const nextWeek = new Date(rider.returnDate || Date.now());
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        
+        rider.returnDate = nextWeek;
+        rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+        rider.paymentStatus = 'paid';
+        
+        // Reset escalation and recovery on payment
+        rider.reminderEscalationStage = 0;
+        rider.isRecoveryBucket = false;
 
-          // Create Invoice Record
-          try {
-            const { createInvoiceRecord } = require('../utils/invoiceHelper');
-            await createInvoiceRecord(rider, amount);
-          } catch (invErr) {
-            console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
-          }
-
-          console.log(`🎉 [WEBHOOK] Successfully updated Rider ${rider.name} to PAID`);
-          
-          // Send WhatsApp Confirmation
-          try {
-            const { sendPaymentReminder } = require('../utils/whatsapp');
-            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
-            await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
-          } catch (waErr) {
-            console.error('⚠️ [WEBHOOK] WhatsApp confirmation failed:', waErr.message);
-          }
+        if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
+          rider.bikesUsed.push(rider.vehicleNumber);
         }
+        
+        await rider.save();
+
+        // Create Invoice Record
+        try {
+          const { createInvoiceRecord } = require('../utils/invoiceHelper');
+          await createInvoiceRecord(rider, amount);
+        } catch (invErr) {
+          console.error('⚠️ [PHONEPE WEBHOOK] Invoice helper error:', invErr.message);
+        }
+
+        console.log(`🎉 [PHONEPE WEBHOOK] Successfully updated Rider ${rider.name} to PAID`);
+        
+        // Send WhatsApp Confirmation
+        try {
+          const { sendPaymentReminder } = require('../utils/whatsapp');
+          const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+          await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
+        } catch (waErr) {
+          console.error('⚠️ [PHONEPE WEBHOOK] WhatsApp confirmation failed:', waErr.message);
+        }
+      } else {
+        console.log(`ℹ️ [PHONEPE WEBHOOK] Rider ${rider.name} is already marked PAID. Skipping updates.`);
       }
+    } else {
+      console.warn(`⚠️ [PHONEPE WEBHOOK] Payment state not successful. Code: ${decoded.code}`);
     }
 
     res.status(200).send('OK');
   } catch (err) {
-    console.error('💥 [WEBHOOK] CRITICAL ERROR:', err);
-    res.status(200).send('OK');
+    console.error('💥 [PHONEPE WEBHOOK] CRITICAL WEBHOOK ERROR:', err);
+    res.status(200).send('OK'); // Return 200 to stop retry cycle on crash
   }
 };
-
 
 // @GET /api/payments/config-status
 // @desc Diagnostic endpoint to verify environment variables (masked)
@@ -210,10 +148,12 @@ exports.getConfigStatus = async (req, res) => {
         app_id_masked: mask(process.env.CASHFREE_APP_ID),
         mode: (process.env.CASHFREE_APP_ID || '').startsWith('TEST') ? 'SANDBOX' : 'PRODUCTION',
       },
-      razorpay: {
-        key_id_exists: hasValue(process.env.RAZORPAY_KEY_ID),
-        key_secret_exists: hasValue(process.env.RAZORPAY_KEY_SECRET),
-        key_id_masked: mask(process.env.RAZORPAY_KEY_ID),
+      phonepe: {
+        merchant_id_exists: hasValue(process.env.PHONEPE_MERCHANT_ID),
+        salt_key_exists: hasValue(process.env.PHONEPE_SALT_KEY),
+        salt_index_exists: hasValue(process.env.PHONEPE_SALT_INDEX),
+        merchant_id_masked: mask(process.env.PHONEPE_MERCHANT_ID),
+        mode: process.env.PHONEPE_ENV || 'production',
       },
       twilio: {
         account_sid_exists: hasValue(process.env.TWILIO_ACCOUNT_SID),
@@ -229,5 +169,24 @@ exports.getConfigStatus = async (req, res) => {
     res.status(200).json({ success: true, status });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// @GET /api/payments/pay/:riderId
+// @desc Redirect clean shortened links to PhonePe long redirect URL
+exports.redirectPayment = async (req, res) => {
+  try {
+    const { riderId } = req.params;
+    const rider = await Rider.findById(riderId);
+    
+    if (rider && rider.paymentLinkUrl) {
+      console.log(`📡 Redirecting rider ${rider.name} to PhonePe checkout URL...`);
+      return res.redirect(rider.paymentLinkUrl);
+    }
+    
+    res.status(404).send('<h1>Payment Link Expired</h1><p>This payment link has expired or is invalid. Please contact support or request a new checkout link.</p>');
+  } catch (err) {
+    console.error('💥 [REDIRECT ERROR] Failed to redirect payment:', err);
+    res.status(500).send('Internal Server Error');
   }
 };

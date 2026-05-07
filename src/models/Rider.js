@@ -55,6 +55,9 @@ const riderSchema = new mongoose.Schema(
     paymentLinkId: {
       type: String
     },
+    paymentLinkUrl: {
+      type: String
+    },
     bikesUsed: [{
       type: String // List of vehicle numbers
     }],

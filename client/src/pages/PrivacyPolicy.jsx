@@ -68,7 +68,7 @@ const PrivacyPolicy = () => {
                 We do not sell, trade, or otherwise transfer your personally identifiable information to outside parties except for:
               </p>
               <ul className="list-disc ml-6 mt-4 space-y-2">
-                <li>Payment gateways (Cashfree/Razorpay) to process transactions.</li>
+                <li>Payment gateways (Cashfree/PhonePe) to process transactions.</li>
                 <li>Communication services (Twilio) to send rental updates.</li>
                 <li>Legal authorities if required by law.</li>
               </ul>

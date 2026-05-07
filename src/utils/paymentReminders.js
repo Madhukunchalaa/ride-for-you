@@ -1,9 +1,9 @@
-const razorpay = require('../config/razorpay');
+const phonepe = require('../config/phonepe');
 const { sendPaymentReminder } = require('./whatsapp');
 const SystemConfig = require('../models/SystemConfig');
 
 /**
- * Generates a Razorpay link and sends a WhatsApp reminder to a rider.
+ * Generates a PhonePe link and sends a WhatsApp reminder to a rider.
  * @param {Object} rider - Rider document
  * @param {String} type - 'normal', 'warning', 'final'
  */
@@ -17,30 +17,18 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     }
     
     const amountVal = weeklyRate * 100; // in paise
-    const uniqueLinkId = `auto_${type}_${rider._id}_${Date.now()}`;
 
-    // Create Razorpay Link
-    const response = await razorpay.paymentLink.create({
+    // Create PhonePe Link
+    const response = await phonepe.createPaymentLink({
+      riderId: rider._id,
       amount: amountVal,
-      currency: "INR",
-      accept_partial: false,
-      description: `Weekly Rental [${type.toUpperCase()}] - ${rider.vehicleNumber} (Rider: ${rider.name})`,
-      customer: {
-        name: rider.name,
-        contact: rider.whatsappNumber,
-      },
-      notify: { sms: false, email: false },
-      notes: {
-        riderId: rider._id.toString(),
-        link_id: uniqueLinkId,
-        automation_type: type
-      },
-      callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`,
-      callback_method: "get"
+      mobileNumber: rider.whatsappNumber,
+      description: `Weekly Rental [${type.toUpperCase()}] - ${rider.vehicleNumber} (Rider: ${rider.name})`
     });
 
-    const paymentLink = response.short_url;
+    const paymentLink = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
     rider.paymentLinkId = response.id;
+    rider.paymentLinkUrl = response.url;
 
     // Send WhatsApp (Using Content API for consistency if available, otherwise fallback)
     // For automation, we usually use the APPROVED template (TWILIO_CONTENT_SID)

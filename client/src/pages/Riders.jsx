@@ -51,10 +51,10 @@ export default function Riders() {
   }, [isRecoveryPage, isReturnsPage]);
 
 
-  // --- Cashfree Payment Logic ---
+  // --- PhonePe Payment Logic ---
   const handlePayment = async (rider) => {
     try {
-      toast.loading("Generating Cashfree Link...", { id: "cf-link" });
+      toast.loading("Generating PhonePe Checkout Link...", { id: "pp-link" });
       const amount = rider.whatsappNumber === '7095682464' ? 1 : 2000;
       const { data } = await api.post('/payments/create-link', {
         riderId: rider._id,
@@ -62,11 +62,11 @@ export default function Riders() {
       });
 
       if (data.success && data.url) {
-        toast.dismiss("cf-link");
+        toast.dismiss("pp-link");
         window.open(data.url, '_blank');
       }
     } catch (err) {
-      toast.dismiss("cf-link");
+      toast.dismiss("pp-link");
       const errorMsg = err.response?.data?.message || err.message;
       toast.error("Error initiating payment: " + (typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg));
     }

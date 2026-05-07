@@ -76,7 +76,7 @@ const createPaymentLink = async ({ riderId, amount, description, mobileNumber, c
         type: "PG_CHECKOUT",
         message: description || `Weekly EV Rental - Rider ID: ${riderId}`,
         merchantUrls: {
-          redirectUrl: redirectUrl || process.env.PHONEPE_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/thank-you`
+          redirectUrl: redirectUrl || process.env.PHONEPE_REDIRECT_URL || `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`
         }
       },
       prefillUserLoginDetails: {
@@ -131,6 +131,7 @@ const checkPaymentStatus = async (merchantTransactionId) => {
     });
 
     if (response.data) {
+      console.log('📡 [RAW PHONEPE STATUS RESPONSE]:', JSON.stringify(response.data, null, 2));
       const code = response.data.code;
       const state = response.data.state || response.data.data?.state || response.data.data?.paymentState;
       const amountVal = response.data.amount || response.data.data?.amount;
@@ -142,7 +143,7 @@ const checkPaymentStatus = async (merchantTransactionId) => {
         code, // e.g. 'PAYMENT_SUCCESS'
         paymentState: state, // e.g. 'COMPLETED', 'FAILED', 'PENDING'
         amount: amountVal ? amountVal / 100 : 0, // Convert from paise to rupees
-        merchantTransactionId: merchantOrderId
+        merchantTransactionId: merchantTransactionId
       };
     } else {
       console.warn(`⚠️ [PHONEPE V2] Status check returned success=false:`, response.data);

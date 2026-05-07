@@ -52,7 +52,7 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
           riderId: rider._id.toString(),
           link_id: uniqueLinkId
         },
-        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_url: `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`,
         callback_method: "get"
       });
       responseId = response.id;

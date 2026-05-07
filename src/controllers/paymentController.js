@@ -52,7 +52,7 @@ exports.createPaymentLink = async (req, res) => {
           riderId: rider._id.toString(),
           link_id: uniqueLinkId
         },
-        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_url: `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`,
         callback_method: "get"
       });
 
@@ -279,5 +279,44 @@ exports.redirectPayment = async (req, res) => {
   } catch (err) {
     console.error('💥 [REDIRECT ERROR] Failed to redirect payment:', err);
     res.status(500).send('Internal Server Error');
+  }
+};
+
+// @GET /api/payments/callback
+// @desc Handle client redirects from payment gateways and route to frontend thank-you or payment-failed
+exports.paymentCallback = async (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://rideforyouev.com';
+  console.log('📡 [REDIRECT CALLBACK] Params:', req.query);
+
+  try {
+    // 1. Detect PhonePe Redirect Callback (transactionId parameter is appended by PhonePe)
+    const { transactionId } = req.query;
+    if (transactionId) {
+      console.log(`📡 [PHONEPE REDIRECT] Checking status for TXN: ${transactionId}`);
+      const status = await phonepe.checkPaymentStatus(transactionId);
+      
+      if (status.success && status.paymentState === 'COMPLETED') {
+        return res.redirect(`${frontendUrl}/thank-you`);
+      } else {
+        return res.redirect(`${frontendUrl}/payment-failed`);
+      }
+    }
+
+    // 2. Detect Razorpay Redirect Callback (razorpay_payment_link_status parameter is appended by Razorpay)
+    const { razorpay_payment_link_status } = req.query;
+    if (razorpay_payment_link_status) {
+      console.log(`📡 [RAZORPAY REDIRECT] Status: ${razorpay_payment_link_status}`);
+      if (razorpay_payment_link_status === 'paid') {
+        return res.redirect(`${frontendUrl}/thank-you`);
+      } else {
+        return res.redirect(`${frontendUrl}/payment-failed`);
+      }
+    }
+
+    // Fallback: Redirect to home page if no parameters are detected
+    res.redirect(`${frontendUrl}/`);
+  } catch (err) {
+    console.error('💥 [CALLBACK REDIRECT ERROR]:', err.message);
+    res.redirect(`${frontendUrl}/payment-failed`);
   }
 };

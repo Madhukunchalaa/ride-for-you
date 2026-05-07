@@ -67,7 +67,7 @@ exports.sendReminder = async (req, res) => {
           riderId: rider._id.toString(),
           link_id: uniqueLinkId
         },
-        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_url: `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`,
         callback_method: "get"
       });
       responseId = response.id;
@@ -545,7 +545,7 @@ exports.addDamage = async (req, res) => {
           riderId: rider._id.toString(),
           link_id: uniqueLinkId
         },
-        callback_url: `${process.env.FRONTEND_URL || 'https://rideforyouev.com'}/`,
+        callback_url: `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`,
         callback_method: "get"
       });
       responseId = response.id;

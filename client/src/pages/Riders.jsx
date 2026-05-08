@@ -33,9 +33,8 @@ export default function Riders() {
 
   // Filter States
   const [showFilters, setShowFilters] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [dateFilterType, setDateFilterType] = useState('deployDate'); // 'deployDate' or 'returnDate'
+  const [filterDate, setFilterDate] = useState('');
+  const [dateFilterType, setDateFilterType] = useState('returnDate'); // Default to 'returnDate' (Due Date) as requested
   const [paymentFilter, setPaymentFilter] = useState('all'); // 'all', 'paid', 'unpaid'
   const [openActionMenu, setOpenActionMenu] = useState(null);
 
@@ -276,16 +275,13 @@ export default function Riders() {
                           rider.whatsappNumber.includes(searchTerm);
 
     const matchesDate = (() => {
-      if (!startDate && !endDate) return true;
+      if (!filterDate) return true;
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
       // Normalize to YYYY-MM-DD for string comparison
       const targetDateStr = new Date(dateVal).toISOString().split('T')[0];
-      
-      if (startDate && targetDateStr < startDate) return false;
-      if (endDate && targetDateStr > endDate) return false;
-      return true;
+      return targetDateStr === filterDate;
     })();
 
     const matchesPayment = paymentFilter === 'all' || rider.paymentStatus === paymentFilter;
@@ -301,11 +297,10 @@ export default function Riders() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchTerm, startDate, endDate, dateFilterType, itemsPerPage]);
+  }, [activeTab, searchTerm, filterDate, dateFilterType, itemsPerPage]);
 
   const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
+    setFilterDate('');
     setSearchTerm('');
     setPaymentFilter('all');
     setItemsPerPage(50);
@@ -421,26 +416,16 @@ export default function Riders() {
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">From Date</label>
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                  Select Specific {dateFilterType === 'deployDate' ? 'Deployment' : 'Due'} Date
+                </label>
                 <div className="relative">
                   <CalendarRange size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />
                   <input 
                     type="date" 
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="input h-12 pl-12 bg-slate-50 dark:bg-dark-200/50 [color-scheme:light] dark:[color-scheme:dark]"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">To Date</label>
-                <div className="relative">
-                  <CalendarRange size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />
-                  <input 
-                    type="date" 
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
                     className="input h-12 pl-12 bg-slate-50 dark:bg-dark-200/50 [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>

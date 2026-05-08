@@ -249,11 +249,16 @@ exports.addRider = async (req, res) => {
       returnDate,
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
       autoReminderTime: autoReminderTime || '00:00',
-      bikesUsed: [vehicleNumber.toUpperCase()]
+      bikesUsed: [vehicleNumber.toUpperCase()],
+      securityDeposit: req.body.securityDeposit !== undefined ? Number(req.body.securityDeposit) : 0
     });
 
-    const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-    newRider.rentalRate = config ? Number(config.value) : 2000;
+    if (req.body.rentalRate !== undefined) {
+      newRider.rentalRate = Number(req.body.rentalRate);
+    } else {
+      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
+      newRider.rentalRate = config ? Number(config.value) : 2000;
+    }
 
     if (riderStatus === 'recovery') {
       newRider.isRecoveryBucket = true;

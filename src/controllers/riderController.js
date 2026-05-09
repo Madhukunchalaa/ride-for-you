@@ -317,16 +317,28 @@ exports.updateRider = async (req, res) => {
     if (autoReminderTime) rider.autoReminderTime = autoReminderTime;
     else if (!rider.autoReminderTime) rider.autoReminderTime = '00:00';
     if (riderStatus) {
-      rider.riderStatus = riderStatus;
       if (riderStatus === 'recovery') {
+        rider.riderStatus = 'active';
         rider.isRecoveryBucket = true;
         rider.reminderEscalationStage = 3;
+
+        // Trigger Recovery Template
+        try {
+          const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+          await sendAutomatedPaymentLink(rider, 'warning');
+        } catch (warnErr) {
+          console.warn('Recovery message failed:', warnErr.message);
+        }
       } else if (riderStatus === 'active') {
+        rider.riderStatus = 'active';
         rider.isRecoveryBucket = false;
         rider.reminderEscalationStage = 0;
       } else if (riderStatus === 'inactive') {
+        rider.riderStatus = 'inactive';
         rider.isRecoveryBucket = false;
         rider.reminderEscalationStage = 0;
+      } else {
+        rider.riderStatus = riderStatus;
       }
     }
 
@@ -403,6 +415,14 @@ exports.updateStatus = async (req, res) => {
       rider.isRecoveryBucket = isRecoveryBucket;
       if (isRecoveryBucket) {
         rider.reminderEscalationStage = 3; // Max stage if manually moved
+
+        // Trigger Recovery Template
+        try {
+          const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+          await sendAutomatedPaymentLink(rider, 'warning');
+        } catch (warnErr) {
+          console.warn('Recovery message failed:', warnErr.message);
+        }
       }
     }
 

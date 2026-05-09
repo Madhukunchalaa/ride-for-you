@@ -541,9 +541,6 @@ export default function Riders() {
                     </button>
                     {openActionMenu === String(rider._id) && (
                       <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom-2">
-                        <button onClick={() => { handlePayment(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
-                          <CreditCard size={16} className="text-primary-500" /> Pay Now
-                        </button>
                         <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
                           {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
                           Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
@@ -714,9 +711,6 @@ export default function Riders() {
                                 <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-dark-200/50">
                                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2">Manage Rider</p>
                                 </div>
-                                <button onClick={() => { handlePayment(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
-                                  <CreditCard size={16} className="text-primary-500" /> Create Payment Link
-                                </button>
                                 <button 
                                   onClick={() => { 
                                     if (rider.paymentStatus === 'unpaid') {

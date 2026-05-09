@@ -324,6 +324,9 @@ exports.updateRider = async (req, res) => {
       } else if (riderStatus === 'active') {
         rider.isRecoveryBucket = false;
         rider.reminderEscalationStage = 0;
+      } else if (riderStatus === 'inactive') {
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
       }
     }
 
@@ -419,6 +422,10 @@ exports.updateStatus = async (req, res) => {
         }
       } else if (riderStatus === 'active') {
         rider.riderStatus = 'active';
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
+      } else if (riderStatus === 'inactive') {
+        rider.riderStatus = 'inactive';
         rider.isRecoveryBucket = false;
         rider.reminderEscalationStage = 0;
       } else {

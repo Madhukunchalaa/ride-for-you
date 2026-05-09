@@ -261,7 +261,7 @@ export default function Riders() {
     let isCorrectTab = (rider.riderStatus || 'active') === activeTab;
     
     if (activeTab === 'recovery') {
-      isCorrectTab = rider.isRecoveryBucket === true && rider.riderStatus !== 'returned';
+      isCorrectTab = rider.isRecoveryBucket === true && rider.riderStatus !== 'returned' && rider.riderStatus !== 'inactive';
     } else if (activeTab === 'active') {
       isCorrectTab = rider.riderStatus === 'active' && !rider.isRecoveryBucket;
     } else if (activeTab === 'returned') {

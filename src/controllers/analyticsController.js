@@ -306,9 +306,35 @@ exports.getBillingStats = async (req, res) => {
 // @GET /api/analytics/payments
 exports.getPaymentAnalytics = async (req, res) => {
   try {
-    const activeRiders = await Rider.find({ riderStatus: 'active' }).sort({ returnDate: 1 });
+    const { date } = req.query;
+
+    let isSpecificDate = false;
+    let startDate = new Date();
+    let endDate = new Date();
+
+    if (date) {
+      isSpecificDate = true;
+      startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    let activeRiders;
+    if (isSpecificDate) {
+      activeRiders = await Rider.find({
+        deployDate: { $lte: endDate },
+        $or: [
+          { riderStatus: { $ne: 'returned' } },
+          { returnDate: { $gt: startDate } }
+        ]
+      }).sort({ returnDate: 1 });
+    } else {
+      activeRiders = await Rider.find({ riderStatus: 'active' }).sort({ returnDate: 1 });
+    }
     
     const globalWeeklyRate = await getWeeklyRate();
+    const referenceEnd = isSpecificDate ? endDate : new Date();
     
     let totalCollected = 0;
     let pendingDues = 0;
@@ -328,12 +354,17 @@ exports.getPaymentAnalytics = async (req, res) => {
         unpaidWeeks = rider.paymentStatus === 'unpaid' ? 1 : 0;
         isOverdue = rider.paymentStatus === 'unpaid';
       } else {
-        const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+        const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
+          ? new Date(rider.returnDate) 
+          : referenceEnd;
+        
+        if (new Date(deployDate) > referenceEnd) return; // Skip if deployed after our filter date
+
         const diffTime = Math.abs(end - new Date(deployDate));
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
         unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
-        isOverdue = unpaidWeeks > 0 && new Date() > new Date(rider.returnDate);
+        isOverdue = unpaidWeeks > 0 && referenceEnd > new Date(rider.returnDate);
       }
 
       totalCollected += (paidWeeks * rate);

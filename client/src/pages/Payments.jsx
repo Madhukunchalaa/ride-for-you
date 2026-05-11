@@ -8,6 +8,7 @@ import Pagination from '../components/Pagination';
 export default function Payments() {
   const [data, setData] = useState({ stats: {}, riders: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRider, setSelectedRider] = useState('');
@@ -18,7 +19,10 @@ export default function Payments() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/analytics/payments');
+      const url = selectedDate 
+        ? `/analytics/payments?date=${selectedDate}`
+        : '/analytics/payments';
+      const res = await api.get(url);
       setData(res.data.data);
     } catch (err) {
       console.error('Failed to fetch payments:', err);
@@ -29,7 +33,7 @@ export default function Payments() {
 
   useEffect(() => {
     fetchPayments();
-  }, []);
+  }, [selectedDate]);
 
   const handleRecordPayment = async (e) => {
     e.preventDefault();
@@ -60,7 +64,11 @@ export default function Payments() {
       };
     }
 
-    const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+    const referenceEnd = selectedDate ? new Date(selectedDate) : new Date();
+    const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
+      ? new Date(rider.returnDate) 
+      : referenceEnd;
+    
     const diffTime = Math.abs(end - deployDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
@@ -98,12 +106,35 @@ export default function Payments() {
           <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Payments Tracking</h2>
           <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold">Monitor rental transactions and upcoming dues</p>
         </div>
-        <button 
-          onClick={() => exportToCSV(data.riders, 'Payments_Report')}
-          className="btn-secondary px-6 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold bg-white dark:bg-dark-100/50 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 shadow-sm"
-        >
-          <Download size={18} /> Export Reports
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Custom Date Filter */}
+          <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black uppercase tracking-widest">
+            <Calendar size={16} className="text-primary-500" />
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+              title="Filter payments as of date"
+            />
+            {selectedDate && (
+              <button 
+                onClick={() => setSelectedDate('')}
+                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <button 
+            onClick={() => exportToCSV(data.riders, 'Payments_Report')}
+            className="btn-secondary h-11 px-6 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold bg-white dark:bg-dark-100/50 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 shadow-sm rounded-2xl"
+          >
+            <Download size={18} /> Export Reports
+          </button>
+        </div>
       </div>
 
       {/* Dynamic Weekly Rental Tracker Info Card */}

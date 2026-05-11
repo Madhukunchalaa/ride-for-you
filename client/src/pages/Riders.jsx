@@ -251,6 +251,32 @@ export default function Riders() {
     setIsModalOpen(true);
   };
 
+  const getWeekStats = (rider) => {
+    const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
+    const paidWeeks = rider.totalWeeks || 0;
+    
+    if (!deployDate) {
+      return {
+        currentWeek: paidWeeks + 1,
+        paidWeeks: paidWeeks,
+        unpaidWeeks: rider.paymentStatus === 'unpaid' ? 1 : 0
+      };
+    }
+
+    const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+    const diffTime = Math.abs(end - deployDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+    const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+
+    return {
+      currentWeek,
+      paidWeeks,
+      unpaidWeeks
+    };
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
@@ -513,12 +539,19 @@ export default function Riders() {
                    <div className="text-right">
                       <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Subscription</p>
                       <div className="flex flex-col items-end">
-                        <span className={`text-[10px] font-black uppercase tracking-widest text-primary-500`}>
-                          Week {(rider.totalWeeks || 0) + 1} Running
-                        </span>
-                        <span className={`text-[8px] font-bold uppercase tracking-widest ${rider.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
-                          {rider.totalWeeks || 0} Weeks Paid
-                        </span>
+                        {(() => {
+                           const stats = getWeekStats(rider);
+                           return (
+                             <>
+                               <span className="text-[10px] font-black uppercase tracking-widest text-primary-500">
+                                 Week {stats.currentWeek} Running
+                               </span>
+                               <span className={`text-[8px] font-bold uppercase tracking-widest ${stats.unpaidWeeks > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                 {stats.paidWeeks} Paid • {stats.unpaidWeeks} Unpaid
+                               </span>
+                             </>
+                           );
+                         })()}
                       </div>
                    </div>
                 </div>
@@ -663,22 +696,31 @@ export default function Riders() {
                               {rider.riderStatus}
                             </span>
                             <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 mt-2 uppercase tracking-tighter">
-                              Week {(rider.totalWeeks || 0) + 1} Running
+                              Week {getWeekStats(rider).currentWeek} Running
                             </span>
                           </div>
                         )}
                       </td>
                       <td className="p-6">
                         <div className="flex flex-col gap-1">
-                          <span className={`${
-                            rider.isRecoveryBucket 
-                            ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
-                            : rider.paymentStatus === 'paid' 
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' 
-                            : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
-                          } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
-                            {rider.isRecoveryBucket ? 'RECOVERY' : `${rider.totalWeeks || 0} WEEKS PAID`}
-                          </span>
+                          {(() => {
+                            const stats = getWeekStats(rider);
+                            return (
+                              <span className={`${
+                                rider.isRecoveryBucket 
+                                ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
+                                : stats.unpaidWeeks > 0
+                                ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
+                                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                              } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
+                                {rider.isRecoveryBucket 
+                                  ? 'RECOVERY' 
+                                  : stats.unpaidWeeks > 0 
+                                  ? `${stats.paidWeeks} PAID • ${stats.unpaidWeeks} UNPAID` 
+                                  : `${stats.paidWeeks} WEEKS PAID`}
+                              </span>
+                            );
+                          })()}
                           {rider.autoReminderEnabled && !rider.isRecoveryBucket && rider.paymentStatus === 'unpaid' && (
                             <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1 ml-1">
                               <Loader2 size={8} className="animate-spin text-primary-500" /> 

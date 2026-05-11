@@ -86,9 +86,29 @@ const initAutomatedReminders = () => {
           }
         }
         // Stage 4: Recovery Bucket (7+ days overdue)
-        else if (daysOverdue >= 7 && !rider.isRecoveryBucket) {
-          rider.isRecoveryBucket = true;
-          console.log(`⚠️ Moving rider ${rider.name} to RECOVERY BUCKET (Overdue: ${daysOverdue} days)`);
+        else if (daysOverdue >= 7) {
+          if (!rider.isRecoveryBucket) {
+            rider.isRecoveryBucket = true;
+            console.log(`⚠️ Moving rider ${rider.name} to RECOVERY BUCKET (Overdue: ${daysOverdue} days)`);
+          }
+
+          // Send reminder once every 7 days (weekly) while they remain active and unpaid
+          const lastSent = rider.lastAutomatedReminderDate ? new Date(rider.lastAutomatedReminderDate) : null;
+          let daysSinceLastReminder = 7;
+
+          if (lastSent) {
+            const lastSentIST = new Date(lastSent.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+            const lastSentAtMidnight = new Date(lastSentIST.getFullYear(), lastSentIST.getMonth(), lastSentIST.getDate());
+            daysSinceLastReminder = Math.floor((todayAtMidnight - lastSentAtMidnight) / (1000 * 60 * 60 * 24));
+          }
+
+          if (daysSinceLastReminder >= 7) {
+            console.log(`   - 📤 [RECOVERY] Overdue by ${daysOverdue} days. Sending continuous weekly reminder...`);
+            success = await sendAutomatedPaymentLink(rider, 'final');
+            if (success) {
+              rider.lastAutomatedReminderDate = today;
+            }
+          }
         }
 
         if (rider.isModified()) {

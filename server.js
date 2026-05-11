@@ -17,6 +17,7 @@ const app = express();
 connectDB().then(() => {
   seedAdmin(); // Auto-seed on startup
   initAutomatedReminders(); // Start Auto-Reminders & Recovery tracking
+  initCronJobs(); // Start background weekly status reset jobs
 });
 
 // Middleware

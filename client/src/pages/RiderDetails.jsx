@@ -235,6 +235,34 @@ export default function RiderDetails() {
 
   if (!rider) return null;
 
+  const getWeekStats = () => {
+    const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
+    const paidWeeks = rider.totalWeeks || 0;
+    
+    if (!deployDate) {
+      return {
+        currentWeek: paidWeeks + 1,
+        paidWeeks: paidWeeks,
+        unpaidWeeks: rider.paymentStatus === 'unpaid' ? 1 : 0
+      };
+    }
+
+    const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+    const diffTime = Math.abs(end - deployDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+    const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+
+    return {
+      currentWeek,
+      paidWeeks,
+      unpaidWeeks
+    };
+  };
+
+  const stats = getWeekStats();
+
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in pb-20 px-0 md:px-0">
       {/* Header & Back Button */}
@@ -342,25 +370,57 @@ export default function RiderDetails() {
               </div>
               <div className="bg-black/20 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
                 <p className="text-[10px] font-black text-white/70 uppercase tracking-widest">Payment Status</p>
-                <p className="text-xl md:text-2xl font-display font-black text-white mt-1">
-                  Week {(rider.totalWeeks || 0) + 1} <span className="text-[10px]">RUNNING</span>
+                <p className="text-lg md:text-xl font-display font-black text-white mt-1">
+                  Week {stats.currentWeek} <span className="text-[10px]">{rider.riderStatus === 'returned' ? 'ENDED' : 'RUNNING'}</span>
                 </p>
               </div>
             </div>
             <div className="mt-4 p-4 bg-white/10 rounded-2xl border border-white/5">
               <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mb-2">Subscription Progress</p>
               <div className="flex items-center gap-1">
-                {[...Array(Math.max((rider.totalWeeks || 0) + 1, 4))].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1.5 flex-1 rounded-full ${i < (rider.totalWeeks || 0) ? 'bg-emerald-400' : i === (rider.totalWeeks || 0) ? 'bg-white/40 animate-pulse' : 'bg-white/10'}`} 
-                    title={`Week ${i + 1}`}
-                  />
-                ))}
+                {[...Array(Math.max(stats.currentWeek, 4))].map((_, i) => {
+                  const weekNum = i + 1;
+                  const isPaid = i < stats.paidWeeks;
+                  const isCurrent = weekNum === stats.currentWeek;
+                  const isUnpaid = weekNum <= stats.currentWeek && !isPaid;
+                  
+                  let barClass = 'bg-white/10';
+                  if (isPaid) {
+                    barClass = 'bg-emerald-400';
+                  } else if (isUnpaid) {
+                    barClass = isCurrent ? 'bg-rose-500 animate-pulse' : 'bg-rose-500/70';
+                  }
+
+                  return (
+                    <div 
+                      key={i} 
+                      className={`h-1.5 flex-1 rounded-full ${barClass}`} 
+                      title={`Week ${weekNum}: ${isPaid ? 'Paid' : 'Unpaid'}`}
+                    />
+                  );
+                })}
               </div>
               <p className="text-[8px] font-bold text-white/50 mt-2 uppercase tracking-widest">
-                {rider.totalWeeks || 0} Weeks Paid • Currently in Week {(rider.totalWeeks || 0) + 1}
+                {stats.paidWeeks} Weeks Paid • {stats.unpaidWeeks > 0 ? `${stats.unpaidWeeks} Weeks Unpaid` : 'All Weeks Paid'} • Currently in Week {stats.currentWeek}
               </p>
+
+              {/* Dynamic Week-by-Week Breakdown List */}
+              <div className="mt-4 space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                {[...Array(stats.currentWeek)].map((_, i) => {
+                  const weekNum = i + 1;
+                  const isPaid = i < stats.paidWeeks;
+                  return (
+                    <div key={i} className="flex items-center justify-between text-[10px] bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                      <span className="font-bold text-white/80">Week {weekNum}</span>
+                      <span className={`font-black uppercase tracking-widest px-1.5 py-0.5 rounded text-[8px] ${
+                        isPaid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                      }`}>
+                        {isPaid ? 'Paid' : 'Unpaid'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

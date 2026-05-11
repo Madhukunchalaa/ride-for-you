@@ -305,15 +305,11 @@ export default function Riders() {
 
     const matchesDate = (() => {
       if (!filterDate) return true;
-      
-      // If a payment filter is selected, the date is used dynamically to check 
-      // who was paid/unpaid on that date. We don't restrict by exact deploy/return date day.
-      if (paymentFilter !== 'all') return true;
 
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
-      // Normalize to YYYY-MM-DD for string comparison
+      // Normalize to YYYY-MM-DD for exact day comparison
       const targetDateStr = new Date(dateVal).toISOString().split('T')[0];
       return targetDateStr === filterDate;
     })();
@@ -321,50 +317,13 @@ export default function Riders() {
     const matchesPayment = (() => {
       if (paymentFilter === 'all') return true;
 
-      if (filterDate) {
-        // Construct target date at local midnight to prevent timezone shifting
-        const [year, month, day] = filterDate.split('-').map(Number);
-        const targetDate = new Date(year, month - 1, day);
-
-        const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
-        if (!deployDate) return false;
-        const deployDateMidnight = new Date(deployDate.getFullYear(), deployDate.getMonth(), deployDate.getDate());
-
-        const returnDate = rider.returnDate ? new Date(rider.returnDate) : null;
-        if (!returnDate) return false;
-        const returnDateMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
-
-        if (targetDate < deployDateMidnight) return false; // not deployed yet
-
-        // Calculate the exact date up to which the rider has paid
-        const calculatedWeeks = (rider.deployDate && rider.returnDate)
-          ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
-          : 0;
-        const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
-
-        const paidCutoffDate = new Date(deployDateMidnight);
-        paidCutoffDate.setDate(paidCutoffDate.getDate() + paidWeeks * 7);
-
-        const isPaidOnDate = targetDate < paidCutoffDate;
-
-        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
-          return isPaidOnDate;
-        } else {
-          // unpaid on date
-          if (rider.riderStatus === 'returned' && targetDate >= returnDateMidnight) {
-            return false; // they already returned the bike, so they don't owe for future dates
-          }
-          return !isPaidOnDate;
-        }
-      } else {
-        const stats = getWeekStats(rider);
-        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
-          return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
-        } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
-          return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
-        }
-        return true;
+      const stats = getWeekStats(rider);
+      if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+        return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
+      } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+        return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
       }
+      return true;
     })();
 
     return isCorrectTab && matchesSearch && matchesDate && matchesPayment;

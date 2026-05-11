@@ -251,6 +251,50 @@ export default function Riders() {
     setIsModalOpen(true);
   };
 
+  const getRiderDayStatus = (rider, targetDateStr) => {
+    const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
+    if (!deployDate) return { isDue: false, status: 'all' };
+
+    // Set targetDate to midnight in local time
+    const [year, month, day] = targetDateStr.split('-').map(Number);
+    const targetDate = new Date(year, month - 1, day);
+
+    // Deploy date midnight in local time
+    const deployDateMidnight = new Date(deployDate.getFullYear(), deployDate.getMonth(), deployDate.getDate());
+
+    // If target date is before deploy date, they are not due yet
+    if (targetDate < deployDateMidnight) {
+      return { isDue: false, status: 'all' };
+    }
+
+    // Calculate difference in days
+    const diffTime = Math.abs(targetDate - deployDateMidnight);
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    // Is due if diffDays is a multiple of 7
+    const isDue = diffDays % 7 === 0;
+    if (!isDue) {
+      return { isDue: false, status: 'all' };
+    }
+
+    // Calculate required weeks to be fully paid for this week starting targetDate
+    const requiredWeeks = diffDays / 7;
+
+    // Actual paid weeks
+    const calculatedWeeks = (rider.deployDate && rider.returnDate)
+      ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+      : 0;
+    const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+
+    // If they have paid MORE weeks than required, they are already paid for the week starting today
+    const isPaid = paidWeeks > requiredWeeks;
+
+    return {
+      isDue: true,
+      status: isPaid ? 'paid' : 'pending'
+    };
+  };
+
   const getDailyStats = () => {
     // Determine the reference date to monitor (default to today if filterDate is empty)
     let monitorDateStr = filterDate;
@@ -270,22 +314,13 @@ export default function Riders() {
     let pendingOnDate = [];
 
     activeRiders.forEach(rider => {
-      if (!rider.returnDate) return;
-      const d = new Date(rider.returnDate);
-      if (isNaN(d.getTime())) return;
-      
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const riderDueStr = `${year}-${month}-${day}`;
-
-      if (riderDueStr === monitorDateStr) {
+      const dayStatus = getRiderDayStatus(rider, monitorDateStr);
+      if (dayStatus.isDue) {
         dueOnDate.push(rider);
-        const stats = getWeekStats(rider);
-        if (stats.unpaidWeeks > 0) {
-          pendingOnDate.push(rider);
-        } else {
+        if (dayStatus.status === 'paid') {
           paidOnDate.push(rider);
+        } else {
+          pendingOnDate.push(rider);
         }
       }
     });
@@ -356,6 +391,12 @@ export default function Riders() {
     const matchesDate = (() => {
       if (!filterDate) return true;
 
+      // Only apply weekly cycle lookups for active tab
+      if (activeTab === 'active' && !isRecoveryPage && !isReturnsPage) {
+        const dayStatus = getRiderDayStatus(rider, filterDate);
+        return dayStatus.isDue;
+      }
+
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
@@ -373,6 +414,25 @@ export default function Riders() {
 
     const matchesPayment = (() => {
       if (paymentFilter === 'all') return true;
+
+      if (activeTab === 'active' && !isRecoveryPage && !isReturnsPage) {
+        if (filterDate) {
+          const dayStatus = getRiderDayStatus(rider, filterDate);
+          if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+            return dayStatus.status === 'paid';
+          } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+            return dayStatus.status === 'pending';
+          }
+        } else {
+          const stats = getWeekStats(rider);
+          if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+            return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
+          } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+            return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
+          }
+        }
+        return true;
+      }
 
       const stats = getWeekStats(rider);
       if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {

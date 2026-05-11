@@ -209,12 +209,17 @@ exports.addRider = async (req, res) => {
         }
       }
 
+      const initialWeeks = (deployDate && returnDate)
+        ? Math.max(1, Math.round((new Date(returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+        : 1;
+
       rider.name = name;
       rider.email = email;
       rider.vehicleNumber = vehicleNumber.toUpperCase();
       rider.riderStatus = 'active';
       rider.deployDate = deployDate;
       rider.returnDate = returnDate;
+      rider.totalWeeks = initialWeeks; // Set reactivated weeks paid based on deployment period
       rider.paymentStatus = 'unpaid';
       rider.autoReminderEnabled = autoReminderEnabled !== undefined ? autoReminderEnabled : true;
       rider.autoReminderTime = autoReminderTime || '00:00';
@@ -238,6 +243,10 @@ exports.addRider = async (req, res) => {
       });
     }
 
+    const initialWeeks = (deployDate && returnDate)
+      ? Math.max(1, Math.round((new Date(returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+      : 1;
+
     // 3. Create New Rider
     const newRider = new Rider({
       name,
@@ -247,6 +256,7 @@ exports.addRider = async (req, res) => {
       vehicleNumber: vehicleNumber.toUpperCase(),
       deployDate,
       returnDate,
+      totalWeeks: initialWeeks, // Set initial weeks paid based on deployment period
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
       autoReminderTime: autoReminderTime || '00:00',
       bikesUsed: [vehicleNumber.toUpperCase()],

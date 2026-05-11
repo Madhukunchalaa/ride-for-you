@@ -89,7 +89,10 @@ exports.getDashboardStats = async (req, res) => {
 
     const pendingDues = activeRidersList.reduce((acc, rider) => {
       const deployDate = rider.deployDate;
-      const paidWeeks = rider.totalWeeks || 0;
+      const calculatedWeeks = (deployDate && rider.returnDate)
+        ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+        : 0;
+      const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
       const rate = rider.rentalRate || globalWeeklyRate;
 
       if (!deployDate) {
@@ -346,7 +349,10 @@ exports.getPaymentAnalytics = async (req, res) => {
       upcomingTotal += rate;
       
       const deployDate = rider.deployDate;
-      const paidWeeks = rider.totalWeeks || 0;
+      const calculatedWeeks = (deployDate && rider.returnDate)
+        ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+        : 0;
+      const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
       
       let unpaidWeeks = 0;
       let isOverdue = false;

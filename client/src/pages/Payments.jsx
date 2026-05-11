@@ -54,7 +54,10 @@ export default function Payments() {
 
   const getWeekStats = (rider) => {
     const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
-    const paidWeeks = rider.totalWeeks || 0;
+    const calculatedWeeks = (rider.deployDate && rider.returnDate)
+      ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+      : 0;
+    const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
     
     if (!deployDate) {
       return {

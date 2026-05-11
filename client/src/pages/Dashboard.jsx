@@ -8,6 +8,7 @@ import {
   Clock,
   Loader2,
   Calendar,
+  CalendarRange,
   CheckCircle2,
   DollarSign,
   ShieldCheck
@@ -28,14 +29,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('weekly');
   const [selectedDate, setSelectedDate] = useState('');
+  const [isRangeMode, setIsRangeMode] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const url = selectedDate 
-          ? `/analytics/dashboard?date=${selectedDate}`
-          : `/analytics/dashboard?timeframe=${timeframe}`;
+        let url = `/analytics/dashboard?timeframe=${timeframe}`;
+        if (isRangeMode && fromDate && toDate) {
+          url = `/analytics/dashboard?startDate=${fromDate}&endDate=${toDate}`;
+        } else if (!isRangeMode && selectedDate) {
+          url = `/analytics/dashboard?date=${selectedDate}`;
+        }
         const response = await api.get(url);
         setData(response.data.data);
       } catch (err) {
@@ -45,7 +52,7 @@ export default function Dashboard() {
       }
     };
     fetchStats();
-  }, [timeframe, selectedDate]);
+  }, [timeframe, selectedDate, isRangeMode, fromDate, toDate]);
 
   if (loading) {
     return (
@@ -57,6 +64,7 @@ export default function Dashboard() {
   }
 
   const getTimeframeLabel = () => {
+    if (isRangeMode) return 'Custom';
     if (timeframe === 'monthly') return 'Monthly';
     if (timeframe === 'yearly') return 'Yearly';
     return 'Weekly';
@@ -79,41 +87,99 @@ export default function Dashboard() {
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Real-time performance analytics</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Custom Date Filter */}
-          <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-            <Calendar size={16} className="text-primary-500" />
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => {
-                setSelectedDate(e.target.value);
-              }}
-              className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
-              title="Filter by specific date"
-            />
-            {selectedDate && (
-              <button 
-                onClick={() => setSelectedDate('')}
-                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          {/* Toggle Range Mode Button */}
+          <button
+            onClick={() => {
+              setIsRangeMode(!isRangeMode);
+              setFromDate('');
+              setToDate('');
+              setSelectedDate('');
+            }}
+            className={`px-4 py-2.5 h-12 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] md:text-[10px] transition-all border shadow-sm ${
+              isRangeMode 
+                ? 'bg-primary-500 text-black border-primary-500 hover:bg-primary-400' 
+                : 'bg-white dark:bg-dark-100 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+            }`}
+          >
+            <CalendarRange size={15} />
+            <span>{isRangeMode ? 'Switch to Standard' : 'Custom Date Range'}</span>
+          </button>
 
-          {/* Standard Timeframe Filter */}
-          {!selectedDate && (
-            <div className="flex items-center gap-3 bg-white dark:bg-dark-100 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <Calendar size={16} className="text-primary-500 ml-2" />
-              <select 
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4 text-slate-800 dark:text-white"
-              >
-                <option value="weekly">Weekly View</option>
-                <option value="monthly">Monthly View</option>
-                <option value="yearly">Yearly View</option>
-              </select>
+          {isRangeMode ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date */}
+              <div className="flex items-center gap-2 bg-white dark:bg-dark-100 px-3 py-2 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <span className="text-[9px] font-black uppercase text-slate-400">From:</span>
+                <input 
+                  type="date" 
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                />
+              </div>
+
+              {/* To Date */}
+              <div className="flex items-center gap-2 bg-white dark:bg-dark-100 px-3 py-2 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <span className="text-[9px] font-black uppercase text-slate-400">To:</span>
+                <input 
+                  type="date" 
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                />
+              </div>
+
+              {(fromDate || toDate) && (
+                <button 
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                  className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl transition-all"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Custom Date Filter */}
+              <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <Calendar size={16} className="text-primary-500" />
+                <input 
+                  type="date" 
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                  }}
+                  className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                  title="Filter by specific date"
+                />
+                {selectedDate && (
+                  <button 
+                    onClick={() => setSelectedDate('')}
+                    className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Standard Timeframe Filter */}
+              {!selectedDate && (
+                <div className="flex items-center gap-3 bg-white dark:bg-dark-100 p-2 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <Calendar size={16} className="text-primary-500 ml-2" />
+                  <select 
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(e.target.value)}
+                    className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4 text-slate-800 dark:text-white"
+                  >
+                    <option value="weekly">Weekly View</option>
+                    <option value="monthly">Monthly View</option>
+                    <option value="yearly">Yearly View</option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -142,7 +208,7 @@ export default function Dashboard() {
             <div>
               <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Fleet Growth Trend</h3>
               <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
-                {selectedDate ? `Rider registrations (Leading up to ${getTimeframeLabel()})` : `Rider registrations (Last 7 Days)`}
+                {isRangeMode ? `Rider registrations (${fromDate || 'Start'} to ${toDate || 'End'})` : selectedDate ? `Rider registrations (Leading up to ${getTimeframeLabel()})` : `Rider registrations (Last 7 Days)`}
               </p>
             </div>
             <div className="bg-primary-600/10 border border-primary-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">
@@ -248,7 +314,7 @@ export default function Dashboard() {
           <div>
             <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Revenue Collection</h3>
             <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
-              {selectedDate ? `Daily income trends (Leading up to ${getTimeframeLabel()})` : `Daily income trends (Last 7 Days)`}
+              {isRangeMode ? `Daily income trends (${fromDate || 'Start'} to ${toDate || 'End'})` : selectedDate ? `Daily income trends (Leading up to ${getTimeframeLabel()})` : `Daily income trends (Last 7 Days)`}
             </p>
           </div>
           <div className="bg-emerald-600/10 border border-emerald-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">

@@ -12,13 +12,21 @@ const getWeeklyRate = async () => {
 // @GET /api/analytics/dashboard
 exports.getDashboardStats = async (req, res) => {
   try {
-    const { timeframe = 'weekly', date } = req.query;
+    const { timeframe = 'weekly', date, startDate: queryStart, endDate: queryEnd } = req.query;
 
     let isSpecificDate = false;
+    let isRangeQuery = false;
     let startDate = new Date();
     let endDate = new Date();
 
-    if (date) {
+    if (queryStart && queryEnd) {
+      isSpecificDate = true;
+      isRangeQuery = true;
+      startDate = new Date(queryStart);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(queryEnd);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (date) {
       isSpecificDate = true;
       startDate = new Date(date);
       startDate.setHours(0, 0, 0, 0);
@@ -133,7 +141,7 @@ exports.getDashboardStats = async (req, res) => {
 
     // 3. Trends (Let's show 7-day preceding trend for context, or matching startDate)
     const trendStartDate = new Date(startDate);
-    if (isSpecificDate) {
+    if (isSpecificDate && !isRangeQuery) {
       trendStartDate.setDate(trendStartDate.getDate() - 6);
       trendStartDate.setHours(0, 0, 0, 0);
     }

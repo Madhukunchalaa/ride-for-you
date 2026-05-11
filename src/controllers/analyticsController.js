@@ -296,19 +296,22 @@ exports.getPaymentAnalytics = async (req, res) => {
       const paidWeeks = rider.totalWeeks || 0;
       
       let unpaidWeeks = 0;
+      let isOverdue = false;
       if (!deployDate) {
         unpaidWeeks = rider.paymentStatus === 'unpaid' ? 1 : 0;
+        isOverdue = rider.paymentStatus === 'unpaid';
       } else {
         const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
         const diffTime = Math.abs(end - new Date(deployDate));
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
         unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+        isOverdue = unpaidWeeks > 0 && new Date() > new Date(rider.returnDate);
       }
 
       totalCollected += (paidWeeks * rate);
       pendingDues += (unpaidWeeks * rate);
-      if (unpaidWeeks === 0) {
+      if (!isOverdue) {
         successfulCount++;
       }
     });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle, MessageSquare, Download } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle, MessageSquare, Download, AlertTriangle } from 'lucide-react';
 
 import api from '../api/axios';
 import { exportToCSV } from '../utils/exportUtils';
@@ -251,6 +251,56 @@ export default function Riders() {
     setIsModalOpen(true);
   };
 
+  const getDailyStats = () => {
+    // Determine the reference date to monitor (default to today if filterDate is empty)
+    let monitorDateStr = filterDate;
+    if (!monitorDateStr) {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      monitorDateStr = `${year}-${month}-${day}`;
+    }
+
+    // Now, let's scan all active riders to see who has their due date (returnDate) on this monitorDateStr!
+    const activeRiders = riders.filter(r => r.riderStatus === 'active' && !r.isRecoveryBucket);
+    
+    let dueOnDate = [];
+    let paidOnDate = [];
+    let pendingOnDate = [];
+
+    activeRiders.forEach(rider => {
+      if (!rider.returnDate) return;
+      const d = new Date(rider.returnDate);
+      if (isNaN(d.getTime())) return;
+      
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const riderDueStr = `${year}-${month}-${day}`;
+
+      if (riderDueStr === monitorDateStr) {
+        dueOnDate.push(rider);
+        const stats = getWeekStats(rider);
+        if (stats.unpaidWeeks > 0) {
+          pendingOnDate.push(rider);
+        } else {
+          paidOnDate.push(rider);
+        }
+      }
+    });
+
+    return {
+      monitorDateStr,
+      dueCount: dueOnDate.length,
+      paidCount: paidOnDate.length,
+      pendingCount: pendingOnDate.length,
+      dueOnDate,
+      paidOnDate,
+      pendingOnDate
+    };
+  };
+
   const getWeekStats = (rider) => {
     const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
     const calculatedWeeks = (rider.deployDate && rider.returnDate)
@@ -414,6 +464,151 @@ export default function Riders() {
           </button>
         </div>
       )}
+
+      {/* Daily Operations Due Monitor */}
+      {(!isRecoveryPage && !isReturnsPage) && (() => {
+        const stats = getDailyStats();
+        const formattedMonitorDate = new Date(stats.monitorDateStr).toLocaleDateString('en-GB', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric' 
+        });
+
+        return (
+          <div className="bg-white/40 dark:bg-dark-100/40 backdrop-blur-xl p-6 rounded-3xl md:rounded-[2rem] border border-slate-200 dark:border-slate-800/50 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500">
+                  <CalendarRange size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Daily Due Monitor
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                    Operations checklist as of {formattedMonitorDate}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date controller */}
+              <div className="flex items-center gap-3">
+                <input 
+                  type="date" 
+                  value={filterDate || (() => {
+                    const d = new Date();
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                  })()}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="bg-slate-50 dark:bg-dark-200 border border-slate-200 dark:border-slate-800 text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-xl text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark] cursor-pointer focus:outline-none focus:border-primary-500 transition-all"
+                />
+                <button 
+                  onClick={() => {
+                    const d = new Date();
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    setFilterDate(`${year}-${month}-${day}`);
+                  }}
+                  className="btn-secondary h-[38px] px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                >
+                  Go Today
+                </button>
+              </div>
+            </div>
+
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Due Card */}
+              <button
+                onClick={() => {
+                  setFilterDate(stats.monitorDateStr);
+                  setPaymentFilter('all');
+                }}
+                className={`text-left p-5 rounded-2xl border transition-all relative overflow-hidden group ${
+                  filterDate === stats.monitorDateStr && paymentFilter === 'all'
+                    ? 'bg-primary-600/10 dark:bg-primary-600/5 border-primary-500/30 shadow-glow-primary'
+                    : 'bg-slate-50/50 dark:bg-dark-200/30 border-slate-200 dark:border-slate-800/50 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.02]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Riders Due</p>
+                    <p className="text-3xl font-display font-black text-slate-900 dark:text-white mt-2">
+                      {stats.dueCount}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                    <Users size={20} />
+                  </div>
+                </div>
+                <div className="text-[9px] font-black text-primary-500 dark:text-primary-400 uppercase tracking-widest mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>View All Due</span> &rarr;
+                </div>
+              </button>
+
+              {/* Paid Card */}
+              <button
+                onClick={() => {
+                  setFilterDate(stats.monitorDateStr);
+                  setPaymentFilter('fully_paid');
+                }}
+                className={`text-left p-5 rounded-2xl border transition-all relative overflow-hidden group ${
+                  filterDate === stats.monitorDateStr && paymentFilter === 'fully_paid'
+                    ? 'bg-emerald-600/10 dark:bg-emerald-600/5 border-emerald-500/30 shadow-md'
+                    : 'bg-slate-50/50 dark:bg-dark-200/30 border-slate-200 dark:border-slate-800/50 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.02]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest">Paid / Completed</p>
+                    <p className="text-3xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-2">
+                      {stats.paidCount}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <CheckCircle2 size={20} />
+                  </div>
+                </div>
+                <div className="text-[9px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>View Paid Riders</span> &rarr;
+                </div>
+              </button>
+
+              {/* Pending Card */}
+              <button
+                onClick={() => {
+                  setFilterDate(stats.monitorDateStr);
+                  setPaymentFilter('pending');
+                }}
+                className={`text-left p-5 rounded-2xl border transition-all relative overflow-hidden group ${
+                  filterDate === stats.monitorDateStr && paymentFilter === 'pending'
+                    ? 'bg-orange-600/10 dark:bg-orange-600/5 border-orange-500/30 shadow-md border-l-4 border-l-orange-500'
+                    : 'bg-slate-50/50 dark:bg-dark-200/30 border-slate-200 dark:border-slate-800/50 border-l-4 border-l-orange-500/40 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.02]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-orange-500 dark:text-orange-400 uppercase tracking-widest">Pending / Unpaid</p>
+                    <p className="text-3xl font-display font-black text-orange-600 dark:text-orange-400 mt-2">
+                      {stats.pendingCount}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                    <AlertTriangle size={20} />
+                  </div>
+                </div>
+                <div className="text-[9px] font-black text-orange-500 dark:text-orange-400 uppercase tracking-widest mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>View Pending Riders</span> &rarr;
+                </div>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Dynamic Weekly Rental Tracker Info Card */}
       <div className="bg-gradient-to-r from-emerald-500/10 via-primary-500/5 to-transparent border border-emerald-500/15 dark:border-emerald-500/10 p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">

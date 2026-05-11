@@ -78,7 +78,7 @@ const riderSchema = new mongoose.Schema(
     },
     autoReminderTime: {
       type: String,
-      default: "12:00"
+      default: "00:00"
     },
     reminderEscalationStage: {
       type: Number,

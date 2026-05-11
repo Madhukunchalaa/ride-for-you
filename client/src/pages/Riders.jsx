@@ -336,13 +336,18 @@ export default function Riders() {
 
         if (targetDate < deployDateMidnight) return false; // not deployed yet
 
-        // Calculate the exact date up to which the rider has paid: deployDate + (totalWeeks * 7 days)
+        // Calculate the exact date up to which the rider has paid
+        const calculatedWeeks = (rider.deployDate && rider.returnDate)
+          ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+          : 0;
+        const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+
         const paidCutoffDate = new Date(deployDateMidnight);
-        paidCutoffDate.setDate(paidCutoffDate.getDate() + (rider.totalWeeks || 0) * 7);
+        paidCutoffDate.setDate(paidCutoffDate.getDate() + paidWeeks * 7);
 
         const isPaidOnDate = targetDate < paidCutoffDate;
 
-        if (paymentFilter === 'paid') {
+        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
           return isPaidOnDate;
         } else {
           // unpaid on date
@@ -352,7 +357,13 @@ export default function Riders() {
           return !isPaidOnDate;
         }
       } else {
-        return rider.paymentStatus === paymentFilter;
+        const stats = getWeekStats(rider);
+        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+          return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
+        } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+          return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
+        }
+        return true;
       }
     })();
 
@@ -539,8 +550,8 @@ export default function Riders() {
                     className="input h-12 pl-12 appearance-none bg-slate-50 dark:bg-dark-200/50"
                   >
                     <option value="all">All Payments</option>
-                    <option value="paid">Paid Only</option>
-                    <option value="unpaid">Unpaid Only</option>
+                    <option value="fully_paid">Fully Paid</option>
+                    <option value="pending">Pending / Unpaid</option>
                   </select>
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>

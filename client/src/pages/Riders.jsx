@@ -333,7 +333,11 @@ export default function Riders() {
 
         if (targetDate < deployDateMidnight) return false; // not deployed yet
 
-        const isPaidOnDate = targetDate < returnDateMidnight;
+        // Calculate the exact date up to which the rider has paid: deployDate + (totalWeeks * 7 days)
+        const paidCutoffDate = new Date(deployDateMidnight);
+        paidCutoffDate.setDate(paidCutoffDate.getDate() + (rider.totalWeeks || 0) * 7);
+
+        const isPaidOnDate = targetDate < paidCutoffDate;
 
         if (paymentFilter === 'paid') {
           return isPaidOnDate;

@@ -236,6 +236,16 @@ exports.addRider = async (req, res) => {
 
       await rider.save();
       
+      // Send payment link immediately on onboarding if unpaid
+      if (rider.paymentStatus === 'unpaid') {
+        try {
+          const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+          await sendAutomatedPaymentLink(rider, 'normal');
+        } catch (waErr) {
+          console.error('⚠️ [ONBOARDING] WhatsApp trigger failed on reactivation:', waErr.message);
+        }
+      }
+      
       return res.status(200).json({
         success: true,
         message: 'Past rider reactivated successfully',
@@ -276,6 +286,16 @@ exports.addRider = async (req, res) => {
     }
 
     await newRider.save();
+
+    // Send payment link immediately on onboarding if unpaid
+    if (newRider.paymentStatus === 'unpaid') {
+      try {
+        const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+        await sendAutomatedPaymentLink(newRider, 'normal');
+      } catch (waErr) {
+        console.error('⚠️ [ONBOARDING] WhatsApp trigger failed on new rider:', waErr.message);
+      }
+    }
 
     res.status(201).json({
       success: true,

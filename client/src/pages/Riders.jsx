@@ -435,6 +435,35 @@ export default function Riders() {
         </div>
       )}
 
+      {/* Dynamic Weekly Rental Tracker Info Card */}
+      <div className="bg-gradient-to-r from-emerald-500/10 via-primary-500/5 to-transparent border border-emerald-500/15 dark:border-emerald-500/10 p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <CreditCard size={24} />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">How Weekly Payments Work</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+              Rental status is calculated automatically. Each week a rider occupies a bike (based on deployment date), they require <strong>1 Paid Week</strong>. If elapsed weeks exceed paid weeks, they are automatically flagged as <strong>UNPAID</strong>. Recording a payment dynamically credits 1 extra week, extends their due date by 7 days, and logs a fresh invoice.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-4 shrink-0 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-dark-200 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
+          <div className="flex flex-col items-center px-3 border-r border-slate-200 dark:border-slate-800">
+            <span className="text-slate-400">Deployed</span>
+            <span className="text-slate-800 dark:text-white font-bold mt-1">Start Date</span>
+          </div>
+          <div className="flex flex-col items-center px-3 border-r border-slate-200 dark:border-slate-800">
+            <span className="text-emerald-500">Every Payment</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold mt-1">+1 Paid Week</span>
+          </div>
+          <div className="flex flex-col items-center px-3">
+            <span className="text-orange-500">Due Date</span>
+            <span className="text-orange-600 dark:text-orange-400 font-bold mt-1">+7 Days</span>
+          </div>
+        </div>
+      </div>
+
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

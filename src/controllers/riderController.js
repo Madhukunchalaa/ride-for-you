@@ -380,7 +380,7 @@ exports.updateStatus = async (req, res) => {
 
     // Handle payment status changes
     if (paymentStatus) {
-      if (paymentStatus === 'paid' && rider.paymentStatus === 'unpaid') {
+      if (paymentStatus === 'paid') {
         const nextWeek = new Date(rider.returnDate || Date.now());
         nextWeek.setDate(nextWeek.getDate() + 7);
         rider.returnDate = nextWeek;

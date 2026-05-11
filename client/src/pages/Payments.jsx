@@ -48,6 +48,32 @@ export default function Payments() {
     }
   };
 
+  const getWeekStats = (rider) => {
+    const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
+    const paidWeeks = rider.totalWeeks || 0;
+    
+    if (!deployDate) {
+      return {
+        currentWeek: paidWeeks + 1,
+        paidWeeks: paidWeeks,
+        unpaidWeeks: rider.paymentStatus === 'unpaid' ? 1 : 0
+      };
+    }
+
+    const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+    const diffTime = Math.abs(end - deployDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+    const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+
+    return {
+      currentWeek,
+      paidWeeks,
+      unpaidWeeks
+    };
+  };
+
   const filteredRiders = data.riders.filter(rider => 
     rider.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     rider.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase())
@@ -63,7 +89,7 @@ export default function Payments() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const unpaidRiders = data.riders.filter(r => r.paymentStatus === 'unpaid');
+  const unpaidRiders = data.riders.filter(r => getWeekStats(r).unpaidWeeks > 0);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -78,6 +104,35 @@ export default function Payments() {
         >
           <Download size={18} /> Export Reports
         </button>
+      </div>
+
+      {/* Dynamic Weekly Rental Tracker Info Card */}
+      <div className="bg-gradient-to-r from-emerald-500/10 via-primary-500/5 to-transparent border border-emerald-500/15 dark:border-emerald-500/10 p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <CreditCard size={24} />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">How Weekly Payments Work</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+              Rental status is calculated automatically. Each week a rider occupies a bike (based on deployment date), they require <strong>1 Paid Week</strong>. If elapsed weeks exceed paid weeks, they are automatically flagged as <strong>UNPAID</strong>. Recording a payment dynamically credits 1 extra week, extends their due date by 7 days, and logs a fresh invoice.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-4 shrink-0 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-dark-200 border border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
+          <div className="flex flex-col items-center px-3 border-r border-slate-200 dark:border-slate-800">
+            <span className="text-slate-400">Deployed</span>
+            <span className="text-slate-800 dark:text-white font-bold mt-1">Start Date</span>
+          </div>
+          <div className="flex flex-col items-center px-3 border-r border-slate-200 dark:border-slate-800">
+            <span className="text-emerald-500">Every Payment</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold mt-1">+1 Paid Week</span>
+          </div>
+          <div className="flex flex-col items-center px-3">
+            <span className="text-orange-500">Due Date</span>
+            <span className="text-orange-600 dark:text-orange-400 font-bold mt-1">+7 Days</span>
+          </div>
+        </div>
       </div>
 
       {/* Dynamic Stats Grid */}
@@ -166,12 +221,17 @@ export default function Payments() {
                     </td>
                     <td className="p-8 text-slate-900 dark:text-white font-black">₹{(rider.rentalRate || data.stats.weeklyRate || 2000).toLocaleString()}</td>
                     <td className="p-8">
-                      <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
-                        rider.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'
-                      }`}>
-                        {rider.paymentStatus === 'paid' ? <CheckCircle size={14} /> : <Calendar size={14} />}
-                        {rider.paymentStatus}
-                      </span>
+                      {(() => {
+                        const stats = getWeekStats(rider);
+                        return (
+                          <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${
+                            stats.unpaidWeeks > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}>
+                            {stats.unpaidWeeks > 0 ? <Calendar size={14} /> : <CheckCircle size={14} />}
+                            {stats.unpaidWeeks > 0 ? `${stats.unpaidWeeks} Week(s) Unpaid` : `${stats.paidWeeks} Weeks Paid`}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))

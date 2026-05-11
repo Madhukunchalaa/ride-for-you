@@ -100,41 +100,62 @@ exports.webhookHandler = async (req, res) => {
 
         const rider = await Rider.findById(riderId);
         if (rider) {
-          if (rider.paymentStatus === 'unpaid') {
-            const nextWeek = new Date(rider.returnDate || Date.now());
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            
-            rider.returnDate = nextWeek;
-            rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-            rider.paymentStatus = 'paid';
-            
-            rider.reminderEscalationStage = 0;
-            rider.isRecoveryBucket = false;
-
-            if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
-              rider.bikesUsed.push(rider.vehicleNumber);
-            }
-            
-            await rider.save();
-
-            // Create Invoice Record
-            try {
-              const { createInvoiceRecord } = require('../utils/invoiceHelper');
-              await createInvoiceRecord(rider, amount);
-            } catch (invErr) {
-              console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
-            }
-
-            // Send WhatsApp Confirmation
-            try {
-              const { sendPaymentReminder } = require('../utils/whatsapp');
-              const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
-              await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
-            } catch (waErr) {
-              console.error('⚠️ [WEBHOOK] WhatsApp confirmation failed:', waErr.message);
-            }
+          // Robust idempotency check to avoid double-processing
+          let isProcessed = false;
+          if (rider.paymentLinkId === `PROCESSED_${data.id}`) {
+            isProcessed = true;
           } else {
-            console.log(`ℹ️ [WEBHOOK] Rider ${rider.name} is already marked PAID. Skipping.`);
+            const Invoice = require('../models/Invoice');
+            const existingInvoice = await Invoice.findOne({ remarks: new RegExp(data.id) });
+            if (existingInvoice) {
+              isProcessed = true;
+              // Sync link status in rider DB if it wasn't updated
+              if (rider.paymentLinkId === data.id) {
+                rider.paymentLinkId = `PROCESSED_${data.id}`;
+                await rider.save();
+              }
+            }
+          }
+
+          if (isProcessed) {
+            console.log(`ℹ️ [RAZORPAY WEBHOOK] Payment link ${data.id} is already processed. Skipping duplicate webhook.`);
+            return res.status(200).send('OK');
+          }
+
+          // Process the payment
+          const nextWeek = new Date(rider.returnDate || Date.now());
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          
+          rider.returnDate = nextWeek;
+          rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+          rider.paymentStatus = 'paid';
+          
+          rider.reminderEscalationStage = 0;
+          rider.isRecoveryBucket = false;
+
+          if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
+            rider.bikesUsed.push(rider.vehicleNumber);
+          }
+          
+          // Mark payment link as processed
+          rider.paymentLinkId = `PROCESSED_${data.id}`;
+          await rider.save();
+
+          // Create Invoice Record with link ID in remarks
+          try {
+            const { createInvoiceRecord } = require('../utils/invoiceHelper');
+            await createInvoiceRecord(rider, amount, 'RENT', `Weekly Rental Payment (Link: ${data.id})`);
+          } catch (invErr) {
+            console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
+          }
+
+          // Send WhatsApp Confirmation
+          try {
+            const { sendPaymentReminder } = require('../utils/whatsapp');
+            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+            await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
+          } catch (waErr) {
+            console.error('⚠️ [WEBHOOK] WhatsApp confirmation failed:', waErr.message);
           }
         }
       }
@@ -171,47 +192,75 @@ exports.webhookHandler = async (req, res) => {
 
         console.log(`🔍 [PHONEPE WEBHOOK] Processing successful payment. TX ID: ${transactionId}, Amount: ${amount}`);
 
-        const rider = await Rider.findOne({ paymentLinkId: transactionId });
+        // Find rider by active paymentLinkId OR processed paymentLinkId
+        let rider = await Rider.findOne({
+          $or: [
+            { paymentLinkId: transactionId },
+            { paymentLinkId: `PROCESSED_${transactionId}` }
+          ]
+        });
+
         if (!rider) {
           console.error(`❌ [PHONEPE WEBHOOK] No rider found with paymentLinkId ${transactionId}`);
           return res.status(200).send('OK');
         }
 
-        if (rider.paymentStatus === 'unpaid') {
-          const nextWeek = new Date(rider.returnDate || Date.now());
-          nextWeek.setDate(nextWeek.getDate() + 7);
-          
-          rider.returnDate = nextWeek;
-          rider.totalWeeks = (rider.totalWeeks || 0) + 1;
-          rider.paymentStatus = 'paid';
-          
-          rider.reminderEscalationStage = 0;
-          rider.isRecoveryBucket = false;
-
-          if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
-            rider.bikesUsed.push(rider.vehicleNumber);
-          }
-          
-          await rider.save();
-
-          // Create Invoice Record
-          try {
-            const { createInvoiceRecord } = require('../utils/invoiceHelper');
-            await createInvoiceRecord(rider, amount);
-          } catch (invErr) {
-            console.error('⚠️ [PHONEPE WEBHOOK] Invoice helper error:', invErr.message);
-          }
-
-          // Send WhatsApp Confirmation
-          try {
-            const { sendPaymentReminder } = require('../utils/whatsapp');
-            const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
-            await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
-          } catch (waErr) {
-            console.error('⚠️ [PHONEPE WEBHOOK] WhatsApp confirmation failed:', waErr.message);
-          }
+        // Robust idempotency check to avoid double-processing
+        let isProcessed = false;
+        if (rider.paymentLinkId === `PROCESSED_${transactionId}`) {
+          isProcessed = true;
         } else {
-          console.log(`ℹ️ [PHONEPE WEBHOOK] Rider ${rider.name} is already marked PAID. Skipping.`);
+          const Invoice = require('../models/Invoice');
+          const existingInvoice = await Invoice.findOne({ remarks: new RegExp(transactionId) });
+          if (existingInvoice) {
+            isProcessed = true;
+            // Sync link status in rider DB if it wasn't updated
+            if (rider.paymentLinkId === transactionId) {
+              rider.paymentLinkId = `PROCESSED_${transactionId}`;
+              await rider.save();
+            }
+          }
+        }
+
+        if (isProcessed) {
+          console.log(`ℹ️ [PHONEPE WEBHOOK] Transaction ${transactionId} is already processed. Skipping duplicate webhook.`);
+          return res.status(200).send('OK');
+        }
+
+        // Process the payment
+        const nextWeek = new Date(rider.returnDate || Date.now());
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        
+        rider.returnDate = nextWeek;
+        rider.totalWeeks = (rider.totalWeeks || 0) + 1;
+        rider.paymentStatus = 'paid';
+        
+        rider.reminderEscalationStage = 0;
+        rider.isRecoveryBucket = false;
+
+        if (rider.vehicleNumber && !rider.bikesUsed.includes(rider.vehicleNumber)) {
+          rider.bikesUsed.push(rider.vehicleNumber);
+        }
+        
+        // Mark payment link as processed
+        rider.paymentLinkId = `PROCESSED_${transactionId}`;
+        await rider.save();
+
+        // Create Invoice Record with the PhonePe transaction ID in remarks
+        try {
+          const { createInvoiceRecord } = require('../utils/invoiceHelper');
+          await createInvoiceRecord(rider, amount, 'RENT', `Weekly Rental Payment (PhonePe TX: ${transactionId})`);
+        } catch (invErr) {
+          console.error('⚠️ [PHONEPE WEBHOOK] Invoice helper error:', invErr.message);
+        }
+
+        // Send WhatsApp Confirmation
+        try {
+          const { sendPaymentReminder } = require('../utils/whatsapp');
+          const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${rider.name}*,\n\nWe have successfully received your weekly rental payment of *₹${amount}*.\n\nYour dashboard has been updated. Thank you! ⚡`;
+          await sendPaymentReminder(rider.whatsappNumber, { body: confirmationBody });
+        } catch (waErr) {
+          console.error('⚠️ [PHONEPE WEBHOOK] WhatsApp confirmation failed:', waErr.message);
         }
       }
       return res.status(200).send('OK');

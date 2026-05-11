@@ -150,7 +150,7 @@ export default function Payments() {
           </p>
         </div>
         <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Successful</p>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Successful (On-Time)</p>
           <p className="text-3xl font-display font-black text-slate-900 dark:text-white mt-2">
             {loading ? '...' : data.stats.successfulCount}
           </p>

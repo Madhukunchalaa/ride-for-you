@@ -284,7 +284,12 @@ export default function Riders() {
     const calculatedWeeks = (rider.deployDate && rider.returnDate)
       ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
       : 0;
-    const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+    
+    // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
+    const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+    
+    // If unpaid, they have made basePaidWeeks - 1 actual payments
+    const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
 
     // If they have paid MORE weeks than required, they are already paid for the week starting today
     const isPaid = paidWeeks > requiredWeeks;
@@ -343,7 +348,10 @@ export default function Riders() {
       : 0;
     
     // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
-    const paidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+    const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+    
+    // If unpaid, they have made basePaidWeeks - 1 actual payments
+    const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
     
     if (!deployDate) {
       return {
@@ -361,11 +369,17 @@ export default function Riders() {
     
     // Check if current date is past their due date
     const isOverdue = rider.returnDate ? (new Date() > new Date(rider.returnDate)) : false;
-    const unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+    
+    let unpaidWeeks = 0;
+    if (rider.paymentStatus === 'unpaid') {
+      unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+    } else {
+      unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+    }
 
     return {
       currentWeek,
-      paidWeeks,
+      paidWeeks: basePaidWeeks,
       unpaidWeeks
     };
   };

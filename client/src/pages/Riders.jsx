@@ -309,8 +309,15 @@ export default function Riders() {
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
-      // Normalize to YYYY-MM-DD for exact day comparison
-      const targetDateStr = new Date(dateVal).toISOString().split('T')[0];
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return false;
+
+      // Extract components using local timezone to match on-screen display exactly
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const targetDateStr = `${year}-${month}-${day}`;
+
       return targetDateStr === filterDate;
     })();
 

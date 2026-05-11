@@ -12,51 +12,81 @@ const getWeeklyRate = async () => {
 // @GET /api/analytics/dashboard
 exports.getDashboardStats = async (req, res) => {
   try {
-    // 1. Basic Counts
-    const activeRiders = await Rider.countDocuments({ riderStatus: 'active' });
-    
-    // 2. Financial Calculations based on Timeframe
-    const { timeframe = 'weekly' } = req.query;
-    const startDate = new Date();
-    
-    if (timeframe === 'monthly') {
-      startDate.setDate(startDate.getDate() - 30);
-    } else if (timeframe === 'yearly') {
-      startDate.setDate(startDate.getDate() - 365);
-    } else {
-      // Default to weekly (7 days)
-      startDate.setDate(startDate.getDate() - 7);
-    }
-    startDate.setHours(0, 0, 0, 0);
+    const { timeframe = 'weekly', date } = req.query;
 
-    // Weekly Revenue = Collected from riders in last 7 days
+    let isSpecificDate = false;
+    let startDate = new Date();
+    let endDate = new Date();
+
+    if (date) {
+      isSpecificDate = true;
+      startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      if (timeframe === 'monthly') {
+        startDate.setDate(startDate.getDate() - 30);
+      } else if (timeframe === 'yearly') {
+        startDate.setDate(startDate.getDate() - 365);
+      } else {
+        // Default to weekly (7 days)
+        startDate.setDate(startDate.getDate() - 7);
+      }
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // 1. Basic Counts
+    let activeRiders;
+    if (isSpecificDate) {
+      activeRiders = await Rider.countDocuments({
+        deployDate: { $lte: endDate },
+        $or: [
+          { riderStatus: { $ne: 'returned' } },
+          { returnDate: { $gt: startDate } }
+        ]
+      });
+    } else {
+      activeRiders = await Rider.countDocuments({ riderStatus: 'active' });
+    }
+    
+    // 2. Financial Calculations based on Timeframe or Specific Date
+    const revenueMatch = isSpecificDate
+      ? { riderId: { $ne: null }, createdAt: { $gte: startDate, $lte: endDate } }
+      : { riderId: { $ne: null }, createdAt: { $gte: startDate } };
+
     const revenueStats = await Invoice.aggregate([
-      { 
-        $match: { 
-          riderId: { $ne: null },
-          createdAt: { $gte: startDate }
-        } 
-      },
+      { $match: revenueMatch },
       { $group: { _id: null, total: { $sum: "$billAmount" } } }
     ]);
     const totalRevenue = revenueStats[0]?.total || 0;
 
-    // Weekly Hala Expenses = Paid to Hala in last 7 days
+    const expenseMatch = isSpecificDate
+      ? { riderId: { $eq: null }, createdAt: { $gte: startDate, $lte: endDate } }
+      : { riderId: { $eq: null }, createdAt: { $gte: startDate } };
+
     const expenseStats = await Invoice.aggregate([
-      { 
-        $match: { 
-          riderId: { $eq: null },
-          createdAt: { $gte: startDate }
-        } 
-      },
+      { $match: expenseMatch },
       { $group: { _id: null, total: { $sum: "$actualRent" } } }
     ]);
     const totalHalaExpenses = expenseStats[0]?.total || 0;
     const adminProfit = totalRevenue - totalHalaExpenses;
 
-    // Pending Dues (This remains total outstanding as it's critical, but we can call it "Current Pending")
-    const activeRidersList = await Rider.find({ riderStatus: 'active' });
+    // Pending Dues (Outstanding calculation as of the end date)
+    const activeRidersList = isSpecificDate
+      ? await Rider.find({
+          deployDate: { $lte: endDate },
+          $or: [
+            { riderStatus: { $ne: 'returned' } },
+            { returnDate: { $gt: startDate } }
+          ]
+        })
+      : await Rider.find({ riderStatus: 'active' });
+
     const globalWeeklyRate = await getWeeklyRate();
+    const referenceEnd = isSpecificDate ? endDate : new Date();
+
     const pendingDues = activeRidersList.reduce((acc, rider) => {
       const deployDate = rider.deployDate;
       const paidWeeks = rider.totalWeeks || 0;
@@ -66,7 +96,12 @@ exports.getDashboardStats = async (req, res) => {
         return acc + (rider.paymentStatus === 'unpaid' ? rate : 0);
       }
 
-      const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+      const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
+        ? new Date(rider.returnDate) 
+        : referenceEnd;
+      
+      if (new Date(deployDate) > referenceEnd) return acc;
+
       const diffTime = Math.abs(end - new Date(deployDate));
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
@@ -76,19 +111,35 @@ exports.getDashboardStats = async (req, res) => {
       return acc + (unpaidWeeks * rate);
     }, 0);
 
-    // Total Security Deposits (Global total for all active riders)
+    // Total Security Deposits
+    const sdMatch = isSpecificDate
+      ? { 
+          deployDate: { $lte: endDate },
+          $or: [
+            { riderStatus: { $ne: 'returned' } },
+            { returnDate: { $gt: startDate } }
+          ]
+        }
+      : { riderStatus: 'active' };
+
     const sdStats = await Rider.aggregate([
-      { $match: { riderStatus: 'active' } },
+      { $match: sdMatch },
       { $group: { _id: null, total: { $sum: "$securityDeposit" } } }
     ]);
     const totalSD = sdStats[0]?.total || 0;
 
-    // 3. 7-Day Trends
-    // (sevenDaysAgo is already declared above)
-    
+    // 3. Trends (Let's show 7-day preceding trend for context, or matching startDate)
+    const trendStartDate = new Date(startDate);
+    if (isSpecificDate) {
+      trendStartDate.setDate(trendStartDate.getDate() - 6);
+      trendStartDate.setHours(0, 0, 0, 0);
+    }
+
+    const trendEnd = endDate;
+
     // Rider Growth Trend
     const riderTrend = await Rider.aggregate([
-      { $match: { createdAt: { $gte: startDate } } },
+      { $match: { createdAt: { $gte: trendStartDate, $lte: trendEnd } } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -98,11 +149,11 @@ exports.getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } }
     ]);
 
-    // Revenue Trend (from Rider Invoices)
+    // Revenue Trend
     const revenueTrend = await Invoice.aggregate([
       { 
         $match: { 
-          createdAt: { $gte: startDate },
+          createdAt: { $gte: trendStartDate, $lte: trendEnd },
           riderId: { $ne: null }
         } 
       },
@@ -115,18 +166,19 @@ exports.getDashboardStats = async (req, res) => {
       { $sort: { "_id": 1 } }
     ]);
 
-    // 4. Recent Activity (Unified: New Riders + Extensions)
-    const recentRiders = await Rider.find()
+    // 4. Recent Activity
+    const recentRiders = await Rider.find({ createdAt: { $lte: endDate } })
       .sort({ createdAt: -1 })
       .limit(5)
       .select('name vehicleNumber createdAt');
     
-    // Recent Payment Extensions (Invoices with riderId)
-    const recentExtensions = await Invoice.find({ riderId: { $ne: null } })
+    const recentExtensions = await Invoice.find({ 
+      riderId: { $ne: null },
+      createdAt: { $lte: endDate }
+    })
       .sort({ createdAt: -1 })
       .limit(5);
 
-    // Combine and sort by date
     const recentActivity = [
       ...recentRiders.map(r => ({ 
         type: 'ONBOARDING', 

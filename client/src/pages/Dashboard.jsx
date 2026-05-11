@@ -27,12 +27,16 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState('weekly');
+  const [selectedDate, setSelectedDate] = useState('');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/analytics/dashboard?timeframe=${timeframe}`);
+        const url = selectedDate 
+          ? `/analytics/dashboard?date=${selectedDate}`
+          : `/analytics/dashboard?timeframe=${timeframe}`;
+        const response = await api.get(url);
         setData(response.data.data);
       } catch (err) {
         console.error('Analytics Error:', err);
@@ -41,7 +45,7 @@ export default function Dashboard() {
       }
     };
     fetchStats();
-  }, [timeframe]);
+  }, [timeframe, selectedDate]);
 
   if (loading) {
     return (
@@ -74,17 +78,44 @@ export default function Dashboard() {
           <h2 className="text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Dashboard Overview</h2>
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Real-time performance analytics</p>
         </div>
-        <div className="flex items-center gap-3 bg-white dark:bg-dark-100 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <Calendar size={16} className="text-primary-500 ml-2" />
-          <select 
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4"
-          >
-            <option value="weekly">Weekly View</option>
-            <option value="monthly">Monthly View</option>
-            <option value="yearly">Yearly View</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Custom Date Filter */}
+          <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <Calendar size={16} className="text-primary-500" />
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+              }}
+              className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+              title="Filter by specific date"
+            />
+            {selectedDate && (
+              <button 
+                onClick={() => setSelectedDate('')}
+                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Standard Timeframe Filter */}
+          {!selectedDate && (
+            <div className="flex items-center gap-3 bg-white dark:bg-dark-100 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <Calendar size={16} className="text-primary-500 ml-2" />
+              <select 
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4 text-slate-800 dark:text-white"
+              >
+                <option value="weekly">Weekly View</option>
+                <option value="monthly">Monthly View</option>
+                <option value="yearly">Yearly View</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
       {/* Stat Cards */}
@@ -110,7 +141,9 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Fleet Growth Trend</h3>
-              <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Rider registrations (Last 7 Days)</p>
+              <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                {selectedDate ? `Rider registrations (Leading up to ${getTimeframeLabel()})` : `Rider registrations (Last 7 Days)`}
+              </p>
             </div>
             <div className="bg-primary-600/10 border border-primary-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></div>
@@ -214,7 +247,9 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h3 className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">Revenue Collection</h3>
-            <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Daily income trends (Last 7 Days)</p>
+            <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+              {selectedDate ? `Daily income trends (Leading up to ${getTimeframeLabel()})` : `Daily income trends (Last 7 Days)`}
+            </p>
           </div>
           <div className="bg-emerald-600/10 border border-emerald-500/20 px-3 py-1 rounded-full flex items-center gap-2 w-fit">
             <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>

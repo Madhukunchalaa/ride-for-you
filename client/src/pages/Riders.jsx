@@ -611,13 +611,24 @@ export default function Riders() {
                       <div className="flex flex-col items-end">
                         {(() => {
                            const stats = getWeekStats(rider);
+                           const isOverdue = stats.unpaidWeeks > 0 && new Date() > new Date(rider.returnDate);
                            return (
                              <>
                                <span className="text-[10px] font-black uppercase tracking-widest text-primary-500">
                                  Week {stats.currentWeek} Running
                                </span>
-                               <span className={`text-[8px] font-bold uppercase tracking-widest ${stats.unpaidWeeks > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                 {stats.paidWeeks} Paid • {stats.unpaidWeeks} Unpaid
+                               <span className={`text-[8px] font-bold uppercase tracking-widest ${
+                                 stats.unpaidWeeks > 0 
+                                   ? isOverdue 
+                                     ? 'text-red-500 font-black animate-pulse' 
+                                     : 'text-orange-500' 
+                                   : 'text-emerald-500'
+                               }`}>
+                                 {stats.unpaidWeeks > 0 
+                                   ? isOverdue 
+                                     ? `OVERDUE (${stats.unpaidWeeks} WK)` 
+                                     : `PENDING (${stats.unpaidWeeks} WK)` 
+                                   : `FULLY PAID (${stats.paidWeeks} WK)`}
                                </span>
                              </>
                            );
@@ -775,19 +786,24 @@ export default function Riders() {
                         <div className="flex flex-col gap-1">
                           {(() => {
                             const stats = getWeekStats(rider);
+                            const isOverdue = stats.unpaidWeeks > 0 && new Date() > new Date(rider.returnDate);
                             return (
                               <span className={`${
                                 rider.isRecoveryBucket 
                                 ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
                                 : stats.unpaidWeeks > 0
-                                ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
+                                ? isOverdue
+                                  ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
+                                  : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
                                 : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                               } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
                                 {rider.isRecoveryBucket 
                                   ? 'RECOVERY' 
                                   : stats.unpaidWeeks > 0 
-                                  ? `${stats.paidWeeks} PAID • ${stats.unpaidWeeks} UNPAID` 
-                                  : `${stats.paidWeeks} WEEKS PAID`}
+                                  ? isOverdue
+                                    ? `OVERDUE (${stats.unpaidWeeks} WK)` 
+                                    : `PENDING (${stats.unpaidWeeks} WK)`
+                                  : `FULLY PAID (${stats.paidWeeks} WK)`}
                               </span>
                             );
                           })()}

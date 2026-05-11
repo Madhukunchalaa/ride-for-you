@@ -295,9 +295,9 @@ export default function RiderDetails() {
                 try {
                   toast.loading('Sending image promo...');
                   await api.post(`/riders/${rider._id}/send-reminder`, { 
-                    templateName: '2061108621177961', // Using the approved one!
+                    templateName: 'promo', // Using the approved one!
                     variables: { 1: rider.name },
-                    headerImage: 'https://rideforyouev.com/assets/fusion.png'
+                    headerImage: 'https://rideforyouev.com/assets/promo_flyer.jpg'
                   });
                   toast.dismiss();
                   toast.success('Promo sent successfully!');

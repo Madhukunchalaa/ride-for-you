@@ -24,6 +24,8 @@ import { exportToCSV } from '../utils/exportUtils';
 
 export default function Reports() {
   const [range, setRange] = useState('monthly');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +33,10 @@ export default function Reports() {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/analytics/reports?range=${range}`);
+        let url = `/analytics/reports?range=${range}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+        const response = await api.get(url);
         setData(response.data.data);
       } catch (err) {
         console.error('Reports Error:', err);
@@ -40,7 +45,7 @@ export default function Reports() {
       }
     };
     fetchReports();
-  }, [range]);
+  }, [range, startDate, endDate]);
 
   const totalEarnings = data.reduce((sum, item) => sum + item.earnings, 0);
   const totalExpenses = data.reduce((sum, item) => sum + item.halaPayments, 0);
@@ -62,8 +67,52 @@ export default function Reports() {
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Custom Date Range Filter */}
+          <div className="flex items-center gap-2 bg-white dark:bg-dark-100 px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black uppercase tracking-widest">
+            <Calendar size={14} className="text-primary-500" />
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setRange('daily'); // Switch to daily for granular range analysis
+              }}
+              className="bg-transparent focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white w-28 [color-scheme:light] dark:[color-scheme:dark]"
+              title="Start Date"
+            />
+            <span className="text-slate-400 text-[10px]">to</span>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setRange('daily');
+              }}
+              className="bg-transparent focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white w-28 [color-scheme:light] dark:[color-scheme:dark]"
+              title="End Date"
+            />
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setRange('monthly');
+                }}
+                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           <div className="bg-slate-100 dark:bg-dark-200/50 p-1 rounded-2xl flex">
+            <button 
+              onClick={() => setRange('daily')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'daily' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
+            >
+              Daily
+            </button>
             <button 
               onClick={() => setRange('weekly')}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${range === 'weekly' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
@@ -76,8 +125,8 @@ export default function Reports() {
             >
               Monthly
             </button>
-
           </div>
+
           <button 
             onClick={() => exportToCSV(data, 'Financial_Report')}
             className="p-3 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-primary-500 transition-all shadow-sm"
@@ -118,7 +167,15 @@ export default function Reports() {
                   fontSize={10} 
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(val) => range === 'monthly' ? new Date(val).toLocaleDateString('default', { month: 'short', year: '2-digit' }) : val}
+                  tickFormatter={(val) => {
+                    if (range === 'monthly') {
+                      return new Date(val).toLocaleDateString('default', { month: 'short', year: '2-digit' });
+                    }
+                    if (range === 'daily') {
+                      return new Date(val).toLocaleDateString('default', { day: '2-digit', month: 'short' });
+                    }
+                    return val;
+                  }}
                 />
                 <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val/1000}k`} />
                 <Tooltip 

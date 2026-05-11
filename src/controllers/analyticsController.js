@@ -217,14 +217,36 @@ exports.getDashboardStats = async (req, res) => {
 // @GET /api/analytics/reports
 exports.getFinancialReports = async (req, res) => {
   try {
-    const { range = 'monthly' } = req.query; // 'weekly' or 'monthly'
+    const { range = 'monthly', startDate, endDate } = req.query; // 'weekly', 'monthly', 'daily'
     
+    let matchStage = {};
+    if (startDate || endDate) {
+      matchStage.createdAt = {};
+      if (startDate) {
+        const s = new Date(startDate);
+        s.setHours(0, 0, 0, 0);
+        matchStage.createdAt.$gte = s;
+      }
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        matchStage.createdAt.$lte = e;
+      }
+    }
+
     let format = "%Y-%m"; // Default monthly
     if (range === 'weekly') {
       format = "%Y-W%V"; // Weekly format
+    } else if (range === 'daily') {
+      format = "%Y-%m-%d"; // Daily format
     }
 
-    const reports = await Invoice.aggregate([
+    const pipeline = [];
+    if (Object.keys(matchStage).length > 0) {
+      pipeline.push({ $match: matchStage });
+    }
+
+    pipeline.push(
       {
         $group: {
           _id: { $dateToString: { format: format, date: "$createdAt" } },
@@ -244,9 +266,14 @@ exports.getFinancialReports = async (req, res) => {
           profit: { $subtract: ["$earnings", "$halaPayments"] }
         }
       },
-      { $sort: { "period": -1 } },
-      { $limit: 12 } // Last 12 periods
-    ]);
+      { $sort: { "period": -1 } }
+    );
+
+    if (!startDate && !endDate) {
+      pipeline.push({ $limit: 12 }); // Last 12 periods if no date filter is active
+    }
+
+    const reports = await Invoice.aggregate(pipeline);
 
     res.status(200).json({
       success: true,

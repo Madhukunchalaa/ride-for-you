@@ -97,11 +97,14 @@ exports.getDashboardStats = async (req, res) => {
 
     const pendingDues = activeRidersList.reduce((acc, rider) => {
       const deployDate = rider.deployDate;
+      const rate = rider.rentalRate || globalWeeklyRate;
+
       const calculatedWeeks = (deployDate && rider.returnDate)
         ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
         : 0;
-      const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
-      const rate = rider.rentalRate || globalWeeklyRate;
+      
+      const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+      const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
 
       if (!deployDate) {
         return acc + (rider.paymentStatus === 'unpaid' ? rate : 0);
@@ -117,7 +120,14 @@ exports.getDashboardStats = async (req, res) => {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-      const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+      const isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
+
+      let unpaidWeeks = 0;
+      if (rider.paymentStatus === 'unpaid') {
+        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+      } else {
+        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+      }
 
       return acc + (unpaidWeeks * rate);
     }, 0);
@@ -366,7 +376,12 @@ exports.getPaymentAnalytics = async (req, res) => {
       const calculatedWeeks = (deployDate && rider.returnDate)
         ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
         : 0;
-      const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+      
+      // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
+      const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+      
+      // If unpaid, they have made basePaidWeeks - 1 actual payments
+      const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
       
       let unpaidWeeks = 0;
       let isOverdue = false;
@@ -383,13 +398,20 @@ exports.getPaymentAnalytics = async (req, res) => {
         const diffTime = Math.abs(end - new Date(deployDate));
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-        unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
-        isOverdue = unpaidWeeks > 0 && referenceEnd > new Date(rider.returnDate);
+        
+        // Check if current date is past their due date
+        isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
+        
+        if (rider.paymentStatus === 'unpaid') {
+          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+        } else {
+          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+        }
       }
 
-      totalCollected += (paidWeeks * rate);
+      totalCollected += (basePaidWeeks * rate);
       pendingDues += (unpaidWeeks * rate);
-      if (!isOverdue) {
+      if (!isOverdue && rider.paymentStatus === 'paid') {
         successfulCount++;
       }
     });

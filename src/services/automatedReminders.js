@@ -45,13 +45,12 @@ const initAutomatedReminders = () => {
           continue;
         }
 
-        // 5-Minute Window Matching
+        // 5-Minute Window Matching (all reminders only fire at their scheduled hour, e.g. 12:00 PM)
         const [targetH, targetM] = rider.autoReminderTime.split(':').map(Number);
         const [currH, currM] = [today.getHours(), today.getMinutes()];
         const isTimeMatch = (currH === targetH && currM >= targetM && currM < targetM + 5);
-        const isOverdueTrigger = (daysOverdue > 0);
 
-        if (!isTimeMatch && !isOverdueTrigger) {
+        if (!isTimeMatch) {
           continue;
         }
 

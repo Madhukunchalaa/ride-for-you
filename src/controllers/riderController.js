@@ -222,7 +222,7 @@ exports.addRider = async (req, res) => {
       rider.totalWeeks = initialWeeks; // Set reactivated weeks paid based on deployment period
       rider.paymentStatus = 'unpaid';
       rider.autoReminderEnabled = autoReminderEnabled !== undefined ? autoReminderEnabled : true;
-      rider.autoReminderTime = autoReminderTime || '00:00';
+      rider.autoReminderTime = autoReminderTime || '12:00';
       rider.reminderEscalationStage = 0;
       rider.isRecoveryBucket = false;
       rider.securityDeposit = Number(req.body.securityDeposit) || 0;
@@ -268,7 +268,7 @@ exports.addRider = async (req, res) => {
       returnDate,
       totalWeeks: initialWeeks, // Set initial weeks paid based on deployment period
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
-      autoReminderTime: autoReminderTime || '00:00',
+      autoReminderTime: autoReminderTime || '12:00',
       bikesUsed: [vehicleNumber.toUpperCase()],
       securityDeposit: req.body.securityDeposit !== undefined ? Number(req.body.securityDeposit) : 0
     });

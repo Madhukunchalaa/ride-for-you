@@ -317,13 +317,19 @@ exports.getBillingStats = async (req, res) => {
 // @GET /api/analytics/payments
 exports.getPaymentAnalytics = async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, startDate: queryStart, endDate: queryEnd } = req.query;
 
     let isSpecificDate = false;
     let startDate = new Date();
     let endDate = new Date();
 
-    if (date) {
+    if (queryStart && queryEnd) {
+      isSpecificDate = true;
+      startDate = new Date(queryStart);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(queryEnd);
+      endDate.setHours(23, 59, 59, 999);
+    } else if (date) {
       isSpecificDate = true;
       startDate = new Date(date);
       startDate.setHours(0, 0, 0, 0);

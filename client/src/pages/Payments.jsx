@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Download, Search, Calendar, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CreditCard, Download, Search, Calendar, CalendarRange, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '../api/axios';
 import { exportToCSV } from '../utils/exportUtils';
 import Modal from '../components/Modal';
@@ -9,6 +9,9 @@ export default function Payments() {
   const [data, setData] = useState({ stats: {}, riders: [] });
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
+  const [isRangeMode, setIsRangeMode] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRider, setSelectedRider] = useState('');
@@ -19,9 +22,12 @@ export default function Payments() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const url = selectedDate 
-        ? `/analytics/payments?date=${selectedDate}`
-        : '/analytics/payments';
+      let url = '/analytics/payments';
+      if (isRangeMode && fromDate && toDate) {
+        url = `/analytics/payments?startDate=${fromDate}&endDate=${toDate}`;
+      } else if (!isRangeMode && selectedDate) {
+        url = `/analytics/payments?date=${selectedDate}`;
+      }
       const res = await api.get(url);
       setData(res.data.data);
     } catch (err) {
@@ -33,7 +39,7 @@ export default function Payments() {
 
   useEffect(() => {
     fetchPayments();
-  }, [selectedDate]);
+  }, [selectedDate, isRangeMode, fromDate, toDate]);
 
   const handleRecordPayment = async (e) => {
     e.preventDefault();
@@ -67,7 +73,12 @@ export default function Payments() {
       };
     }
 
-    const referenceEnd = selectedDate ? new Date(selectedDate) : new Date();
+    const referenceEnd = (isRangeMode && toDate)
+      ? new Date(toDate)
+      : (!isRangeMode && selectedDate)
+        ? new Date(selectedDate)
+        : new Date();
+
     const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
       ? new Date(rider.returnDate) 
       : referenceEnd;
@@ -111,25 +122,81 @@ export default function Payments() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          {/* Custom Date Filter */}
-          <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black uppercase tracking-widest">
-            <Calendar size={16} className="text-primary-500" />
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
-              title="Filter payments as of date"
-            />
-            {selectedDate && (
-              <button 
-                onClick={() => setSelectedDate('')}
-                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          {/* Toggle Range Mode Button */}
+          <button
+            onClick={() => {
+              setIsRangeMode(!isRangeMode);
+              setFromDate('');
+              setToDate('');
+              setSelectedDate('');
+            }}
+            className={`px-4 py-2.5 h-11 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[9px] md:text-[10px] transition-all border shadow-sm ${
+              isRangeMode 
+                ? 'bg-primary-500 text-black border-primary-500 hover:bg-primary-400' 
+                : 'bg-white dark:bg-dark-100 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+            }`}
+          >
+            <CalendarRange size={15} />
+            <span>{isRangeMode ? 'Switch to Standard' : 'Custom Date Range'}</span>
+          </button>
+
+          {isRangeMode ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date */}
+              <div className="flex items-center gap-2 bg-white dark:bg-dark-100 px-3 py-2 h-11 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black">
+                <span className="text-[9px] font-black uppercase text-slate-400">From:</span>
+                <input 
+                  type="date" 
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                />
+              </div>
+
+              {/* To Date */}
+              <div className="flex items-center gap-2 bg-white dark:bg-dark-100 px-3 py-2 h-11 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black">
+                <span className="text-[9px] font-black uppercase text-slate-400">To:</span>
+                <input 
+                  type="date" 
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                />
+              </div>
+
+              {(fromDate || toDate) && (
+                <button 
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                  className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2.5 py-1.5 rounded-xl transition-all"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Custom Date Filter */
+            <div className="flex items-center gap-3 bg-white dark:bg-dark-100 px-4 py-2.5 h-11 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs font-black uppercase tracking-widest">
+              <Calendar size={16} className="text-primary-500" />
+              <input 
+                type="date" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent focus:outline-none cursor-pointer border-0 p-0 text-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
+                title="Filter payments as of date"
+              />
+              {selectedDate && (
+                <button 
+                  onClick={() => setSelectedDate('')}
+                  className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all ml-1"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
 
           <button 
             onClick={() => exportToCSV(data.riders, 'Payments_Report')}

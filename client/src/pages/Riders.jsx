@@ -341,7 +341,9 @@ export default function Riders() {
     const calculatedWeeks = (rider.deployDate && rider.returnDate)
       ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
       : 0;
-    const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+    
+    // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
+    const paidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
     
     if (!deployDate) {
       return {
@@ -356,7 +358,10 @@ export default function Riders() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-    const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+    
+    // Check if current date is past their due date
+    const isOverdue = rider.returnDate ? (new Date() > new Date(rider.returnDate)) : false;
+    const unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
 
     return {
       currentWeek,

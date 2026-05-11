@@ -302,6 +302,11 @@ export default function Riders() {
 
     const matchesDate = (() => {
       if (!filterDate) return true;
+      
+      // If a payment filter is selected, the date is used dynamically to check 
+      // who was paid/unpaid on that date. We don't restrict by exact deploy/return date day.
+      if (paymentFilter !== 'all') return true;
+
       const dateVal = rider[dateFilterType];
       if (!dateVal) return false;
       
@@ -310,7 +315,39 @@ export default function Riders() {
       return targetDateStr === filterDate;
     })();
 
-    const matchesPayment = paymentFilter === 'all' || rider.paymentStatus === paymentFilter;
+    const matchesPayment = (() => {
+      if (paymentFilter === 'all') return true;
+
+      if (filterDate) {
+        // Construct target date at local midnight to prevent timezone shifting
+        const [year, month, day] = filterDate.split('-').map(Number);
+        const targetDate = new Date(year, month - 1, day);
+
+        const deployDate = rider.deployDate ? new Date(rider.deployDate) : null;
+        if (!deployDate) return false;
+        const deployDateMidnight = new Date(deployDate.getFullYear(), deployDate.getMonth(), deployDate.getDate());
+
+        const returnDate = rider.returnDate ? new Date(rider.returnDate) : null;
+        if (!returnDate) return false;
+        const returnDateMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
+
+        if (targetDate < deployDateMidnight) return false; // not deployed yet
+
+        const isPaidOnDate = targetDate < returnDateMidnight;
+
+        if (paymentFilter === 'paid') {
+          return isPaidOnDate;
+        } else {
+          // unpaid on date
+          if (rider.riderStatus === 'returned' && targetDate >= returnDateMidnight) {
+            return false; // they already returned the bike, so they don't owe for future dates
+          }
+          return !isPaidOnDate;
+        }
+      } else {
+        return rider.paymentStatus === paymentFilter;
+      }
+    })();
 
     return isCorrectTab && matchesSearch && matchesDate && matchesPayment;
   });

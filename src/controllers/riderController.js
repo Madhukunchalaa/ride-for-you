@@ -111,7 +111,7 @@ exports.sendReminder = async (req, res) => {
       try {
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(paymentLink)}`;
         await sendPaymentReminder(rider.whatsappNumber, { 
-          templateName: 'rejoiner_direct_v1', // Re-use an IMAGE template for the QR
+          templateName: '2061108621177961', // Re-use an IMAGE template for the QR
           variables: { 1: 'SCAN & PAY' },
           headerImage: qrUrl
         });

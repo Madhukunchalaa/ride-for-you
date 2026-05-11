@@ -55,13 +55,25 @@ exports.getDashboardStats = async (req, res) => {
     const adminProfit = totalRevenue - totalHalaExpenses;
 
     // Pending Dues (This remains total outstanding as it's critical, but we can call it "Current Pending")
-    const unpaidActiveRiders = await Rider.find({ 
-      paymentStatus: 'unpaid', 
-      riderStatus: 'active' 
-    });
+    const activeRidersList = await Rider.find({ riderStatus: 'active' });
     const globalWeeklyRate = await getWeeklyRate();
-    const pendingDues = unpaidActiveRiders.reduce((acc, rider) => {
-      return acc + (rider.rentalRate || globalWeeklyRate);
+    const pendingDues = activeRidersList.reduce((acc, rider) => {
+      const deployDate = rider.deployDate;
+      const paidWeeks = rider.totalWeeks || 0;
+      const rate = rider.rentalRate || globalWeeklyRate;
+
+      if (!deployDate) {
+        return acc + (rider.paymentStatus === 'unpaid' ? rate : 0);
+      }
+
+      const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+      const diffTime = Math.abs(end - new Date(deployDate));
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+      const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+
+      return acc + (unpaidWeeks * rate);
     }, 0);
 
     // Total Security Deposits (Global total for all active riders)
@@ -227,11 +239,25 @@ exports.getPaymentAnalytics = async (req, res) => {
     activeRiders.forEach(rider => {
       const rate = rider.rentalRate || globalWeeklyRate;
       upcomingTotal += rate;
-      if (rider.paymentStatus === 'paid') {
-        totalCollected += rate;
-        successfulCount++;
+      
+      const deployDate = rider.deployDate;
+      const paidWeeks = rider.totalWeeks || 0;
+      
+      let unpaidWeeks = 0;
+      if (!deployDate) {
+        unpaidWeeks = rider.paymentStatus === 'unpaid' ? 1 : 0;
       } else {
-        pendingDues += rate;
+        const end = (rider.riderStatus === 'returned' && rider.returnDate) ? new Date(rider.returnDate) : new Date();
+        const diffTime = Math.abs(end - new Date(deployDate));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+        unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+      }
+
+      totalCollected += (paidWeeks * rate);
+      pendingDues += (unpaidWeeks * rate);
+      if (unpaidWeeks === 0) {
+        successfulCount++;
       }
     });
 

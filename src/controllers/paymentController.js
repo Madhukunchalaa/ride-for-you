@@ -90,11 +90,37 @@ exports.webhookHandler = async (req, res) => {
         const data = payload.payment_link.entity;
         const amount = data.amount_paid / 100;
         const riderId = data.notes?.riderId;
+        const customPaymentId = data.notes?.customPaymentId;
 
-        console.log(`🔍 [WEBHOOK] Processing Razorpay Link: ${data.id}, Rider: ${riderId}, Amount: ${amount}`);
+        console.log(`🔍 [WEBHOOK] Processing Razorpay Link: ${data.id}, Rider: ${riderId}, CustomPayment: ${customPaymentId}, Amount: ${amount}`);
+
+        if (customPaymentId) {
+          const CustomPayment = require('../models/CustomPayment');
+          const customPayment = await CustomPayment.findById(customPaymentId);
+          if (customPayment) {
+            if (customPayment.paymentLinkId === `PROCESSED_${data.id}` || customPayment.paymentStatus === 'paid') {
+              console.log(`ℹ️ Custom Payment ${data.id} already processed.`);
+              return res.status(200).send('OK');
+            }
+            customPayment.paymentStatus = 'paid';
+            customPayment.paymentDate = new Date();
+            customPayment.paymentLinkId = `PROCESSED_${data.id}`;
+            await customPayment.save();
+
+            // Send WhatsApp Confirmation
+            try {
+              const { sendPaymentReminder } = require('../utils/whatsapp');
+              const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${customPayment.name}*,\n\nWe have successfully received your payment of *₹${customPayment.amount}* for *${customPayment.remarks}*.\n\nThank you! ⚡`;
+              await sendPaymentReminder(customPayment.whatsappNumber, { body: confirmationBody });
+            } catch (waErr) {
+              console.error('⚠️ [WEBHOOK] Custom Payment WhatsApp confirmation failed:', waErr.message);
+            }
+            return res.status(200).send('OK');
+          }
+        }
 
         if (!riderId) {
-          console.error('❌ [WEBHOOK] No riderId in link notes');
+          console.error('❌ [WEBHOOK] No riderId or customPaymentId in link notes');
           return res.status(200).send('OK');
         }
 
@@ -201,7 +227,41 @@ exports.webhookHandler = async (req, res) => {
         });
 
         if (!rider) {
-          console.error(`❌ [PHONEPE WEBHOOK] No rider found with paymentLinkId ${transactionId}`);
+          // Check if this is a custom payment link!
+          const CustomPayment = require('../models/CustomPayment');
+          let customPayment = await CustomPayment.findOne({
+            $or: [
+              { paymentLinkId: transactionId },
+              { paymentLinkId: `PROCESSED_${transactionId}` }
+            ]
+          });
+
+          if (customPayment) {
+            if (customPayment.paymentLinkId === `PROCESSED_${transactionId}` || customPayment.paymentStatus === 'paid') {
+              console.log(`ℹ️ Custom Payment ${transactionId} already processed.`);
+              return res.status(200).send('OK');
+            }
+
+            customPayment.paymentStatus = 'paid';
+            customPayment.paymentDate = new Date();
+            customPayment.paymentLinkId = `PROCESSED_${transactionId}`;
+            await customPayment.save();
+
+            console.log(`✅ [WEBHOOK] Custom payment for ${customPayment.name} marked as PAID. Amount: ₹${customPayment.amount}`);
+
+            // Send WhatsApp Confirmation
+            try {
+              const { sendPaymentReminder } = require('../utils/whatsapp');
+              const confirmationBody = `✅ *Payment Received! - Ride For You*\n\nHello *${customPayment.name}*,\n\nWe have successfully received your payment of *₹${customPayment.amount}* for *${customPayment.remarks}*.\n\nThank you! ⚡`;
+              await sendPaymentReminder(customPayment.whatsappNumber, { body: confirmationBody });
+            } catch (waErr) {
+              console.error('⚠️ [WEBHOOK] Custom Payment WhatsApp confirmation failed:', waErr.message);
+            }
+
+            return res.status(200).send('OK');
+          }
+
+          console.error(`❌ [PHONEPE WEBHOOK] No rider or custom payment found with paymentLinkId ${transactionId}`);
           return res.status(200).send('OK');
         }
 
@@ -327,6 +387,26 @@ exports.redirectPayment = async (req, res) => {
     res.status(404).send('<h1>Payment Link Expired</h1><p>This payment link has expired or is invalid. Please contact support or request a new checkout link.</p>');
   } catch (err) {
     console.error('💥 [REDIRECT ERROR] Failed to redirect payment:', err);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+// @GET /api/payments/pay/custom/:paymentId
+// @desc Redirect clean custom shortened links to PhonePe long redirect URL
+exports.redirectCustomPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const CustomPayment = require('../models/CustomPayment');
+    const payment = await CustomPayment.findById(paymentId);
+    
+    if (payment && payment.paymentLinkUrl) {
+      console.log(`📡 Redirecting custom customer ${payment.name} to checkout URL...`);
+      return res.redirect(payment.paymentLinkUrl);
+    }
+    
+    res.status(404).send('<h1>Payment Link Expired</h1><p>This payment link has expired or is invalid. Please contact support or request a new checkout link.</p>');
+  } catch (err) {
+    console.error('💥 [CUSTOM REDIRECT ERROR] Failed to redirect payment:', err);
     res.status(500).send('Internal Server Error');
   }
 };

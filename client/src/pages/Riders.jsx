@@ -1038,28 +1038,45 @@ export default function Riders() {
                         )}
                       </td>
                       <td className="p-6">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1.5">
                           {(() => {
                             const stats = getWeekStats(rider);
                             const isOverdue = stats.unpaidWeeks > 0 && new Date() > new Date(rider.returnDate);
                             return (
-                              <span className={`${
-                                rider.isRecoveryBucket 
-                                ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
-                                : stats.unpaidWeeks > 0
-                                ? isOverdue
-                                  ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
-                                  : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
-                                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                              } px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit`}>
-                                {rider.isRecoveryBucket 
-                                  ? 'RECOVERY' 
-                                  : stats.unpaidWeeks > 0 
+                              <div className="flex flex-col gap-1.5">
+                                <span className={`${
+                                  rider.isRecoveryBucket 
+                                  ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
+                                  : stats.unpaidWeeks > 0
                                   ? isOverdue
-                                    ? `OVERDUE (${stats.unpaidWeeks} WK)` 
-                                    : `PENDING (${stats.unpaidWeeks} WK)`
-                                  : `FULLY PAID (${stats.paidWeeks} WK)`}
-                              </span>
+                                    ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
+                                    : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
+                                  : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                                } px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit`}>
+                                  {rider.isRecoveryBucket 
+                                    ? 'RECOVERY' 
+                                    : stats.unpaidWeeks > 0 
+                                    ? isOverdue
+                                      ? `OVERDUE (${stats.unpaidWeeks} WK)` 
+                                      : `PENDING (${stats.unpaidWeeks} WK)`
+                                    : `FULLY PAID`}
+                                </span>
+                                
+                                <div className="flex flex-col text-[10px] font-bold text-slate-500 dark:text-slate-400 gap-0.5 leading-normal">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span>Paid: <b className="text-slate-900 dark:text-white font-black">{stats.paidWeeks} Weeks</b></span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span>Current: <b className="text-slate-900 dark:text-white font-black">Week {stats.currentWeek}</b></span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${stats.unpaidWeeks > 0 ? (isOverdue ? 'bg-red-500' : 'bg-orange-500') : 'bg-emerald-500'}`}></span>
+                                    <span>Paid Up To: <b className="text-slate-900 dark:text-white font-black">{formatDate(rider.returnDate)}</b></span>
+                                  </div>
+                                </div>
+                              </div>
                             );
                           })()}
                           {rider.autoReminderEnabled && !rider.isRecoveryBucket && rider.paymentStatus === 'unpaid' && (

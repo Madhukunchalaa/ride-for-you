@@ -141,14 +141,20 @@ exports.getDashboardStats = async (req, res) => {
       const diffTime = Math.abs(end - new Date(deployDate));
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+      const currentWeek = rider.riderStatus === 'returned'
+        ? Math.max(1, Math.round(diffDays / 7))
+        : Math.max(1, Math.floor(diffDays / 7) + 1);
       const isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
 
       let unpaidWeeks = 0;
-      if (rider.paymentStatus === 'unpaid') {
-        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+      if (rider.riderStatus === 'returned') {
+        unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
       } else {
-        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+        if (rider.paymentStatus === 'unpaid') {
+          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+        } else {
+          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+        }
       }
 
       return acc + (unpaidWeeks * rate);
@@ -444,15 +450,21 @@ exports.getPaymentAnalytics = async (req, res) => {
 
           const diffTime = Math.abs(end - new Date(deployDate));
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+          const currentWeek = rider.riderStatus === 'returned'
+            ? Math.max(1, Math.round(diffDays / 7))
+            : Math.max(1, Math.floor(diffDays / 7) + 1);
           
           // Check if current date is past their due date
           isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
           
-          if (rider.paymentStatus === 'unpaid') {
-            unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+          if (rider.riderStatus === 'returned') {
+            unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
           } else {
-            unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+            if (rider.paymentStatus === 'unpaid') {
+              unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+            } else {
+              unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+            }
           }
         }
 

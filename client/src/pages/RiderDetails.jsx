@@ -255,8 +255,12 @@ export default function RiderDetails() {
     const diffTime = Math.abs(end - deployDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-    const unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
+    const currentWeek = rider.riderStatus === 'returned' 
+      ? Math.max(1, Math.round(diffDays / 7)) 
+      : Math.max(1, Math.floor(diffDays / 7) + 1);
+    const unpaidWeeks = rider.riderStatus === 'returned'
+      ? Math.max(0, currentWeek - paidWeeks)
+      : Math.max(0, currentWeek - paidWeeks);
 
     return {
       currentWeek,

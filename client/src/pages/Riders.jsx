@@ -367,16 +367,22 @@ export default function Riders() {
     const diffTime = Math.abs(end - deployDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+    const currentWeek = rider.riderStatus === 'returned' 
+      ? Math.max(1, Math.round(diffDays / 7)) 
+      : Math.max(1, Math.floor(diffDays / 7) + 1);
     
     // Check if current date is past their due date
     const isOverdue = rider.returnDate ? (new Date() > new Date(rider.returnDate)) : false;
     
     let unpaidWeeks = 0;
-    if (rider.paymentStatus === 'unpaid') {
-      unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+    if (rider.riderStatus === 'returned') {
+      unpaidWeeks = Math.max(0, currentWeek - paidWeeks);
     } else {
-      unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+      if (rider.paymentStatus === 'unpaid') {
+        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+      } else {
+        unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+      }
     }
 
     return {
@@ -1026,7 +1032,7 @@ export default function Riders() {
                               {rider.riderStatus}
                             </span>
                             <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 mt-2 uppercase tracking-tighter">
-                              Week {getWeekStats(rider).currentWeek} Running
+                              Week {getWeekStats(rider).currentWeek} {rider.riderStatus === 'returned' ? 'Ended' : 'Running'}
                             </span>
                           </div>
                         )}

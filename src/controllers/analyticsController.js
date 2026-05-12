@@ -390,53 +390,79 @@ exports.getPaymentAnalytics = async (req, res) => {
     let successfulCount = 0;
     let upcomingTotal = 0;
 
-    activeRiders.forEach(rider => {
-      const rate = rider.rentalRate || globalWeeklyRate;
-      upcomingTotal += rate;
-      
-      const deployDate = rider.deployDate;
-      const calculatedWeeks = (deployDate && rider.returnDate)
-        ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
-        : 0;
-      
-      // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
-      const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
-      
-      // If unpaid, they have made basePaidWeeks actual payments
-      const paidWeeks = basePaidWeeks;
-      
-      let unpaidWeeks = 0;
-      let isOverdue = false;
-      if (!deployDate) {
-        unpaidWeeks = rider.paymentStatus === 'unpaid' ? 1 : 0;
-        isOverdue = rider.paymentStatus === 'unpaid';
-      } else {
-        const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
-          ? new Date(rider.returnDate) 
-          : referenceEnd;
-        
-        if (new Date(deployDate) > referenceEnd) return; // Skip if deployed after our filter date
+    if (isSpecificDate) {
+      // 1. Total Collected from actual rental invoices created in this specific window
+      const invoices = await Invoice.find({
+        riderId: { $ne: null },
+        createdAt: { $gte: startDate, $lte: endDate }
+      });
+      totalCollected = invoices.reduce((sum, inv) => sum + (inv.billAmount || 0), 0);
 
-        const diffTime = Math.abs(end - new Date(deployDate));
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
-        
-        // Check if current date is past their due date
-        isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
-        
-        if (rider.paymentStatus === 'unpaid') {
-          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
-        } else {
-          unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+      // 2. Pending Dues and Successful Counts specifically scheduled/due in this window
+      activeRiders.forEach(rider => {
+        const rate = rider.rentalRate || globalWeeklyRate;
+        if (rider.returnDate) {
+          const rDate = new Date(rider.returnDate);
+          if (rDate >= startDate && rDate <= endDate) {
+            if (rider.paymentStatus === 'unpaid') {
+              pendingDues += rate;
+            } else if (rider.paymentStatus === 'paid') {
+              successfulCount++;
+            }
+          }
         }
-      }
+      });
+      
+      upcomingTotal = 0; // Reset upcoming for specific date selections
+    } else {
+      activeRiders.forEach(rider => {
+        const rate = rider.rentalRate || globalWeeklyRate;
+        upcomingTotal += rate;
+        
+        const deployDate = rider.deployDate;
+        const calculatedWeeks = (deployDate && rider.returnDate)
+          ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
+          : 0;
+        
+        // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
+        const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+        
+        // If unpaid, they have made basePaidWeeks actual payments
+        const paidWeeks = basePaidWeeks;
+        
+        let unpaidWeeks = 0;
+        let isOverdue = false;
+        if (!deployDate) {
+          unpaidWeeks = rider.paymentStatus === 'unpaid' ? 1 : 0;
+          isOverdue = rider.paymentStatus === 'unpaid';
+        } else {
+          const end = (rider.riderStatus === 'returned' && rider.returnDate && new Date(rider.returnDate) < referenceEnd) 
+            ? new Date(rider.returnDate) 
+            : referenceEnd;
+          
+          if (new Date(deployDate) > referenceEnd) return; // Skip if deployed after our filter date
 
-      totalCollected += (basePaidWeeks * rate);
-      pendingDues += (unpaidWeeks * rate);
-      if (!isOverdue && rider.paymentStatus === 'paid') {
-        successfulCount++;
-      }
-    });
+          const diffTime = Math.abs(end - new Date(deployDate));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const currentWeek = Math.max(1, Math.floor(diffDays / 7) + 1);
+          
+          // Check if current date is past their due date
+          isOverdue = rider.returnDate ? (referenceEnd > new Date(rider.returnDate)) : false;
+          
+          if (rider.paymentStatus === 'unpaid') {
+            unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 1;
+          } else {
+            unpaidWeeks = isOverdue ? Math.max(1, currentWeek - paidWeeks) : 0;
+          }
+        }
+
+        totalCollected += (basePaidWeeks * rate);
+        pendingDues += (unpaidWeeks * rate);
+        if (!isOverdue && rider.paymentStatus === 'paid') {
+          successfulCount++;
+        }
+      });
+    }
 
     const stats = {
       totalCollected,

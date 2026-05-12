@@ -348,31 +348,39 @@ export default function Payments() {
           </div>
 
           {/* Dynamic Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className={`grid grid-cols-1 ${(selectedDate || (isRangeMode && fromDate && toDate)) ? 'md:grid-cols-3' : 'md:grid-cols-4'} gap-6`}>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Total Collected</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                {isRangeMode ? 'Range Collected' : selectedDate ? "Today's Collected" : 'Total Collected'}
+              </p>
               <p className="text-3xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-2">
                 ₹{loading ? '...' : data.stats.totalCollected?.toLocaleString()}
               </p>
             </div>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 border-l-4 border-l-orange-500 p-6 rounded-[2rem] shadow-xl">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Pending Dues</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                {isRangeMode ? 'Range Pending' : selectedDate ? "Today's Pending" : 'Pending Dues'}
+              </p>
               <p className="text-3xl font-display font-black text-orange-600 dark:text-orange-400 mt-2">
                 ₹{loading ? '...' : data.stats.pendingDues?.toLocaleString()}
               </p>
             </div>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Successful (On-Time)</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                {isRangeMode ? 'Range Successful' : selectedDate ? "Today's Successful" : 'Successful (On-Time)'}
+              </p>
               <p className="text-3xl font-display font-black text-slate-900 dark:text-white mt-2">
                 {loading ? '...' : data.stats.successfulCount}
               </p>
             </div>
-            <div className="bg-primary-600/10 backdrop-blur-xl border border-primary-500/20 p-6 rounded-[2rem] shadow-glow-primary">
-              <p className="text-[10px] font-black text-primary-500 dark:text-primary-400 uppercase tracking-[0.3em]">Upcoming Total</p>
-              <p className="text-3xl font-display font-black text-primary-600 dark:text-primary-400 mt-2">
-                ₹{loading ? '...' : data.stats.upcomingTotal?.toLocaleString()}
-              </p>
-            </div>
+            {!(selectedDate || (isRangeMode && fromDate && toDate)) && (
+              <div className="bg-primary-600/10 backdrop-blur-xl border border-primary-500/20 p-6 rounded-[2rem] shadow-glow-primary">
+                <p className="text-[10px] font-black text-primary-500 dark:text-primary-400 uppercase tracking-[0.3em]">Upcoming Total</p>
+                <p className="text-3xl font-display font-black text-primary-600 dark:text-primary-400 mt-2">
+                  ₹{loading ? '...' : data.stats.upcomingTotal?.toLocaleString()}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Transaction History Section */}

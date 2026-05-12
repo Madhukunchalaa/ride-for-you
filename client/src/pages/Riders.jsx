@@ -34,7 +34,7 @@ export default function Riders() {
   // Filter States
   const [showFilters, setShowFilters] = useState(false);
   const [filterDate, setFilterDate] = useState('');
-  const [dateFilterType, setDateFilterType] = useState('returnDate'); // Default to 'returnDate' (Due Date) as requested
+  const [dateFilterType, setDateFilterType] = useState('anniversary'); // Default to 'anniversary' for backward compatibility with Daily Due Monitor
   const [paymentFilter, setPaymentFilter] = useState('all'); // 'all', 'paid', 'unpaid'
   const [openActionMenu, setOpenActionMenu] = useState(null);
 
@@ -410,8 +410,7 @@ export default function Riders() {
     const matchesDate = (() => {
       if (!filterDate) return true;
 
-      // Only apply weekly cycle lookups for active tab
-      if (activeTab === 'active' && !isRecoveryPage && !isReturnsPage) {
+      if (dateFilterType === 'anniversary') {
         const dayStatus = getRiderDayStatus(rider, filterDate);
         return dayStatus.isDue;
       }
@@ -479,6 +478,7 @@ export default function Riders() {
     setFilterDate('');
     setSearchTerm('');
     setPaymentFilter('all');
+    setDateFilterType('anniversary');
     setItemsPerPage(50);
     setShowFilters(false);
   };
@@ -758,17 +758,18 @@ export default function Riders() {
                   <select 
                     value={dateFilterType}
                     onChange={(e) => setDateFilterType(e.target.value)}
-                    className="input h-12 appearance-none bg-slate-50 dark:bg-dark-200/50"
+                    className="input h-12 appearance-none bg-slate-50 dark:bg-dark-200/50 text-xs font-black uppercase tracking-widest"
                   >
-                    <option value="deployDate">Deployment Date</option>
-                    <option value="returnDate">Return Date</option>
+                    <option value="anniversary">Weekly Anniversary Due</option>
+                    <option value="returnDate">Exact Due Date (Return Date)</option>
+                    <option value="deployDate">Exact Deployment Date</option>
                   </select>
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>
               </div>
               <div className="space-y-2 col-span-1 md:col-span-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                  Select Specific {dateFilterType === 'deployDate' ? 'Deployment' : 'Due'} Date
+                  Select Specific {dateFilterType === 'deployDate' ? 'Deployment' : dateFilterType === 'anniversary' ? 'Weekly Anniversary' : 'Due'} Date
                 </label>
                 <div className="relative">
                   <CalendarRange size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-500" />

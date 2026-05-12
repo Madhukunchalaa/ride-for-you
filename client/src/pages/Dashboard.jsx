@@ -77,7 +77,7 @@ export default function Dashboard() {
   const stats = [
     { label: `${getTimeframeLabel()} Profit`, value: `₹${(data?.stats?.adminProfit || 0).toLocaleString()}`, icon: DollarSign, color: 'text-sky-400', bg: 'bg-sky-600/10' },
     { label: `${getTimeframeLabel()} Active Fleet`, value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
-    { label: 'Pending Dues', value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
+    { label: `${getTimeframeLabel()} Pending`, value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
     { label: `${getTimeframeLabel()} Revenue`, value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
     { label: 'Total SD', value: `₹${(data?.stats?.totalSD || 0).toLocaleString()}`, icon: ShieldCheck, color: 'text-indigo-400', bg: 'bg-indigo-600/10' },
   ];

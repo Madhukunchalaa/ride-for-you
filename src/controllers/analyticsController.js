@@ -106,9 +106,21 @@ exports.getDashboardStats = async (req, res) => {
     const referenceEnd = isSpecificDate ? endDate : new Date();
 
     const pendingDues = activeRidersList.reduce((acc, rider) => {
-      const deployDate = rider.deployDate;
       const rate = rider.rentalRate || globalWeeklyRate;
 
+      if (isSpecificDate) {
+        // If specific date/range (like Today), only calculate dues that fell due specifically in this window and are unpaid
+        if (rider.returnDate) {
+          const rDate = new Date(rider.returnDate);
+          if (rDate >= startDate && rDate <= endDate && rider.paymentStatus === 'unpaid') {
+            return acc + rate;
+          }
+        }
+        return acc;
+      }
+
+      // Default accumulated outstanding weeks logic for standard global timeframes
+      const deployDate = rider.deployDate;
       const calculatedWeeks = (deployDate && rider.returnDate)
         ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
         : 0;

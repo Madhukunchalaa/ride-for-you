@@ -277,26 +277,28 @@ export default function Riders() {
       return { isDue: false, status: 'all' };
     }
 
-    // Calculate required weeks to be fully paid for this week starting targetDate
-    const requiredWeeks = diffDays / 7;
+    if (!rider.returnDate) {
+      return {
+        isDue: true,
+        status: rider.paymentStatus === 'paid' ? 'paid' : 'pending'
+      };
+    }
 
-    // Actual paid weeks
-    const calculatedWeeks = (rider.deployDate && rider.returnDate)
-      ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
-      : 0;
-    
-    // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
-    const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
-    
-    // If unpaid, they have made basePaidWeeks actual payments
-    const paidWeeks = basePaidWeeks;
+    const rDate = new Date(rider.returnDate);
+    const returnDateMidnight = new Date(rDate.getFullYear(), rDate.getMonth(), rDate.getDate());
 
-    // If they have paid MORE weeks than required, they are already paid for the week starting today
-    const isPaid = paidWeeks > requiredWeeks;
+    let status = 'pending';
+    if (returnDateMidnight > targetDate) {
+      status = 'paid';
+    } else if (returnDateMidnight.getTime() === targetDate.getTime()) {
+      status = rider.paymentStatus === 'paid' ? 'paid' : 'pending';
+    } else {
+      status = 'pending';
+    }
 
     return {
       isDue: true,
-      status: isPaid ? 'paid' : 'pending'
+      status
     };
   };
 
@@ -433,30 +435,22 @@ export default function Riders() {
     const matchesPayment = (() => {
       if (paymentFilter === 'all') return true;
 
-      if (activeTab === 'active' && !isRecoveryPage && !isReturnsPage) {
-        if (filterDate) {
-          const dayStatus = getRiderDayStatus(rider, filterDate);
-          if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
-            return dayStatus.status === 'paid';
-          } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
-            return dayStatus.status === 'pending';
-          }
-        } else {
-          const stats = getWeekStats(rider);
-          if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
-            return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
-          } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
-            return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
-          }
-        }
-        return true;
-      }
+      const isAnniversaryFilter = (activeTab === 'active' && !isRecoveryPage && !isReturnsPage && filterDate && dateFilterType === 'anniversary');
 
-      const stats = getWeekStats(rider);
-      if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
-        return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
-      } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
-        return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
+      if (isAnniversaryFilter) {
+        const dayStatus = getRiderDayStatus(rider, filterDate);
+        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+          return dayStatus.status === 'paid';
+        } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+          return dayStatus.status === 'pending';
+        }
+      } else {
+        const stats = getWeekStats(rider);
+        if (paymentFilter === 'fully_paid' || paymentFilter === 'paid') {
+          return stats.unpaidWeeks === 0 || rider.paymentStatus === 'paid';
+        } else if (paymentFilter === 'pending' || paymentFilter === 'unpaid') {
+          return stats.unpaidWeeks > 0 || rider.paymentStatus === 'unpaid';
+        }
       }
       return true;
     })();

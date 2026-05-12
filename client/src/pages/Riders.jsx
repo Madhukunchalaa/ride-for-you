@@ -288,8 +288,8 @@ export default function Riders() {
     // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
     const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
     
-    // If unpaid, they have made basePaidWeeks - 1 actual payments
-    const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
+    // If unpaid, they have made basePaidWeeks actual payments
+    const paidWeeks = basePaidWeeks;
 
     // If they have paid MORE weeks than required, they are already paid for the week starting today
     const isPaid = paidWeeks > requiredWeeks;
@@ -350,8 +350,8 @@ export default function Riders() {
     // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
     const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
     
-    // If unpaid, they have made basePaidWeeks - 1 actual payments
-    const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
+    // If unpaid, they have made basePaidWeeks actual payments
+    const paidWeeks = basePaidWeeks;
     
     if (!deployDate) {
       return {

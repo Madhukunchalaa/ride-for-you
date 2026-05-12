@@ -103,8 +103,7 @@ exports.getDashboardStats = async (req, res) => {
         ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
         : 0;
       
-      const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
-      const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
+      const paidWeeks = basePaidWeeks;
 
       if (!deployDate) {
         return acc + (rider.paymentStatus === 'unpaid' ? rate : 0);
@@ -380,8 +379,8 @@ exports.getPaymentAnalytics = async (req, res) => {
       // Trust totalWeeks in DB if it is a number, otherwise fallback to calculatedWeeks
       const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
       
-      // If unpaid, they have made basePaidWeeks - 1 actual payments
-      const paidWeeks = rider.paymentStatus === 'unpaid' ? Math.max(0, basePaidWeeks - 1) : basePaidWeeks;
+      // If unpaid, they have made basePaidWeeks actual payments
+      const paidWeeks = basePaidWeeks;
       
       let unpaidWeeks = 0;
       let isOverdue = false;

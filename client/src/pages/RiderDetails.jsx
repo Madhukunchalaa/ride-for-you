@@ -240,7 +240,8 @@ export default function RiderDetails() {
     const calculatedWeeks = (rider.deployDate && rider.returnDate)
       ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(rider.deployDate)) / (1000 * 60 * 60 * 24 * 7)))
       : 0;
-    const paidWeeks = typeof rider.totalWeeks === 'number' ? Math.max(rider.totalWeeks, calculatedWeeks) : calculatedWeeks;
+    const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
+    const paidWeeks = basePaidWeeks;
     
     if (!deployDate) {
       return {

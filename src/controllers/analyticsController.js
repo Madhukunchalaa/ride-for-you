@@ -33,16 +33,26 @@ exports.getDashboardStats = async (req, res) => {
       endDate = new Date(date);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      if (timeframe === 'monthly') {
-        startDate.setDate(startDate.getDate() - 30);
-      } else if (timeframe === 'yearly') {
-        startDate.setDate(startDate.getDate() - 365);
+      if (timeframe === 'today' || timeframe === 'daily') {
+        isSpecificDate = true;
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
       } else {
-        // Default to weekly (7 days)
-        startDate.setDate(startDate.getDate() - 7);
+        if (timeframe === 'monthly') {
+          startDate.setDate(startDate.getDate() - 30);
+        } else if (timeframe === 'yearly') {
+          startDate.setDate(startDate.getDate() - 365);
+        } else if (timeframe === 'all' || timeframe === 'total') {
+          startDate = new Date(0); // Since beginning of time (1970)
+        } else {
+          // Default to weekly (7 days)
+          startDate.setDate(startDate.getDate() - 7);
+        }
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
       }
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
     }
 
     // 1. Basic Counts

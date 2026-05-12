@@ -64,15 +64,19 @@ export default function Dashboard() {
   }
 
   const getTimeframeLabel = () => {
-    if (isRangeMode) return 'Custom';
+    if (isRangeMode) return 'Range';
+    if (selectedDate) return 'Selected Date';
+    if (timeframe === 'today') return "Today's";
+    if (timeframe === 'weekly') return 'Weekly';
     if (timeframe === 'monthly') return 'Monthly';
     if (timeframe === 'yearly') return 'Yearly';
+    if (timeframe === 'all') return 'All-Time';
     return 'Weekly';
   };
 
   const stats = [
     { label: `${getTimeframeLabel()} Profit`, value: `₹${(data?.stats?.adminProfit || 0).toLocaleString()}`, icon: DollarSign, color: 'text-sky-400', bg: 'bg-sky-600/10' },
-    { label: 'Active Fleet', value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
+    { label: `${getTimeframeLabel()} Active Fleet`, value: data?.stats?.activeRiders || 0, icon: Bike, color: 'text-sky-400', bg: 'bg-sky-600/10' },
     { label: 'Pending Dues', value: `₹${(data?.stats?.pendingDues || 0).toLocaleString()}`, icon: Clock, color: 'text-orange-400', bg: 'bg-orange-600/10' },
     { label: `${getTimeframeLabel()} Revenue`, value: `₹${(data?.stats?.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-600/10' },
     { label: 'Total SD', value: `₹${(data?.stats?.totalSD || 0).toLocaleString()}`, icon: ShieldCheck, color: 'text-indigo-400', bg: 'bg-indigo-600/10' },
@@ -172,11 +176,13 @@ export default function Dashboard() {
                   <select 
                     value={timeframe}
                     onChange={(e) => setTimeframe(e.target.value)}
-                    className="bg-transparent text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4 text-slate-800 dark:text-white"
+                    className="bg-transparent text-[10px] md:text-xs font-black uppercase tracking-widest focus:outline-none cursor-pointer pr-4 text-slate-800 dark:text-white bg-white dark:bg-dark-100 border-none"
                   >
+                    <option value="today">Today's View</option>
                     <option value="weekly">Weekly View</option>
                     <option value="monthly">Monthly View</option>
                     <option value="yearly">Yearly View</option>
+                    <option value="all">Total (All-Time)</option>
                   </select>
                 </div>
               )}

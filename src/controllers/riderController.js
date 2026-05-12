@@ -400,7 +400,11 @@ exports.updateStatus = async (req, res) => {
     // Handle payment status changes
     if (paymentStatus) {
       if (paymentStatus === 'paid') {
-        const nextWeek = new Date(rider.returnDate || Date.now());
+        // Use the provided paymentDate (manual collection date) as the base
+        // so returnDate = paymentDate + 7 days (not old returnDate + 7)
+        const paymentDate = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
+        paymentDate.setHours(0, 0, 0, 0); // normalize to midnight
+        const nextWeek = new Date(paymentDate);
         nextWeek.setDate(nextWeek.getDate() + 7);
         rider.returnDate = nextWeek;
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
@@ -408,6 +412,7 @@ exports.updateStatus = async (req, res) => {
         // Reset escalation and recovery on payment
         rider.reminderEscalationStage = 0;
         rider.isRecoveryBucket = false;
+        rider.lastAutomatedReminderDate = null; // allow fresh reminder next cycle
 
         if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
           rider.bikesUsed.push(rider.vehicleNumber);

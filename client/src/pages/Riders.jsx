@@ -1097,7 +1097,7 @@ export default function Riders() {
                                   onClick={() => { 
                                     if (rider.paymentStatus === 'unpaid') {
                                       setPaymentRider(rider);
-                                      setPaymentData({ amount: rider.rentalRate || 2000, remarks: 'Manual Cash Payment' });
+                                      setPaymentData({ amount: rider.rentalRate || 2000, remarks: 'Manual Cash Payment', paymentDate: new Date().toISOString().split('T')[0] });
                                       setIsPaymentModalOpen(true);
                                     } else {
                                       handleUpdateStatus(rider._id, 'unpaid');
@@ -1401,7 +1401,7 @@ export default function Riders() {
         isOpen={isPaymentModalOpen} 
         onClose={() => {
           setIsPaymentModalOpen(false);
-          setPaymentData({ amount: '', remarks: '' });
+          setPaymentData({ amount: '', remarks: '', paymentDate: new Date().toISOString().split('T')[0] });
           setPaymentRider(null);
         }}
       >
@@ -1421,6 +1421,22 @@ export default function Riders() {
             </button>
           </div>
 
+          {/* Weeks Already Paid Info Banner */}
+          {paymentRider && (
+            <div className="mx-8 mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weeks Already Paid</p>
+                <p className="text-2xl font-black text-slate-800 dark:text-white mt-0.5">{paymentRider.totalWeeks || 0} <span className="text-sm font-bold text-slate-400">weeks</span></p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Due Date</p>
+                <p className="text-sm font-black text-orange-500 mt-0.5">
+                  {paymentRider.returnDate ? new Date(paymentRider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <form 
             onSubmit={async (e) => {
               e.preventDefault();
@@ -1429,9 +1445,12 @@ export default function Riders() {
                 await api.patch(`/riders/${paymentRider._id}/status`, {
                   paymentStatus: 'paid',
                   amount: Number(paymentData.amount),
-                  remarks: paymentData.remarks
+                  remarks: paymentData.remarks,
+                  paymentDate: paymentData.paymentDate  // ← send actual collection date
                 });
-                toast.success('Payment recorded successfully');
+                const nextDue = new Date(paymentData.paymentDate);
+                nextDue.setDate(nextDue.getDate() + 7);
+                toast.success(`Payment recorded! Next due: ${nextDue.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`);
                 setIsPaymentModalOpen(false);
                 fetchRiders();
               } catch (err) {
@@ -1440,8 +1459,27 @@ export default function Riders() {
                 setIsSubmitting(false);
               }
             }} 
-            className="p-8 space-y-6"
+            className="p-8 space-y-5"
           >
+            {/* Payment Date */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">
+                📅 Payment Collected On
+              </label>
+              <input 
+                type="date"
+                required
+                className="input h-14 text-base"
+                value={paymentData.paymentDate || new Date().toISOString().split('T')[0]}
+                onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
+              />
+              {paymentData.paymentDate && (
+                <p className="text-[10px] text-emerald-500 font-bold ml-1">
+                  ✅ Next due date will be set to: {(() => { const d = new Date(paymentData.paymentDate); d.setDate(d.getDate() + 7); return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); })()}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Collected Amount (₹)</label>
               <input 
@@ -1456,14 +1494,14 @@ export default function Riders() {
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Payment Remarks</label>
               <textarea 
-                className="input min-h-[100px] py-4 resize-none"
+                className="input min-h-[80px] py-4 resize-none"
                 placeholder="e.g. Received cash via GPay / Cash hand over"
                 value={paymentData.remarks}
                 onChange={(e) => setPaymentData({ ...paymentData, remarks: e.target.value })}
               />
             </div>
 
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-4 pt-2">
               <button 
                 type="button"
                 onClick={() => setIsPaymentModalOpen(false)}

@@ -113,6 +113,7 @@ exports.getDashboardStats = async (req, res) => {
         ? Math.max(0, Math.round((new Date(rider.returnDate) - new Date(deployDate)) / (1000 * 60 * 60 * 24 * 7)))
         : 0;
       
+      const basePaidWeeks = typeof rider.totalWeeks === 'number' ? rider.totalWeeks : calculatedWeeks;
       const paidWeeks = basePaidWeeks;
 
       if (!deployDate) {

@@ -8,9 +8,9 @@ const Rider = require('../models/Rider');
  * then set paymentStatus to 'unpaid' for the new week.
  */
 const initCronJobs = () => {
-  // Run everyday at midnight: '0 0 * * *'
+  // Run everyday at 23:55 IST so midnight reminders work perfectly
   // For testing, we can run it every minute or on demand: '* * * * *'
-  cron.schedule('0 0 * * *', async () => {
+  cron.schedule('55 23 * * *', async () => {
     console.log('🕒 Running Weekly Status Reset Job...');
     try {
       const today = new Date();
@@ -35,6 +35,8 @@ const initCronJobs = () => {
     } catch (err) {
       console.error('❌ Error in Weekly Status Reset Job:', err);
     }
+  }, {
+    timezone: "Asia/Kolkata"
   });
 
   console.log('🚀 Background Cron Jobs Initialized.');

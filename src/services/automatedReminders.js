@@ -32,15 +32,22 @@ const initAutomatedReminders = () => {
       for (const rider of riders) {
         console.log(`🔍 Checking Rider: ${rider.name} (${rider.whatsappNumber})`);
         
-        const returnDate = new Date(rider.returnDate);
+        const returnDateISTStr = new Date(rider.returnDate).toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+        const returnDateIST = new Date(returnDateISTStr);
+
         const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const returnAtMidnight = new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate());
+        const returnAtMidnight = new Date(returnDateIST.getFullYear(), returnDateIST.getMonth(), returnDateIST.getDate());
         const daysOverdue = Math.floor((todayAtMidnight - returnAtMidnight) / (1000 * 60 * 60 * 24));
         
         console.log(`   - Scheduled: ${rider.autoReminderTime} | Days Overdue: ${daysOverdue}`);
 
-        const lastSentDate = rider.lastAutomatedReminderDate ? new Date(rider.lastAutomatedReminderDate).toDateString() : null;
-        if (lastSentDate === today.toDateString()) {
+        let lastSentDateStr = null;
+        if (rider.lastAutomatedReminderDate) {
+          const lastSentIST = new Date(rider.lastAutomatedReminderDate).toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          lastSentDateStr = new Date(lastSentIST).toDateString();
+        }
+
+        if (lastSentDateStr === today.toDateString()) {
           console.log(`   - ⏭️ Already reminded today.`);
           continue;
         }

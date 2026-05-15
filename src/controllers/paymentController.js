@@ -132,7 +132,7 @@ exports.webhookHandler = async (req, res) => {
             isProcessed = true;
           } else {
             const Invoice = require('../models/Invoice');
-            const existingInvoice = await Invoice.findOne({ remarks: new RegExp(data.id) });
+            const existingInvoice = await Invoice.findOne({ razorpayPaymentId: data.id });
             if (existingInvoice) {
               isProcessed = true;
               // Sync link status in rider DB if it wasn't updated
@@ -149,10 +149,8 @@ exports.webhookHandler = async (req, res) => {
           }
 
           // Process the payment
-          const nextWeek = new Date(rider.returnDate || Date.now());
-          nextWeek.setDate(nextWeek.getDate() + 7);
-          
-          rider.returnDate = nextWeek;
+          const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+          rider.returnDate = calculateNextReturnDate(rider.returnDate);
           rider.totalWeeks = (rider.totalWeeks || 0) + 1;
           rider.paymentStatus = 'paid';
           
@@ -170,7 +168,7 @@ exports.webhookHandler = async (req, res) => {
           // Create Invoice Record with link ID in remarks
           try {
             const { createInvoiceRecord } = require('../utils/invoiceHelper');
-            await createInvoiceRecord(rider, amount, 'RENT', `Weekly Rental Payment (Link: ${data.id})`);
+            await createInvoiceRecord(rider, amount, 'RENT', `Weekly Rental Payment (Link: ${data.id})`, { razorpayPaymentId: data.id });
           } catch (invErr) {
             console.error('⚠️ [WEBHOOK] Invoice helper error:', invErr.message);
           }
@@ -288,10 +286,8 @@ exports.webhookHandler = async (req, res) => {
         }
 
         // Process the payment
-        const nextWeek = new Date(rider.returnDate || Date.now());
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        
-        rider.returnDate = nextWeek;
+        const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+        rider.returnDate = calculateNextReturnDate(rider.returnDate);
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
         rider.paymentStatus = 'paid';
         

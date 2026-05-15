@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const connectDB = require('./src/config/db');
 const { seedAdmin } = require('./src/utils/seedAdmin');
 const { initPaymentScheduler } = require('./src/services/paymentScheduler');
-const { initCronJobs } = require('./src/utils/cronJobs');
+const { initDailyJobs } = require('./src/utils/dailyJobs');
 const { initAutomatedReminders } = require('./src/services/automatedReminders');
 
 const app = express();
@@ -17,7 +17,7 @@ const app = express();
 connectDB().then(() => {
   seedAdmin(); // Auto-seed on startup
   initAutomatedReminders(); // Start Auto-Reminders & Recovery tracking
-  initCronJobs(); // Start background weekly status reset jobs
+  initDailyJobs(); // Start background daily status reset jobs
 });
 
 // Middleware

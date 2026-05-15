@@ -6,6 +6,7 @@ const whatsappController = require('../controllers/whatsappController');
 // Note: In production, we should use twilio.webhook() middleware for security
 router.post('/webhook', express.urlencoded({ extended: false }), whatsappController.handleIncoming);
 router.post('/bulk-reengage', whatsappController.sendBulkReengage);
+router.get('/logs', whatsappController.getReminderLogs);
 
 
 module.exports = router;

@@ -208,7 +208,7 @@ exports.addRider = async (req, res) => {
       rider.riderStatus = 'active';
       rider.deployDate = deployDate;
       rider.returnDate = returnDate;
-      rider.totalWeeks = initialWeeks; // Set reactivated weeks paid based on deployment period
+      // rider.totalWeeks = initialWeeks; // Fix 6: Remove overwriting totalWeeks on reactivation
       rider.paymentStatus = 'unpaid';
       rider.autoReminderEnabled = autoReminderEnabled !== undefined ? autoReminderEnabled : true;
       rider.autoReminderTime = autoReminderTime || '00:00';
@@ -247,7 +247,7 @@ exports.addRider = async (req, res) => {
       vehicleNumber: vehicleNumber.toUpperCase(),
       deployDate,
       returnDate,
-      totalWeeks: initialWeeks, // Set initial weeks paid based on deployment period
+      totalWeeks: 0, // Fix 5: New riders have paid 0 weeks at creation
       autoReminderEnabled: autoReminderEnabled !== undefined ? autoReminderEnabled : true,
       autoReminderTime: autoReminderTime || '00:00',
       bikesUsed: [vehicleNumber.toUpperCase()],
@@ -364,13 +364,50 @@ exports.updateRider = async (req, res) => {
 // @desc Get all riders
 exports.getRiders = async (req, res) => {
   try {
-    const riders = await Rider.find().sort({ createdAt: -1 });
-    res.status(200).json({
-      success: true,
-      count: riders.length,
-      data: riders
+    const { 
+      riderStatus, 
+      paymentStatus, 
+      isRecoveryBucket, 
+      search, 
+      dueFrom, 
+      dueTo, 
+      vehicleNumber 
+    } = req.query;
+
+    const filter = {};
+    if (riderStatus) filter.riderStatus = riderStatus;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
+    if (isRecoveryBucket !== undefined) {
+      filter.isRecoveryBucket = isRecoveryBucket === 'true';
+    }
+    if (vehicleNumber) filter.vehicleNumber = vehicleNumber.toUpperCase();
+    
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { whatsappNumber: { $regex: search } },
+        { vehicleNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (dueFrom || dueTo) {
+      filter.returnDate = {};
+      if (dueFrom) filter.returnDate.$gte = new Date(dueFrom);
+      if (dueTo) {
+        const to = new Date(dueTo);
+        to.setHours(23, 59, 59, 999);
+        filter.returnDate.$lte = to;
+      }
+    }
+
+    const riders = await Rider.find(filter).sort({ returnDate: 1 });
+    res.status(200).json({ 
+      success: true, 
+      count: riders.length, 
+      data: riders 
     });
   } catch (err) {
+    console.error('getRiders error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -384,13 +421,8 @@ exports.updateStatus = async (req, res) => {
     // Handle payment status changes
     if (paymentStatus) {
       if (paymentStatus === 'paid') {
-        // Use the provided paymentDate (manual collection date) as the base
-        // so returnDate = paymentDate + 7 days (not old returnDate + 7)
-        const paymentDate = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
-        paymentDate.setHours(0, 0, 0, 0); // normalize to midnight
-        const nextWeek = new Date(paymentDate);
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        rider.returnDate = nextWeek;
+        const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+        rider.returnDate = calculateNextReturnDate(rider.returnDate);
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
         
         // Reset escalation and recovery on payment

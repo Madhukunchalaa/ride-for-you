@@ -75,3 +75,28 @@ exports.sendBulkReengage = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+/**
+ * Audit: Get recent reminder logs
+ * @GET /api/whatsapp/logs
+ */
+exports.getReminderLogs = async (req, res) => {
+  try {
+    const { riderId, limit = 50 } = req.query;
+    const filter = {};
+    if (riderId) filter.riderId = riderId;
+
+    const ReminderLog = require('../models/ReminderLog');
+    const logs = await ReminderLog.find(filter)
+      .sort({ sentAt: -1 })
+      .limit(Number(limit));
+
+    res.status(200).json({
+      success: true,
+      count: logs.length,
+      data: logs
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

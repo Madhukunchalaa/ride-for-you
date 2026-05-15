@@ -3,7 +3,7 @@ const Invoice = require('../models/Invoice');
 /**
  * Automatically creates an invoice record for a successful payment
  */
-const createInvoiceRecord = async (rider, amount, type = 'RENT', remarks = 'Weekly Rental Payment') => {
+const createInvoiceRecord = async (rider, amount, type = 'RENT', remarks = 'Weekly Rental Payment', extraData = {}) => {
   try {
     const today = new Date();
     const billingMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -17,7 +17,8 @@ const createInvoiceRecord = async (rider, amount, type = 'RENT', remarks = 'Week
       invoiceNum,
       billAmount: amount,
       actualRent: amount,
-      remarks
+      remarks,
+      ...extraData
     });
 
     console.log(`📑 Invoice Created: ${invoiceNum} for ${rider.name}`);

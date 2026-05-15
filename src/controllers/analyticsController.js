@@ -421,6 +421,13 @@ exports.getPaymentAnalytics = async (req, res) => {
       
       upcomingTotal = 0; // Reset upcoming for specific date selections
     } else {
+      // Fix: totalCollected must come from Invoice collection to match dashboard
+      const invoiceFilter = { riderId: { $ne: null } };
+      // Default to "all time" starting from a sensible point or based on startDate
+      invoiceFilter.createdAt = { $gte: startDate };
+      const allInvoices = await Invoice.find(invoiceFilter);
+      totalCollected = allInvoices.reduce((sum, inv) => sum + (inv.billAmount || 0), 0);
+
       activeRiders.forEach(rider => {
         const rate = rider.rentalRate || globalWeeklyRate;
         upcomingTotal += rate;
@@ -468,7 +475,6 @@ exports.getPaymentAnalytics = async (req, res) => {
           }
         }
 
-        totalCollected += (basePaidWeeks * rate);
         pendingDues += (unpaidWeeks * rate);
         if (!isOverdue && rider.paymentStatus === 'paid') {
           successfulCount++;

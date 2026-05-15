@@ -11,13 +11,46 @@ const sendPaymentReminder = async (to, options = {}) => {
   let cleaned = to.replace(/[^0-9]/g, '');
   if (cleaned.length === 10) cleaned = '91' + cleaned;
 
-  if (provider === 'way2chats') {
-    return sendViaWay2Chats(cleaned, options);
-  } else if (provider === 'meta') {
-    return sendViaMeta(cleaned, options);
-  } else {
-    return sendViaTwilio(cleaned, options);
+  let result;
+  let error;
+
+  try {
+    if (provider === 'way2chats') {
+      result = await sendViaWay2Chats(cleaned, options);
+    } else if (provider === 'meta') {
+      result = await sendViaMeta(cleaned, options);
+    } else {
+      result = await sendViaTwilio(cleaned, options);
+    }
+  } catch (err) {
+    error = err;
   }
+
+  // Audit Logging
+  try {
+    const ReminderLog = require('../models/ReminderLog');
+    const Rider = require('../models/Rider');
+    
+    // Attempt to find rider for better logging
+    const rider = await Rider.findOne({ 
+      whatsappNumber: { $regex: cleaned.slice(-10) } 
+    });
+
+    await ReminderLog.create({
+      riderId: rider ? rider._id : null,
+      riderName: rider ? rider.name : 'Unknown',
+      whatsappNumber: cleaned,
+      type: options.type || 'automated',
+      template: options.templateName || 'default',
+      status: error ? 'failed' : 'sent',
+      errorMessage: error ? error.message : null
+    });
+  } catch (logErr) {
+    console.error('⚠️ [AUDIT LOG ERROR]:', logErr.message);
+  }
+
+  if (error) throw error;
+  return result;
 };
 
 /**

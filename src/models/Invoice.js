@@ -37,6 +37,11 @@ const invoiceSchema = new mongoose.Schema(
     remarks: {
       type: String,
       trim: true
+    },
+    razorpayPaymentId: {
+      type: String,
+      unique: true,
+      sparse: true
     }
   },
   { timestamps: true }

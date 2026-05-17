@@ -60,11 +60,13 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     }
 
     const paymentLink = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
+    
+    // Generate QR Code URL (pointing to the payment link)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+    
     rider.paymentLinkId = responseId;
     rider.paymentLinkUrl = responseUrl;
 
-    // Send WhatsApp (Using Content API for consistency if available, otherwise fallback)
-    // For automation, we usually use the APPROVED template (TWILIO_CONTENT_SID)
     const formattedDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
 
     console.log(`🤖 Automated Reminder [${type}] to ${rider.whatsappNumber}...`);
@@ -72,10 +74,11 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     await sendPaymentReminder(rider.whatsappNumber, { 
       templateName: (type === 'warning' || type === 'final') ? 'recovery_warning_v1' : 'payment_reminder_v1',
       contentSid: process.env.TWILIO_CONTENT_SID,
+      headerImage: qrCodeUrl, // This sends the QR code as a header image
       variables: (type === 'warning' || type === 'final') ? {
         1: rider.name,
         2: rider.vehicleNumber,
-        3: '7989776255' // Recovery Dept Contact
+        3: '7989776255'
       } : {
         1: rider.name,
         2: rider.vehicleNumber,

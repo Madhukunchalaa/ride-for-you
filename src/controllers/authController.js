@@ -51,7 +51,7 @@ exports.login = async (req, res) => {
     account = await Rider.findOne({
       $or: [
         { email: identifier.toLowerCase() },
-        { whatsappNumber: searchNumber.length >= 10 ? searchNumber : 'NONE' }
+        { whatsappNumber: searchNumber.length >= 10 ? { $regex: searchNumber + '$' } : 'NONE' }
       ]
     }).select('+password');
 
@@ -97,7 +97,7 @@ exports.verifyOtp = async (req, res) => {
 
     const searchNumber = cleanNumber(whatsappNumber);
     // OTP verification is only for Riders in this flow
-    let account = await Rider.findOne({ whatsappNumber: searchNumber });
+    let account = await Rider.findOne({ whatsappNumber: { $regex: searchNumber + '$' } });
 
     if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
@@ -131,17 +131,35 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // @POST /api/auth/forgot-password
-// @desc Restrict forgot password to Riders only via WhatsApp OTP
+// @desc Restrict forgot password to permitted Riders only via WhatsApp OTP
 exports.forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Please provide your registered email' });
+    const { email, identifier } = req.body;
+    const input = identifier || email;
+
+    if (!input) {
+      return res.status(400).json({ success: false, message: 'Please provide registered email or WhatsApp number' });
     }
 
-    const account = await Rider.findOne({ email });
+    const searchNumber = cleanNumber(input);
+
+    const account = await Rider.findOne({
+      $or: [
+        { email: input.toLowerCase() },
+        { whatsappNumber: searchNumber.length >= 10 ? { $regex: searchNumber + '$' } : 'NONE' }
+      ]
+    });
+
     if (!account) {
-      return res.status(404).json({ success: false, message: 'Client account not found with this email' });
+      return res.status(404).json({ success: false, message: 'Client account not found' });
+    }
+
+    // Restriction: Only allow password reset for the specific WhatsApp numbers:
+    // 1. client number (7989776255)
+    // 2. 7095682464
+    const cleanWhatsApp = cleanNumber(account.whatsappNumber);
+    if (cleanWhatsApp !== '7989776255' && cleanWhatsApp !== '7095682464') {
+      return res.status(403).json({ success: false, message: 'Password reset is not authorized for this account number.' });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -175,7 +193,7 @@ exports.resetPassword = async (req, res) => {
     }
 
     const searchNumber = cleanNumber(whatsappNumber);
-    const account = await Rider.findOne({ whatsappNumber: searchNumber });
+    const account = await Rider.findOne({ whatsappNumber: { $regex: searchNumber + '$' } });
 
     if (!account || account.otp !== otp || account.otpExpires < Date.now()) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
@@ -230,7 +248,7 @@ exports.requestOtp = async (req, res) => {
   try {
     const { whatsappNumber } = req.body;
     const searchNumber = cleanNumber(whatsappNumber);
-    const account = await Rider.findOne({ whatsappNumber: searchNumber });
+    const account = await Rider.findOne({ whatsappNumber: { $regex: searchNumber + '$' } });
     
     if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
 

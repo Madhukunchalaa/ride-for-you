@@ -120,13 +120,13 @@ export default function Login() {
           {forgotPasswordMode && step === 1 ? (
              <form onSubmit={handleForgotPasswordRequest} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Registered Email</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Registered Phone or Email</label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary-400 transition-colors" size={20} />
                     <input 
-                      type="email" 
+                      type="text" 
                       className="input pl-12" 
-                      placeholder="rider@example.com"
+                      placeholder="Enter registered phone or email"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       required

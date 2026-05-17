@@ -7,7 +7,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./src/config/db');
 const { seedAdmin } = require('./src/utils/seedAdmin');
-const { initPaymentScheduler } = require('./src/services/paymentScheduler');
 const { initDailyJobs } = require('./src/utils/dailyJobs');
 const { initAutomatedReminders } = require('./src/services/automatedReminders');
 

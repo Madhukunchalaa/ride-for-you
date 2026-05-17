@@ -4,18 +4,21 @@ const Rider = require('../models/Rider');
 const initDailyJobs = () => {
   cron.schedule('30 0 * * *', async () => {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
+      // Get the current date string in IST (YYYY-MM-DD)
+      const istDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      // This gives us the exact UTC start of the day in IST
+      const istMidnightUTC = new Date(`${istDateString}T00:00:00Z`);
       
       const result = await Rider.updateMany(
         {
           riderStatus: 'active',
           paymentStatus: 'paid',
-          returnDate: { $lte: today }
+          returnDate: { $lte: istMidnightUTC }
         },
         { $set: { paymentStatus: 'unpaid' } }
       );
-      console.log(`[DailyResetCron ${new Date().toISOString()}] Reset ${result.modifiedCount} riders from paid → unpaid`);
+      console.log(`[DailyResetCron ${new Date(istDateString).toDateString()}] Reset ${result.modifiedCount} riders from paid → unpaid`);
     } catch (err) {
       console.error('[DailyResetCron] Failed:', err.message);
     }

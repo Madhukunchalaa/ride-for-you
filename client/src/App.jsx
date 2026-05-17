@@ -39,17 +39,20 @@ const PublicRoute = ({ children }) => {
 import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
-// Helper component for idle timeout (15 minutes)
+// Helper component for idle timeout
 const IdleTimer = ({ children }) => {
   const { user, logout } = useAuth();
 
   useEffect(() => {
     if (!user) return;
 
+    // 5 minutes for Rider (client number), 15 minutes for Admin
+    const INACTIVITY_LIMIT = user.role === 'rider' ? 5 * 60 * 1000 : 15 * 60 * 1000;
+
     let timeout;
-    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 Minutes
 
     const resetTimer = () => {
+      localStorage.setItem('lastActivity', Date.now().toString());
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
         logout();

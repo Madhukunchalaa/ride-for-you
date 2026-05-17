@@ -94,6 +94,50 @@ const sendViaWay2Chats = async (to, options) => {
 };
 
 /**
+ * Meta (Graph API) Sender
+ */
+const sendViaMeta = async (to, options) => {
+  try {
+    const { templateName, variables, language, headerImage } = options;
+
+    const components = [];
+
+    if (headerImage) {
+      components.push({
+        type: 'header',
+        parameters: [{ type: 'image', image: { link: headerImage } }]
+      });
+    }
+
+    if (variables) {
+      const bodyParams = Object.keys(variables)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(key => ({ type: 'text', text: String(variables[key]) }));
+      components.push({ type: 'body', parameters: bodyParams });
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: templateName || 'payment_reminder_v1',
+        language: { code: language || 'en' },
+        ...(components.length > 0 && { components })
+      }
+    };
+
+    console.log(`📲 Sending Meta Template [${payload.template.name}] to ${to}...`);
+    const response = await metaApi.post('/messages', payload);
+    console.log('✅ Meta WhatsApp sent:', response.data?.messages?.[0]?.id || 'SUCCESS');
+    return response.data;
+  } catch (err) {
+    console.error('❌ Meta WhatsApp Error:', err.response?.data || err.message);
+    throw err;
+  }
+};
+
+/**
  * Twilio Sender (Legacy/Fallback)
  */
 const sendViaTwilio = async (to, options) => {

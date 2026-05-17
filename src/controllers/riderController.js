@@ -95,14 +95,17 @@ exports.sendReminder = async (req, res) => {
       };
 
       // 3. Send WhatsApp (Using the PREMIUM TEXT Template!)
+      // Generate QR Code URL
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
+
       const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
         templateName: templateName || 'payment_premium_v1',
+        headerImage: qrCodeUrl,
         variables: {
           1: rider.name,
           2: rider.rentalRate || 800,
           3: paymentLink
         }
-        // NO headerImage here because the template type is "text"
       });
       
       console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);

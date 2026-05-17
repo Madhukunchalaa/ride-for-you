@@ -100,8 +100,8 @@ exports.sendReminder = async (req, res) => {
 
       const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
         templateName: templateName || 'payment_premium_v1',
-        headerImage: qrCodeUrl,
-        variables: {
+        headerImage: templateName ? req.body.headerImage : undefined, // Only pass headerImage for custom templates like 'promo' that support it
+        variables: customVariables || {
           1: rider.name,
           2: rider.rentalRate || 800,
           3: paymentLink

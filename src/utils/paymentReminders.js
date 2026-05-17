@@ -74,7 +74,7 @@ const sendAutomatedPaymentLink = async (rider, type = 'normal') => {
     await sendPaymentReminder(rider.whatsappNumber, { 
       templateName: (type === 'warning' || type === 'final') ? 'recovery_warning_v1' : 'payment_reminder_v1',
       contentSid: process.env.TWILIO_CONTENT_SID,
-      headerImage: qrCodeUrl, // This sends the QR code as a header image
+      // Removed headerImage because payment_reminder_v1 and recovery_warning_v1 are text-only templates and will crash Way2Chats with a 500 error if headerImage is passed.
       variables: (type === 'warning' || type === 'final') ? {
         1: rider.name,
         2: rider.vehicleNumber,

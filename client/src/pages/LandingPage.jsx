@@ -468,7 +468,7 @@ const LandingPage = () => {
               <h4 className="text-sm font-black uppercase tracking-widest text-white mb-6">Support</h4>
               <ul className="space-y-4 text-sm font-bold text-slate-500">
                 <li className="flex items-center gap-2"><Mail size={14} className="text-primary-500" /> support@rideforyouev.com</li>
-                <li className="flex items-center gap-2"><Phone size={14} className="text-primary-500" /> +91 7989776255</li>
+                <li className="flex items-center gap-2"><Phone size={14} className="text-primary-500" /> +91 8886828419</li>
               </ul>
             </div>
 
@@ -489,7 +489,7 @@ const LandingPage = () => {
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 border border-slate-800 px-2 py-0.5 rounded">GST: 36PAAPS7046P1ZO</span>
               </div>
             </div>
-            <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">© 2026 Ride For You EV. All Rights Reserved.</p>
+            <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">© 2023 Ride For You EV. All Rights Reserved.</p>
           </div>
         </div>
       </footer>

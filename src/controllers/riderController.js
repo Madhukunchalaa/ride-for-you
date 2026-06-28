@@ -292,6 +292,8 @@ exports.updateRider = async (req, res) => {
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
 
+    const wasInRecovery = rider.isRecoveryBucket;
+
     // Vehicle Lock check if vehicle is changing
     if (vehicleNumber && vehicleNumber.toUpperCase() !== rider.vehicleNumber) {
       const activeBike = await Rider.findOne({ 
@@ -355,6 +357,12 @@ exports.updateRider = async (req, res) => {
       rider.rentalRate = Number(req.body.rentalRate);
     }
 
+    // Handle recovery bucket exit due date calculation
+    if (wasInRecovery && !rider.isRecoveryBucket && !returnDate) {
+      rider.recoveryRemovedAt = new Date();
+      const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+      rider.returnDate = calculateNextReturnDate(new Date());
+    }
 
     await rider.save();
     res.status(200).json({ success: true, data: rider });
@@ -420,6 +428,8 @@ exports.updateStatus = async (req, res) => {
     const { paymentStatus, riderStatus, isRecoveryBucket } = req.body;
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    const wasInRecovery = rider.isRecoveryBucket;
 
     // Handle payment status changes
     if (paymentStatus) {
@@ -494,6 +504,13 @@ exports.updateStatus = async (req, res) => {
       } else {
         rider.riderStatus = riderStatus;
       }
+    }
+
+    // Handle recovery bucket exit due date calculation
+    if (wasInRecovery && !rider.isRecoveryBucket) {
+      rider.recoveryRemovedAt = new Date();
+      const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+      rider.returnDate = calculateNextReturnDate(new Date());
     }
 
     await rider.save();

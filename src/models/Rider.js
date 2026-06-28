@@ -88,6 +88,9 @@ const riderSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    recoveryRemovedAt: {
+      type: Date
+    },
     lastAutomatedReminderDate: {
       type: Date
     },

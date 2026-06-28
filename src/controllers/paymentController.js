@@ -150,7 +150,12 @@ exports.webhookHandler = async (req, res) => {
 
           // Process the payment
           const { calculateNextReturnDate } = require('../utils/scheduleHelper');
-          rider.returnDate = calculateNextReturnDate(rider.returnDate);
+          if (rider.isRecoveryBucket) {
+            rider.recoveryRemovedAt = new Date();
+            rider.returnDate = calculateNextReturnDate(new Date());
+          } else {
+            rider.returnDate = calculateNextReturnDate(rider.returnDate);
+          }
           rider.totalWeeks = (rider.totalWeeks || 0) + 1;
           rider.paymentStatus = 'paid';
           
@@ -287,7 +292,12 @@ exports.webhookHandler = async (req, res) => {
 
         // Process the payment
         const { calculateNextReturnDate } = require('../utils/scheduleHelper');
-        rider.returnDate = calculateNextReturnDate(rider.returnDate);
+        if (rider.isRecoveryBucket) {
+          rider.recoveryRemovedAt = new Date();
+          rider.returnDate = calculateNextReturnDate(new Date());
+        } else {
+          rider.returnDate = calculateNextReturnDate(rider.returnDate);
+        }
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
         rider.paymentStatus = 'paid';
         

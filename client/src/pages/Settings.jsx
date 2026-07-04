@@ -1,19 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-hot-toast';
-import { FiSettings, FiSave, FiInfo } from 'react-icons/fi';
+import { FiSettings, FiSave, FiInfo, FiUsers, FiTrash2, FiUserPlus } from 'react-icons/fi';
 
 const Settings = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [configs, setConfigs] = useState({
-    WEEKLY_RENTAL_AMOUNT: 2000
-  });
+  const [configs, setConfigs] = useState({ WEEKLY_RENTAL_AMOUNT: 2000 });
+
+  // Employee management state
+  const [employees, setEmployees] = useState([]);
+  const [empForm, setEmpForm] = useState({ name: '', email: '', password: '' });
+  const [empSaving, setEmpSaving] = useState(false);
 
   useEffect(() => {
     fetchConfig();
+    fetchEmployees();
   }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const { data } = await api.get('/employees');
+      if (data.success) setEmployees(data.employees);
+    } catch {}
+  };
+
+  const createEmployee = async () => {
+    if (!empForm.name || !empForm.email || !empForm.password) {
+      return toast.error('All fields are required');
+    }
+    setEmpSaving(true);
+    try {
+      const { data } = await api.post('/employees', empForm);
+      if (data.success) {
+        toast.success('Employee created');
+        setEmpForm({ name: '', email: '', password: '' });
+        fetchEmployees();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create employee');
+    } finally {
+      setEmpSaving(false);
+    }
+  };
+
+  const deleteEmployee = async (id) => {
+    if (!confirm('Remove this employee?')) return;
+    try {
+      await api.delete(`/employees/${id}`);
+      toast.success('Employee removed');
+      fetchEmployees();
+    } catch {
+      toast.error('Failed to remove employee');
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -196,6 +237,88 @@ const Settings = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Employee Management */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-gray-50 bg-gray-50/50 flex items-center gap-2">
+            <FiUsers className="text-indigo-600" />
+            <h2 className="font-semibold text-gray-900">Employee Management</h2>
+          </div>
+          <div className="p-6 space-y-6">
+
+            {/* Create Employee Form */}
+            <div className="p-4 rounded-xl bg-indigo-50/30 border border-indigo-100">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2"><FiUserPlus /> Add New Employee</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  value={empForm.name}
+                  onChange={e => setEmpForm({ ...empForm, name: e.target.value })}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={empForm.email}
+                  onChange={e => setEmpForm({ ...empForm, email: e.target.value })}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={empForm.password}
+                  onChange={e => setEmpForm({ ...empForm, password: e.target.value })}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <button
+                onClick={createEmployee}
+                disabled={empSaving}
+                className="mt-3 flex items-center gap-2 bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm"
+              >
+                <FiUserPlus /> {empSaving ? 'Creating...' : 'Create Employee'}
+              </button>
+              <p className="text-xs text-gray-400 mt-2">Employees can only view Riders tab — change status, send reminders, view & download rider info.</p>
+            </div>
+
+            {/* Employee List */}
+            {employees.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-600">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2">Name</th>
+                      <th className="px-4 py-2">Email</th>
+                      <th className="px-4 py-2">Created</th>
+                      <th className="px-4 py-2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {employees.map(emp => (
+                      <tr key={emp.id} className="bg-white">
+                        <td className="px-4 py-3 font-medium text-gray-900">{emp.name}</td>
+                        <td className="px-4 py-3">{emp.email}</td>
+                        <td className="px-4 py-3">{new Date(emp.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => deleteEmployee(emp._id)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1 text-xs font-medium"
+                          >
+                            <FiTrash2 size={14} /> Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {employees.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-4">No employees added yet.</p>
+            )}
           </div>
         </div>
 

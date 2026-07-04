@@ -66,3 +66,14 @@ exports.admin = (req, res, next) => {
     });
   }
 };
+
+exports.adminOrEmployee = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'employee')) {
+    next();
+  } else {
+    res.status(403).json({
+      success: false,
+      message: 'Access denied'
+    });
+  }
+};

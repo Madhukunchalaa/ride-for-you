@@ -33,7 +33,16 @@ const PrivateRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return !user ? children : <Navigate to="/app/dashboard" />;
+  if (!user) return children;
+  return <Navigate to={user.role === 'employee' ? '/app/riders' : '/app/dashboard'} />;
+};
+
+// Block employees from admin-only routes
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user?.role === 'employee') return <Navigate to="/app/riders" replace />;
+  return children;
 };
 
 import { useEffect } from 'react';
@@ -91,21 +100,20 @@ function App() {
           
           {/* Private Dashboard Routes */}
           <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
-             <Route index element={<Navigate to="/app/dashboard" replace />} />
-             <Route path="dashboard" element={<Dashboard />} />
+             <Route index element={<Navigate to="/app/riders" replace />} />
+             <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
              <Route path="riders" element={<Riders />} />
-             <Route path="recovery" element={<Riders />} />
-             <Route path="returns" element={<Riders />} />
-
+             <Route path="recovery" element={<AdminRoute><Riders /></AdminRoute>} />
+             <Route path="returns" element={<AdminRoute><Riders /></AdminRoute>} />
              <Route path="riders/:id" element={<RiderDetails />} />
-             <Route path="hala" element={<Hala />} />
-             <Route path="payments" element={<Payments />} />
-             <Route path="reports" element={<Reports />} />
-             <Route path="customers" element={<Customer />} />
-             <Route path="expenses" element={<Expenses />} />
-             <Route path="landing-cms" element={<LandingCMS />} />
-             <Route path="whatsapp-crm" element={<WhatsAppCRM />} />
-             <Route path="settings" element={<Settings />} />
+             <Route path="hala" element={<AdminRoute><Hala /></AdminRoute>} />
+             <Route path="payments" element={<AdminRoute><Payments /></AdminRoute>} />
+             <Route path="reports" element={<AdminRoute><Reports /></AdminRoute>} />
+             <Route path="customers" element={<AdminRoute><Customer /></AdminRoute>} />
+             <Route path="expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
+             <Route path="landing-cms" element={<AdminRoute><LandingCMS /></AdminRoute>} />
+             <Route path="whatsapp-crm" element={<AdminRoute><WhatsAppCRM /></AdminRoute>} />
+             <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
 
           </Route>
 

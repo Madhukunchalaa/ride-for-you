@@ -19,13 +19,12 @@ import {
 
 import { useAuth } from '../../context/AuthContext';
 
-const menuItems = [
+const adminMenuItems = [
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/riders', label: 'Riders', icon: Users },
   { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
   { path: '/app/returns', label: 'Returns', icon: RotateCcw },
   { path: '/app/hala', label: 'Hala Details', icon: Bike },
-
   { path: '/app/payments', label: 'Payments', icon: CreditCard },
   { path: '/app/reports', label: 'Intelligence', icon: TrendingUp },
   { path: '/app/customers', label: 'Customers', icon: Users },
@@ -35,9 +34,14 @@ const menuItems = [
   { path: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
+const employeeMenuItems = [
+  { path: '/app/riders', label: 'Riders', icon: Users },
+];
+
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const menuItems = user?.role === 'employee' ? employeeMenuItems : adminMenuItems;
 
   return (
     <aside className={`

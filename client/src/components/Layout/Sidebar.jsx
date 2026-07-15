@@ -36,6 +36,7 @@ const adminMenuItems = [
 
 const employeeMenuItems = [
   { path: '/app/riders', label: 'Riders', icon: Users },
+  { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
 ];
 
 

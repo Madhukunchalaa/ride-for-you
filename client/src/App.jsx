@@ -103,7 +103,7 @@ function App() {
              <Route index element={<Navigate to="/app/riders" replace />} />
              <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
              <Route path="riders" element={<Riders />} />
-             <Route path="recovery" element={<AdminRoute><Riders /></AdminRoute>} />
+             <Route path="recovery" element={<Riders />} />
              <Route path="returns" element={<AdminRoute><Riders /></AdminRoute>} />
              <Route path="riders/:id" element={<RiderDetails />} />
              <Route path="hala" element={<AdminRoute><Hala /></AdminRoute>} />

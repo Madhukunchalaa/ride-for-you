@@ -104,6 +104,7 @@ function App() {
              <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
              <Route path="riders" element={<Riders />} />
              <Route path="recovery" element={<Riders />} />
+             <Route path="police-recovery" element={<Riders />} />
              <Route path="returns" element={<AdminRoute><Riders /></AdminRoute>} />
              <Route path="riders/:id" element={<RiderDetails />} />
              <Route path="hala" element={<AdminRoute><Hala /></AdminRoute>} />

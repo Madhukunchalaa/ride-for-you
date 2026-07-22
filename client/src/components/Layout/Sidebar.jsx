@@ -10,6 +10,7 @@ import {
   X,
   TrendingUp,
   AlertCircle,
+  ShieldAlert,
   DollarSign,
   Monitor,
   RotateCcw,
@@ -23,6 +24,7 @@ const adminMenuItems = [
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/riders', label: 'Riders', icon: Users },
   { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
+  { path: '/app/police-recovery', label: 'Police Recovery', icon: ShieldAlert },
   { path: '/app/returns', label: 'Returns', icon: RotateCcw },
   { path: '/app/hala', label: 'Hala Details', icon: Bike },
   { path: '/app/payments', label: 'Payments', icon: CreditCard },
@@ -37,6 +39,7 @@ const adminMenuItems = [
 const employeeMenuItems = [
   { path: '/app/riders', label: 'Riders', icon: Users },
   { path: '/app/recovery', label: 'Recovery Bucket', icon: AlertCircle },
+  { path: '/app/police-recovery', label: 'Police Recovery', icon: ShieldAlert },
 ];
 
 

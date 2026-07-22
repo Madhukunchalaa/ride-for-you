@@ -293,6 +293,7 @@ exports.updateRider = async (req, res) => {
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
 
     const wasInRecovery = rider.isRecoveryBucket;
+    const wasInPoliceRecovery = rider.isPoliceRecovery;
 
     // Vehicle Lock check if vehicle is changing
     if (vehicleNumber && vehicleNumber.toUpperCase() !== rider.vehicleNumber) {
@@ -328,6 +329,7 @@ exports.updateRider = async (req, res) => {
       if (riderStatus === 'recovery') {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = true;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 3;
 
         // Trigger Recovery Template
@@ -337,13 +339,20 @@ exports.updateRider = async (req, res) => {
         } catch (warnErr) {
           console.warn('Recovery message failed:', warnErr.message);
         }
+      } else if (riderStatus === 'police_recovery') {
+        rider.riderStatus = 'active';
+        rider.isPoliceRecovery = true;
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
       } else if (riderStatus === 'active') {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 0;
       } else if (riderStatus === 'inactive') {
         rider.riderStatus = 'inactive';
         rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 0;
       } else {
         rider.riderStatus = riderStatus;
@@ -364,6 +373,13 @@ exports.updateRider = async (req, res) => {
       rider.returnDate = calculateNextReturnDate(new Date());
     }
 
+    // Handle police recovery bucket exit due date calculation
+    if (wasInPoliceRecovery && !rider.isPoliceRecovery && !returnDate) {
+      rider.policeRecoveryRemovedAt = new Date();
+      const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+      rider.returnDate = calculateNextReturnDate(new Date());
+    }
+
     await rider.save();
     res.status(200).json({ success: true, data: rider });
   } catch (err) {
@@ -379,6 +395,7 @@ exports.getRiders = async (req, res) => {
       riderStatus, 
       paymentStatus, 
       isRecoveryBucket, 
+      isPoliceRecovery,
       search, 
       dueFrom, 
       dueTo, 
@@ -390,6 +407,9 @@ exports.getRiders = async (req, res) => {
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (isRecoveryBucket !== undefined) {
       filter.isRecoveryBucket = isRecoveryBucket === 'true';
+    }
+    if (isPoliceRecovery !== undefined) {
+      filter.isPoliceRecovery = isPoliceRecovery === 'true';
     }
     if (vehicleNumber) filter.vehicleNumber = vehicleNumber.toUpperCase();
     
@@ -425,11 +445,12 @@ exports.getRiders = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   try {
-    const { paymentStatus, riderStatus, isRecoveryBucket } = req.body;
+    const { paymentStatus, riderStatus, isRecoveryBucket, isPoliceRecovery } = req.body;
     const rider = await Rider.findById(req.params.id);
     if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
 
     const wasInRecovery = rider.isRecoveryBucket;
+    const wasInPoliceRecovery = rider.isPoliceRecovery;
 
     // Handle payment status changes
     if (paymentStatus) {
@@ -441,6 +462,7 @@ exports.updateStatus = async (req, res) => {
         // Reset escalation and recovery on payment
         rider.reminderEscalationStage = 0;
         rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
         rider.lastAutomatedReminderDate = null; // allow fresh reminder next cycle
 
         if (!rider.bikesUsed.includes(rider.vehicleNumber)) {
@@ -467,6 +489,7 @@ exports.updateStatus = async (req, res) => {
     if (isRecoveryBucket !== undefined) {
       rider.isRecoveryBucket = isRecoveryBucket;
       if (isRecoveryBucket) {
+        rider.isPoliceRecovery = false; // mutually exclusive
         rider.reminderEscalationStage = 3; // Max stage if manually moved
 
         // Trigger Recovery Template
@@ -479,11 +502,21 @@ exports.updateStatus = async (req, res) => {
       }
     }
 
-    // Handle soft deletion / archiving
+    // Handle police recovery manual toggle
+    if (isPoliceRecovery !== undefined) {
+      rider.isPoliceRecovery = isPoliceRecovery;
+      if (isPoliceRecovery) {
+        rider.isRecoveryBucket = false; // mutually exclusive
+        rider.reminderEscalationStage = 0;
+      }
+    }
+
+    // Handle soft deletion / archiving / bucket changes
     if (riderStatus) {
       if (riderStatus === 'recovery') {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = true;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 3;
 
         // Trigger Recovery Template
@@ -493,14 +526,26 @@ exports.updateStatus = async (req, res) => {
         } catch (warnErr) {
           console.warn('Recovery message failed:', warnErr.message);
         }
+      } else if (riderStatus === 'police_recovery') {
+        rider.riderStatus = 'active';
+        rider.isPoliceRecovery = true;
+        rider.isRecoveryBucket = false;
+        rider.reminderEscalationStage = 0;
       } else if (riderStatus === 'active') {
         rider.riderStatus = 'active';
         rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 0;
       } else if (riderStatus === 'inactive') {
         rider.riderStatus = 'inactive';
         rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
         rider.reminderEscalationStage = 0;
+      } else if (riderStatus === 'returned') {
+        rider.riderStatus = 'returned';
+        rider.returnDate = new Date();
+        rider.isRecoveryBucket = false;
+        rider.isPoliceRecovery = false;
       } else {
         rider.riderStatus = riderStatus;
       }
@@ -509,6 +554,13 @@ exports.updateStatus = async (req, res) => {
     // Handle recovery bucket exit due date calculation
     if (wasInRecovery && !rider.isRecoveryBucket) {
       rider.recoveryRemovedAt = new Date();
+      const { calculateNextReturnDate } = require('../utils/scheduleHelper');
+      rider.returnDate = calculateNextReturnDate(new Date());
+    }
+
+    // Handle police recovery bucket exit due date calculation
+    if (wasInPoliceRecovery && !rider.isPoliceRecovery) {
+      rider.policeRecoveryRemovedAt = new Date();
       const { calculateNextReturnDate } = require('../utils/scheduleHelper');
       rider.returnDate = calculateNextReturnDate(new Date());
     }

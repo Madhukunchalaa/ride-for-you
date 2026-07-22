@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle, MessageSquare, Download, AlertTriangle } from 'lucide-react';
+import { Users, Plus, Search, Filter, Phone, Calendar, Car, ShieldCheck, ShieldAlert, X, Loader2, MoreVertical, ExternalLink, Send, CreditCard, CheckCircle2, Trash2, Edit2, RotateCcw, FilterX, Wrench, ChevronDown, CalendarRange, XCircle, MessageSquare, Download, AlertTriangle } from 'lucide-react';
 
 import api from '../api/axios';
 import { exportToCSV } from '../utils/exportUtils';
@@ -33,6 +33,7 @@ export default function Riders() {
   const location = useLocation();
   const isRecoveryPage = location.pathname.includes('/recovery');
   const isReturnsPage = location.pathname.includes('/returns');
+  const isPoliceRecoveryPage = location.pathname.includes('/police-recovery');
 
   // Filter States
   const [showFilters, setShowFilters] = useState(false);
@@ -47,10 +48,12 @@ export default function Riders() {
       setActiveTab('recovery');
     } else if (isReturnsPage) {
       setActiveTab('returned');
+    } else if (isPoliceRecoveryPage) {
+      setActiveTab('police_recovery');
     } else {
       setActiveTab('active');
     }
-  }, [isRecoveryPage, isReturnsPage]);
+  }, [isRecoveryPage, isReturnsPage, isPoliceRecoveryPage]);
 
 
   // --- PhonePe Payment Logic ---
@@ -242,7 +245,7 @@ export default function Riders() {
     setFormData({
       name: rider.name || '',
       whatsappNumber: rider.whatsappNumber || '',
-      riderStatus: rider.isRecoveryBucket ? 'recovery' : (rider.riderStatus || 'active'),
+      riderStatus: rider.isRecoveryBucket ? 'recovery' : rider.isPoliceRecovery ? 'police_recovery' : (rider.riderStatus || 'active'),
       vehicleNumber: rider.vehicleNumber || '',
       deployDate: rider.deployDate ? new Date(rider.deployDate).toISOString().split('T')[0] : '',
       returnDate: rider.returnDate ? new Date(rider.returnDate).toISOString().split('T')[0] : '',
@@ -317,7 +320,7 @@ export default function Riders() {
     }
 
     // Now, let's scan all active riders to see who has their due date (returnDate) on this monitorDateStr!
-    const activeRiders = riders.filter(r => r.riderStatus === 'active' && !r.isRecoveryBucket);
+    const activeRiders = riders.filter(r => r.riderStatus === 'active' && !r.isRecoveryBucket && !r.isPoliceRecovery);
     
     let dueOnDate = [];
     let paidOnDate = [];
@@ -406,8 +409,10 @@ export default function Riders() {
     
     if (activeTab === 'recovery') {
       isCorrectTab = rider.isRecoveryBucket === true && rider.riderStatus !== 'returned' && rider.riderStatus !== 'inactive';
+    } else if (activeTab === 'police_recovery') {
+      isCorrectTab = rider.isPoliceRecovery === true && rider.riderStatus !== 'returned' && rider.riderStatus !== 'inactive';
     } else if (activeTab === 'active') {
-      isCorrectTab = rider.riderStatus === 'active' && !rider.isRecoveryBucket;
+      isCorrectTab = rider.riderStatus === 'active' && !rider.isRecoveryBucket && !rider.isPoliceRecovery;
     } else if (activeTab === 'returned') {
       isCorrectTab = rider.riderStatus === 'returned';
     } else if (activeTab === 'inactive') {
@@ -493,7 +498,7 @@ export default function Riders() {
         <div>
           <div className="flex items-center gap-3">
           <h2 className="text-3xl font-display font-black text-slate-900 dark:text-white tracking-tight uppercase">
-            {isRecoveryPage ? 'RECOVERY BUCKET' : isReturnsPage ? 'RETURNED FLEET' : 'RIDER MANAGEMENT'}
+            {isRecoveryPage ? 'RECOVERY BUCKET' : isPoliceRecoveryPage ? 'POLICE RECOVERY' : isReturnsPage ? 'RETURNED FLEET' : 'RIDER MANAGEMENT'}
           </h2>
 
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -503,7 +508,7 @@ export default function Riders() {
         </div>
         <p className="text-sm text-slate-500 mt-1 uppercase tracking-widest font-bold flex items-center gap-2">
           <ShieldCheck size={16} className="text-primary-500" /> 
-          {isRecoveryPage ? 'Defaulters & High Risk Database' : isReturnsPage ? 'Inventory of Returned Vehicles' : 'Secure Workforce Database'}
+          {isRecoveryPage ? 'Defaulters & High Risk Database' : isPoliceRecoveryPage ? 'Vehicles Under Police Custody / Dispute' : isReturnsPage ? 'Inventory of Returned Vehicles' : 'Secure Workforce Database'}
         </p>
         </div>
         <div className="flex items-center gap-3">
@@ -514,7 +519,7 @@ export default function Riders() {
           >
             <Download size={20} />
           </button>
-          {(!isRecoveryPage && !isReturnsPage) && (
+          {(!isRecoveryPage && !isReturnsPage && !isPoliceRecoveryPage) && (
             <button 
               onClick={() => {
                 resetForm();
@@ -530,7 +535,7 @@ export default function Riders() {
       </div>
 
       {/* Tab Controls */}
-      {(!isRecoveryPage && !isReturnsPage) && (
+      {(!isRecoveryPage && !isReturnsPage && !isPoliceRecoveryPage) && (
         <div className="flex bg-slate-200/50 dark:bg-dark-200/50 p-1 rounded-2xl w-fit mb-4 border border-slate-200 dark:border-slate-800/50">
           <button 
             onClick={() => setActiveTab('active')} 
@@ -548,7 +553,7 @@ export default function Riders() {
       )}
 
       {/* Daily Operations Due Monitor */}
-      {(!isRecoveryPage && !isReturnsPage) && (() => {
+      {(!isRecoveryPage && !isReturnsPage && !isPoliceRecoveryPage) && (() => {
         const stats = getDailyStats();
         const formattedMonitorDate = new Date(stats.monitorDateStr).toLocaleDateString('en-GB', { 
           day: '2-digit', 
@@ -912,20 +917,31 @@ export default function Riders() {
                       <MoreVertical size={20} />
                     </button>
                     {openActionMenu === String(rider._id) && (
-                      <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom-2">
-                        <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
-                          {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
-                          Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
-                        </button>
-                        <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50">
-                          <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
-                        </button>
-                        <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
-                          <RotateCcw size={16} className="text-blue-500" /> Mark Returned
-                        </button>
-                        <button onClick={() => { setDamageRider(rider); setIsDamageModalOpen(true); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
-                          <Wrench size={16} className="text-red-500" /> Record Damage
-                        </button>
+                       <div className="absolute right-0 bottom-full mb-2 w-48 bg-white dark:bg-dark-100 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in slide-in-from-bottom-2">
+                        {rider.isPoliceRecovery ? (
+                          <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'active', isPoliceRecovery: false }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                            <ShieldCheck size={16} className="text-emerald-500" /> Remove Police Recovery
+                          </button>
+                        ) : (
+                          <>
+                            <button onClick={() => { handleUpdateStatus(rider._id, rider.paymentStatus === 'paid' ? 'unpaid' : 'paid'); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                              {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
+                              Mark as {rider.paymentStatus === 'paid' ? 'Unpaid' : 'Paid'}
+                            </button>
+                            <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50">
+                              <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
+                            </button>
+                            <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                              <RotateCcw size={16} className="text-blue-500" /> Mark Returned
+                            </button>
+                            <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'police_recovery' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                              <ShieldAlert size={16} className="text-orange-500" /> Mark Police Recovery
+                            </button>
+                            <button onClick={() => { setDamageRider(rider); setIsDamageModalOpen(true); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
+                              <Wrench size={16} className="text-red-500" /> Record Damage
+                            </button>
+                          </>
+                        )}
                         <button onClick={() => { handleEditClick(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50">
                           <Edit2 size={16} className="text-slate-400" /> Edit Profile
                         </button>
@@ -1048,7 +1064,9 @@ export default function Riders() {
                             return (
                               <div className="flex flex-col gap-1.5">
                                 <span className={`${
-                                  rider.isRecoveryBucket 
+                                  rider.isPoliceRecovery
+                                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                                  : rider.isRecoveryBucket 
                                   ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20' 
                                   : stats.unpaidWeeks > 0
                                   ? isOverdue
@@ -1056,7 +1074,9 @@ export default function Riders() {
                                     : 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20'
                                   : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                                 } px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border w-fit`}>
-                                  {rider.isRecoveryBucket 
+                                  {rider.isPoliceRecovery
+                                    ? 'POLICE RECOVERY'
+                                    : rider.isRecoveryBucket 
                                     ? 'RECOVERY' 
                                     : stats.unpaidWeeks > 0 
                                     ? isOverdue
@@ -1082,7 +1102,7 @@ export default function Riders() {
                               </div>
                             );
                           })()}
-                          {rider.autoReminderEnabled && !rider.isRecoveryBucket && rider.paymentStatus === 'unpaid' && (
+                          {rider.autoReminderEnabled && !rider.isRecoveryBucket && !rider.isPoliceRecovery && rider.paymentStatus === 'unpaid' && (
                             <span className="text-[8px] font-bold text-slate-400 flex items-center gap-1 ml-1">
                               <Loader2 size={8} className="animate-spin text-primary-500" /> 
                               SET FOR {rider.autoReminderTime}
@@ -1114,31 +1134,42 @@ export default function Riders() {
                                 <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-dark-200/50">
                                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-2">Manage Rider</p>
                                 </div>
-                                <button 
-                                  onClick={() => { 
-                                    if (rider.paymentStatus === 'unpaid') {
-                                      setPaymentRider(rider);
-                                      setPaymentData({ amount: rider.rentalRate || 2000, remarks: 'Manual Cash Payment', paymentDate: new Date().toISOString().split('T')[0] });
-                                      setIsPaymentModalOpen(true);
-                                    } else {
-                                      handleUpdateStatus(rider._id, 'unpaid');
-                                    }
-                                    setOpenActionMenu(null); 
-                                  }} 
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors"
-                                >
-                                  {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
-                                  {rider.paymentStatus === 'paid' ? 'Mark as Unpaid' : 'Record Payment'}
-                                </button>
-                                <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
-                                  <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
-                                </button>
-                                <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
-                                  <RotateCcw size={16} className="text-blue-500" /> Mark as Returned
-                                </button>
-                                <button onClick={() => { setDamageRider(rider); setIsDamageModalOpen(true); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
-                                  <Wrench size={16} className="text-red-500" /> Record Damage
-                                </button>
+                                {rider.isPoliceRecovery ? (
+                                  <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'active', isPoliceRecovery: false }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                    <ShieldCheck size={16} className="text-emerald-500" /> Remove Police Recovery
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button 
+                                      onClick={() => { 
+                                        if (rider.paymentStatus === 'unpaid') {
+                                          setPaymentRider(rider);
+                                          setPaymentData({ amount: rider.rentalRate || 2000, remarks: 'Manual Cash Payment', paymentDate: new Date().toISOString().split('T')[0] });
+                                          setIsPaymentModalOpen(true);
+                                        } else {
+                                          handleUpdateStatus(rider._id, 'unpaid');
+                                        }
+                                        setOpenActionMenu(null); 
+                                      }} 
+                                      className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors"
+                                    >
+                                      {rider.paymentStatus === 'paid' ? <XCircle size={16} className="text-orange-500" /> : <CheckCircle2 size={16} className="text-emerald-500" />} 
+                                      {rider.paymentStatus === 'paid' ? 'Mark as Unpaid' : 'Record Payment'}
+                                    </button>
+                                    <button onClick={() => { handleManualWhatsApp(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                      <MessageSquare size={16} className="text-emerald-500" /> Personal WhatsApp
+                                    </button>
+                                    <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'returned' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                      <RotateCcw size={16} className="text-blue-500" /> Mark as Returned
+                                    </button>
+                                    <button onClick={() => { handleUpdateStatus(rider._id, { riderStatus: 'police_recovery' }); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                      <ShieldAlert size={16} className="text-orange-500" /> Mark Police Recovery
+                                    </button>
+                                    <button onClick={() => { setDamageRider(rider); setIsDamageModalOpen(true); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
+                                      <Wrench size={16} className="text-red-500" /> Record Damage
+                                    </button>
+                                  </>
+                                )}
                                 <button onClick={() => { handleEditClick(rider); setOpenActionMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 transition-colors">
                                   <Edit2 size={16} className="text-slate-400" /> Edit Details
                                 </button>
@@ -1257,6 +1288,7 @@ export default function Riders() {
                 >
                   <option value="active">Active</option>
                   <option value="recovery">Recovery</option>
+                  <option value="police_recovery">Police Recovery</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>

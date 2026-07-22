@@ -88,7 +88,14 @@ const riderSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    isPoliceRecovery: {
+      type: Boolean,
+      default: false
+    },
     recoveryRemovedAt: {
+      type: Date
+    },
+    policeRecoveryRemovedAt: {
       type: Date
     },
     lastAutomatedReminderDate: {

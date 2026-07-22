@@ -231,7 +231,7 @@ export default function Hala() {
             <TrendingUp size={80} className="absolute -right-4 -bottom-4 text-white/10 group-hover:scale-125 transition-transform duration-700" />
             <div className="relative z-10">
               <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.3em]">Hala Total Clearance</p>
-              <h4 className="text-4xl font-display font-black text-white mt-2">₹ {totalActualPayment.toLocaleString()}</h4>
+              <h4 className="text-4xl font-display font-black text-white mt-2">₹ {totalActualPayment.toLocaleString('en-IN')}</h4>
               <p className="text-xs text-white/50 mt-4 font-bold uppercase tracking-widest flex items-center gap-2">
                 <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> {selectedMonth} Status: Validated
               </p>
@@ -249,11 +249,11 @@ export default function Hala() {
               <div className="flex gap-8">
                 <div className="text-right">
                   <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-tighter leading-none">Total SD</p>
-                  <p className="text-xs text-emerald-500 font-black mt-1 leading-none">₹ {totalSecurityDeposit.toLocaleString()}</p>
+                  <p className="text-xs text-emerald-500 font-black mt-1 leading-none">₹ {totalSecurityDeposit.toLocaleString('en-IN')}</p>
                 </div>
                 <div className="text-right border-l border-slate-200 dark:border-slate-800 pl-8">
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter leading-none">Bill Total</p>
-                  <p className="text-xs text-slate-900 dark:text-white font-black mt-1 leading-none">₹ {totalBillAmount.toLocaleString()}</p>
+                  <p className="text-xs text-slate-900 dark:text-white font-black mt-1 leading-none">₹ {totalBillAmount.toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
@@ -292,12 +292,12 @@ export default function Hala() {
                         <td className="p-6">
                           <p className="text-xs font-mono text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight">{inv.invoiceNum}</p>
                         </td>
-                        <td className="p-6 text-slate-900 dark:text-white font-black text-sm">₹ {inv.billAmount?.toLocaleString()}</td>
+                        <td className="p-6 text-slate-900 dark:text-white font-black text-sm">₹ {inv.billAmount?.toLocaleString('en-IN')}</td>
                         <td className="p-6">
-                          <span className="text-sm font-black text-primary-600 dark:text-primary-400">₹ {inv.actualRent?.toLocaleString()}</span>
+                          <span className="text-sm font-black text-primary-600 dark:text-primary-400">₹ {inv.actualRent?.toLocaleString('en-IN')}</span>
                         </td>
                         <td className="p-6 text-emerald-600 dark:text-emerald-400 font-black text-sm italic">
-                          ₹ {inv.securityDeposit?.toLocaleString() || 0}
+                          ₹ {inv.securityDeposit?.toLocaleString('en-IN') || 0}
                         </td>
                         <td className="p-6 text-right">
                           <button 

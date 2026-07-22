@@ -52,9 +52,9 @@ export default function Reports() {
   const totalProfit = totalEarnings - totalExpenses;
 
   const summaryStats = [
-    { label: 'Cumulative Revenue', value: `₹${totalEarnings.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'Hala Payments', value: `₹${totalExpenses.toLocaleString()}`, icon: ArrowDownCircle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-    { label: 'Net Profit', value: `₹${totalProfit.toLocaleString()}`, icon: DollarSign, color: 'text-sky-500', bg: 'bg-sky-500/10' },
+    { label: 'Cumulative Revenue', value: `₹${totalEarnings.toLocaleString('en-IN')}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Hala Payments', value: `₹${totalExpenses.toLocaleString('en-IN')}`, icon: ArrowDownCircle, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+    { label: 'Net Profit', value: `₹${totalProfit.toLocaleString('en-IN')}`, icon: DollarSign, color: 'text-sky-500', bg: 'bg-sky-500/10' },
   ];
 
   return (

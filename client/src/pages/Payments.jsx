@@ -354,7 +354,7 @@ export default function Payments() {
                 {isRangeMode ? 'Range Collected' : selectedDate ? "Today's Collected" : 'Total Collected'}
               </p>
               <p className="text-3xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                ₹{loading ? '...' : data.stats.totalCollected?.toLocaleString()}
+                ₹{loading ? '...' : data.stats.totalCollected?.toLocaleString('en-IN')}
               </p>
             </div>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 border-l-4 border-l-orange-500 p-6 rounded-[2rem] shadow-xl">
@@ -362,7 +362,7 @@ export default function Payments() {
                 {isRangeMode ? 'Range Pending' : selectedDate ? "Today's Pending" : 'Pending Dues'}
               </p>
               <p className="text-3xl font-display font-black text-orange-600 dark:text-orange-400 mt-2">
-                ₹{loading ? '...' : data.stats.pendingDues?.toLocaleString()}
+                ₹{loading ? '...' : data.stats.pendingDues?.toLocaleString('en-IN')}
               </p>
             </div>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
@@ -377,7 +377,7 @@ export default function Payments() {
               <div className="bg-primary-600/10 backdrop-blur-xl border border-primary-500/20 p-6 rounded-[2rem] shadow-glow-primary">
                 <p className="text-[10px] font-black text-primary-500 dark:text-primary-400 uppercase tracking-[0.3em]">Upcoming Total</p>
                 <p className="text-3xl font-display font-black text-primary-600 dark:text-primary-400 mt-2">
-                  ₹{loading ? '...' : data.stats.upcomingTotal?.toLocaleString()}
+                  ₹{loading ? '...' : data.stats.upcomingTotal?.toLocaleString('en-IN')}
                 </p>
               </div>
             )}
@@ -439,7 +439,7 @@ export default function Payments() {
                         <td className="p-8 font-bold text-slate-500 dark:text-slate-400">
                           {new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
-                        <td className="p-8 text-slate-900 dark:text-white font-black">₹{(rider.rentalRate || data.stats.weeklyRate || 2000).toLocaleString()}</td>
+                        <td className="p-8 text-slate-900 dark:text-white font-black">₹{(rider.rentalRate || data.stats.weeklyRate || 2000).toLocaleString('en-IN')}</td>
                         <td className="p-8">
                           {(() => {
                             const stats = getWeekStats(rider);
@@ -483,13 +483,13 @@ export default function Payments() {
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-6 rounded-[2rem] shadow-xl">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Total Custom Collected</p>
               <p className="text-3xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-2">
-                ₹{customLoading ? '...' : customStats.totalCollected?.toLocaleString()}
+                ₹{customLoading ? '...' : customStats.totalCollected?.toLocaleString('en-IN')}
               </p>
             </div>
             <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 border-l-4 border-l-orange-500 p-6 rounded-[2rem] shadow-xl">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Total Custom Pending</p>
               <p className="text-3xl font-display font-black text-orange-600 dark:text-orange-400 mt-2">
-                ₹{customLoading ? '...' : customStats.totalPending?.toLocaleString()}
+                ₹{customLoading ? '...' : customStats.totalPending?.toLocaleString('en-IN')}
               </p>
             </div>
             <div className="bg-primary-600/10 backdrop-blur-xl border border-primary-500/20 p-6 rounded-[2rem] shadow-glow-primary">
@@ -674,7 +674,7 @@ export default function Payments() {
                                 {payment.paymentMethod}
                               </span>
                             </td>
-                            <td className="p-6 text-slate-900 dark:text-white font-black">₹{payment.amount.toLocaleString()}</td>
+                            <td className="p-6 text-slate-900 dark:text-white font-black">₹{payment.amount.toLocaleString('en-IN')}</td>
                             <td className="p-6">
                               <span className={`flex items-center gap-1.5 font-black uppercase tracking-widest text-[9px] ${
                                 payment.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'
@@ -757,7 +757,7 @@ export default function Payments() {
             <div className="p-6 bg-dark-200 border border-slate-800 rounded-3xl space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Rental Amount</span>
-                <span className="text-lg font-black text-white">₹{(unpaidRiders.find(r => r._id === selectedRider)?.rentalRate || data.stats.weeklyRate || 2000).toLocaleString()}</span>
+                <span className="text-lg font-black text-white">₹{(unpaidRiders.find(r => r._id === selectedRider)?.rentalRate || data.stats.weeklyRate || 2000).toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Payment Method</span>

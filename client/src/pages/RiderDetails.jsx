@@ -155,7 +155,7 @@ export default function RiderDetails() {
           invoice.remarks || "Weekly Rental Subscription Service",
           invoice.billingMonth,
           invoice.invoiceType,
-          `INR ${invoice.actualRent?.toLocaleString()}.00`
+          `INR ${invoice.actualRent?.toLocaleString('en-IN')}.00`
         ]],
         styles: { fontSize: 9, cellPadding: 6 },
         headStyles: { fillColor: secondaryColor, textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -175,7 +175,7 @@ export default function RiderDetails() {
       doc.text("TOTAL AMOUNT DUE:", 110, finalY + 10); // Moved to 110 for more space
       doc.setFontSize(14);
       doc.setTextColor(...primaryColor);
-      doc.text(`INR ${invoice.actualRent?.toLocaleString()}.00`, 190, finalY + 10, { align: "right" });
+      doc.text(`INR ${invoice.actualRent?.toLocaleString('en-IN')}.00`, 190, finalY + 10, { align: "right" });
 
       // -- Trust Elements --
       // Digital Stamp (Mock)
@@ -456,7 +456,7 @@ export default function RiderDetails() {
                 <div>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Locked Rental Rate</p>
                   <p className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">
-                    ₹{(rider.rentalRate || 2000).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold ml-1">/ WEEK</span>
+                    ₹{(rider.rentalRate || 2000).toLocaleString('en-IN')} <span className="text-[10px] text-slate-400 font-bold ml-1">/ WEEK</span>
                   </p>
                 </div>
               </div>
@@ -469,7 +469,7 @@ export default function RiderDetails() {
                 <div>
                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Deposit</p>
                   <p className="text-lg md:text-xl font-display font-black text-slate-900 dark:text-white mt-1 leading-none">
-                    ₹{(rider.securityDeposit || 0).toLocaleString()}
+                    ₹{(rider.securityDeposit || 0).toLocaleString('en-IN')}
                   </p>
                 </div>
               </div>
@@ -500,7 +500,7 @@ export default function RiderDetails() {
               </div>
               <div className="text-right">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total Collected</p>
-                <p className="text-sm font-black text-emerald-500">₹{(rider.invoices?.reduce((sum, inv) => sum + (inv.actualRent || 0), 0) || 0).toLocaleString()}</p>
+                <p className="text-sm font-black text-emerald-500">₹{(rider.invoices?.reduce((sum, inv) => sum + (inv.actualRent || 0), 0) || 0).toLocaleString('en-IN')}</p>
               </div>
             </div>
             <div className="max-h-[300px] overflow-x-auto custom-scrollbar">
@@ -529,7 +529,7 @@ export default function RiderDetails() {
                       </td>
                       <td className="p-4 md:p-6 text-right font-black text-slate-900 dark:text-white text-sm">
                         <div className="flex items-center justify-end gap-2 md:gap-4">
-                          <span className="text-xs md:text-sm whitespace-nowrap">₹{inv.actualRent?.toLocaleString()}</span>
+                          <span className="text-xs md:text-sm whitespace-nowrap">₹{inv.actualRent?.toLocaleString('en-IN')}</span>
                           <button 
                             onClick={() => handleDownloadInvoice(inv)}
                             className="p-1.5 md:p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-primary-500 hover:bg-primary-500/10 transition-all sm:opacity-0 sm:group-hover:opacity-100"

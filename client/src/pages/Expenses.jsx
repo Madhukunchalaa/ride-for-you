@@ -192,7 +192,7 @@ export default function Expenses() {
                        ))}
                      </Pie>
                      <Tooltip 
-                        formatter={(value) => `₹${value.toLocaleString()}`}
+                        formatter={(value) => `₹${value.toLocaleString('en-IN')}`}
                         contentStyle={{ 
                          backgroundColor: '#0f172a', 
                          border: '1px solid #1e293b', 
@@ -213,16 +213,16 @@ export default function Expenses() {
              <div className="mt-6 p-4 bg-slate-50 dark:bg-dark-200/50 rounded-2xl border border-slate-100 dark:border-slate-800/50 space-y-3">
                 <div className="flex justify-between items-center text-xs font-bold">
                     <span className="text-slate-500 uppercase">Gross Revenue</span>
-                    <span className="text-blue-500 font-black">₹{comparison.userRevenue.toLocaleString()}</span>
+                    <span className="text-blue-500 font-black">₹{comparison.userRevenue.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-bold">
                     <span className="text-slate-500 uppercase">Total Costs</span>
-                    <span className="text-red-500 font-black">₹{(comparison.halaAmount + comparison.adminSpends).toLocaleString()}</span>
+                    <span className="text-red-500 font-black">₹{(comparison.halaAmount + comparison.adminSpends).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Net Profit</span>
                     <span className={`text-sm font-black ${comparison.netProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        ₹{comparison.netProfit.toLocaleString()}
+                        ₹{comparison.netProfit.toLocaleString('en-IN')}
                     </span>
                 </div>
              </div>
@@ -238,7 +238,7 @@ export default function Expenses() {
               </h3>
               <div className="text-right">
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Total Spends</p>
-                <p className="text-xs text-orange-500 font-black mt-1">₹ {comparison.adminSpends.toLocaleString()}</p>
+                <p className="text-xs text-orange-500 font-black mt-1">₹ {comparison.adminSpends.toLocaleString('en-IN')}</p>
               </div>
             </div>
             
@@ -271,7 +271,7 @@ export default function Expenses() {
                           {exp.remarks}
                         </td>
                         <td className="p-6 text-slate-900 dark:text-white font-black text-sm">
-                          ₹ {exp.amount?.toLocaleString()}
+                          ₹ {exp.amount?.toLocaleString('en-IN')}
                         </td>
                         <td className="p-6 text-right">
                           <button 

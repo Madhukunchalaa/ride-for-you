@@ -26,7 +26,8 @@ const initAutomatedReminders = () => {
       const riders = await Rider.find({ 
         riderStatus: 'active', 
         paymentStatus: 'unpaid',
-        autoReminderEnabled: true
+        autoReminderEnabled: true,
+        isPoliceRecovery: { $ne: true }
       });
 
       for (const rider of riders) {

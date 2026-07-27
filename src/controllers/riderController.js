@@ -369,6 +369,7 @@ exports.updateRider = async (req, res) => {
     // Handle recovery bucket exit due date calculation
     if (wasInRecovery && !rider.isRecoveryBucket && !returnDate) {
       rider.recoveryRemovedAt = new Date();
+      rider.deployDate = new Date();
       const { calculateNextReturnDate } = require('../utils/scheduleHelper');
       rider.returnDate = calculateNextReturnDate(new Date());
     }
@@ -376,6 +377,7 @@ exports.updateRider = async (req, res) => {
     // Handle police recovery bucket exit due date calculation
     if (wasInPoliceRecovery && !rider.isPoliceRecovery && !returnDate) {
       rider.policeRecoveryRemovedAt = new Date();
+      rider.deployDate = new Date();
       const { calculateNextReturnDate } = require('../utils/scheduleHelper');
       rider.returnDate = calculateNextReturnDate(new Date());
     }
@@ -554,6 +556,7 @@ exports.updateStatus = async (req, res) => {
     // Handle recovery bucket exit due date calculation
     if (wasInRecovery && !rider.isRecoveryBucket) {
       rider.recoveryRemovedAt = new Date();
+      rider.deployDate = new Date();
       const { calculateNextReturnDate } = require('../utils/scheduleHelper');
       rider.returnDate = calculateNextReturnDate(new Date());
     }
@@ -561,6 +564,7 @@ exports.updateStatus = async (req, res) => {
     // Handle police recovery bucket exit due date calculation
     if (wasInPoliceRecovery && !rider.isPoliceRecovery) {
       rider.policeRecoveryRemovedAt = new Date();
+      rider.deployDate = new Date();
       const { calculateNextReturnDate } = require('../utils/scheduleHelper');
       rider.returnDate = calculateNextReturnDate(new Date());
     }

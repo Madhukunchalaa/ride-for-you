@@ -92,6 +92,12 @@ const riderSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    recoveryAddedAt: {
+      type: Date
+    },
+    policeRecoveryAddedAt: {
+      type: Date
+    },
     recoveryRemovedAt: {
       type: Date
     },
@@ -111,6 +117,17 @@ const riderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Track when a rider is moved to recovery or police recovery
+riderSchema.pre('save', function (next) {
+  if (this.isModified('isRecoveryBucket') && this.isRecoveryBucket) {
+    this.recoveryAddedAt = new Date();
+  }
+  if (this.isModified('isPoliceRecovery') && this.isPoliceRecovery) {
+    this.policeRecoveryAddedAt = new Date();
+  }
+  next();
+});
 
 // Hash password before saving
 riderSchema.pre('save', async function (next) {

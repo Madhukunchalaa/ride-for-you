@@ -25,129 +25,24 @@ exports.sendReminder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Rider has no WhatsApp number' });
     }
 
-    // 1. Create REAL Payment Link based on Gateway selection
-    let weeklyRate = rider.rentalRate;
-    if (!weeklyRate) {
-      const config = await SystemConfig.findOne({ key: 'WEEKLY_RENTAL_AMOUNT' });
-      weeklyRate = config ? Number(config.value) : 2000;
+    // Send QR-based WhatsApp reminder (same as automated reminder)
+    const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
+    const success = await sendAutomatedPaymentLink(rider, 'normal');
+
+    if (!success) {
+      return res.status(500).json({ success: false, message: 'Failed to send WhatsApp reminder. Check server logs.' });
     }
 
-    const amountVal = weeklyRate * 100; // in paise
-    const gateway = process.env.PAYMENT_GATEWAY || 'razorpay';
-    let responseId = '';
-    let responseUrl = '';
-
-    if (gateway === 'phonepe') {
-      const response = await phonepe.createPaymentLink({
-        riderId: rider._id,
-        amount: amountVal,
-        mobileNumber: rider.whatsappNumber,
-        description: `Weekly Rental - ${rider.vehicleNumber} (Rider: ${rider.name})`
-      });
-      responseId = response.id;
-      responseUrl = response.url;
-    } else {
-      // Default: Razorpay
-      const uniqueLinkId = `pl_${rider._id.toString().slice(-12)}_${Date.now().toString().slice(-6)}`;
-      const response = await razorpay.paymentLink.create({
-        amount: amountVal,
-        currency: "INR",
-        accept_partial: false,
-        description: `Weekly Rental - ${rider.vehicleNumber}`,
-        customer: {
-          name: rider.name,
-          contact: rider.whatsappNumber,
-        },
-        notify: {
-          sms: false,
-          email: false
-        },
-        reminder_enable: true,
-        notes: {
-          riderId: rider._id.toString(),
-          link_id: uniqueLinkId
-        },
-        callback_url: `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/callback`,
-        callback_method: "get"
-      });
-      responseId = response.id;
-      responseUrl = response.short_url;
-    }
-
-    const paymentLink = `${process.env.BACKEND_URL || 'https://rideforyouev.com'}/api/payments/pay/${rider._id}`;
-
-    const { templateName, variables: customVariables } = req.body;
-
-    // 2. Store Payment Link ID and URL in Database
-    rider.paymentLinkId = responseId;
-    rider.paymentLinkUrl = responseUrl;
-    await rider.save();
-
-    // 3. Send WhatsApp
-    try {
-      const formattedDate = rider.returnDate ? new Date(rider.returnDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A';
-      
-      const defaultVariables = {
-        1: rider.name,
-        2: rider.vehicleNumber,
-        3: formattedDate,
-        4: paymentLink
-      };
-
-      // 3. Send WhatsApp (Using the PREMIUM TEXT Template!)
-      // Generate QR Code URL
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(paymentLink)}`;
-
-      const whatsappRes = await sendPaymentReminder(rider.whatsappNumber, { 
-        templateName: templateName || 'payment_premium_v1',
-        headerImage: templateName ? req.body.headerImage : undefined, // Only pass headerImage for custom templates like 'promo' that support it
-        variables: customVariables || {
-          1: rider.name,
-          2: rider.rentalRate || 800,
-          3: paymentLink
-        }
-      });
-      
-      console.log('✅ WhatsApp API Response:', whatsappRes.id || whatsappRes.sid);
-      
-
-
-      res.status(200).json({
-        success: true,
-        message: `Premium Payment request sent to ${rider.name}`
-      });
-
-    } catch (waErr) {
-      console.error('❌ WhatsApp Delivery Error:', waErr.message);
-      return res.status(400).json({
-        success: false,
-        message: `WhatsApp Error: ${waErr.message}`,
-        details: waErr.code
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: `QR Payment reminder sent to ${rider.name}`
+    });
 
   } catch (err) {
-    const errorData = err.response ? err.response.data : null;
-    let errorMessage = 'Failed to create payment link';
-    
-    if (errorData) {
-      if (errorData.message === 'Authentication Failed') {
-        errorMessage = 'Cashfree Authentication Failed: Please check your API credentials.';
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      }
-    } else {
-      errorMessage = err.message;
-    }
-
-    console.error('❌ Razorpay Link Reminder Error:', {
-      message: err.message,
-      data: errorData
-    });
+    console.error('❌ Manual Reminder Error:', err.message);
     res.status(500).json({ 
       success: false, 
-      message: errorMessage,
-      details: errorData 
+      message: err.message
     });
 
   }

@@ -2,6 +2,7 @@ const twilio = require('twilio');
 const Rider = require('../models/Rider');
 const Customer = require('../models/customer');
 const { sendReengageMessage } = require('../utils/whatsapp');
+const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
 
 
 /**
@@ -95,6 +96,64 @@ exports.getReminderLogs = async (req, res) => {
       success: true,
       count: logs.length,
       data: logs
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * MANUAL TEST: Send QR reminder to a specific rider by ID
+ * @POST /api/whatsapp/send-qr/:riderId
+ */
+exports.sendQrReminder = async (req, res) => {
+  try {
+    const rider = await Rider.findById(req.params.riderId);
+    if (!rider) return res.status(404).json({ success: false, message: 'Rider not found' });
+
+    console.log(`📲 [MANUAL] Sending QR reminder to ${rider.name} (${rider.whatsappNumber})...`);
+    const success = await sendAutomatedPaymentLink(rider, 'normal');
+
+    if (success) {
+      res.status(200).json({ success: true, message: `QR reminder sent to ${rider.name} (${rider.whatsappNumber})` });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to send QR reminder. Check server logs.' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * MANUAL TEST: Send QR reminder to ALL active + unpaid riders at once
+ * @POST /api/whatsapp/send-qr-all
+ */
+exports.sendQrReminderToAll = async (req, res) => {
+  try {
+    const riders = await Rider.find({
+      riderStatus: 'active',
+      paymentStatus: 'unpaid',
+      isPoliceRecovery: { $ne: true }
+    });
+
+    if (riders.length === 0) {
+      return res.status(200).json({ success: true, message: 'No unpaid active riders found.' });
+    }
+
+    console.log(`📲 [MANUAL BULK] Sending QR reminder to ${riders.length} riders...`);
+
+    const results = [];
+    for (const rider of riders) {
+      const success = await sendAutomatedPaymentLink(rider, 'normal');
+      results.push({ name: rider.name, phone: rider.whatsappNumber, status: success ? 'sent' : 'failed' });
+    }
+
+    res.status(200).json({
+      success: true,
+      total: riders.length,
+      sent: results.filter(r => r.status === 'sent').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      details: results
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

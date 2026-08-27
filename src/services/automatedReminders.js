@@ -9,6 +9,13 @@ const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
 const initAutomatedReminders = () => {
   // Run every minute for high precision
   cron.schedule('* * * * *', async () => {
+
+    // ⏸️ PAUSE SWITCH — set PAUSE_AUTO_REMINDERS=true in .env to stop all automated reminders
+    if (process.env.PAUSE_AUTO_REMINDERS === 'true') {
+      console.log('⏸️ [AUTO REMINDERS PAUSED] Skipping — set PAUSE_AUTO_REMINDERS=false to resume.');
+      return;
+    }
+
     console.log(`🤖 [${new Date().toISOString()}] Running Automated Reminders check...`);
     
     try {

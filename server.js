@@ -86,6 +86,9 @@ app.use('/api/config', require('./src/routes/config'));
 app.use('/api/employees', require('./src/routes/employee'));
 
 
+// Serve public assets (QR images, etc.) — always available regardless of environment
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+
 // Serve Static Files in Production
 if (process.env.NODE_ENV === 'production') {
   const finalPath = path.resolve(__dirname, 'client', 'dist');

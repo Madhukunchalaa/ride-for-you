@@ -149,13 +149,19 @@ exports.webhookHandler = async (req, res) => {
           }
 
           // Process the payment
+          //
+          // The billing week is anchored to the schedule, never to when the
+          // money arrived. A rider who pays five days late still owes rent for
+          // those five days, so the next due date is the previous one plus a
+          // week — the same rule the manual "mark as paid" path uses. Anchoring
+          // a recovery-bucket payment to the payment date instead silently
+          // forgave every overdue day and walked the whole cycle away from the
+          // deploy date.
           const { calculateNextReturnDate } = require('../utils/scheduleHelper');
           if (rider.isRecoveryBucket) {
             rider.recoveryRemovedAt = new Date();
-            rider.returnDate = calculateNextReturnDate(new Date());
-          } else {
-            rider.returnDate = calculateNextReturnDate(rider.returnDate);
           }
+          rider.returnDate = calculateNextReturnDate(rider.returnDate);
           rider.totalWeeks = (rider.totalWeeks || 0) + 1;
           rider.paymentStatus = 'paid';
           
@@ -290,14 +296,12 @@ exports.webhookHandler = async (req, res) => {
           return res.status(200).send('OK');
         }
 
-        // Process the payment
+        // Process the payment — same schedule rule as the Razorpay path above.
         const { calculateNextReturnDate } = require('../utils/scheduleHelper');
         if (rider.isRecoveryBucket) {
           rider.recoveryRemovedAt = new Date();
-          rider.returnDate = calculateNextReturnDate(new Date());
-        } else {
-          rider.returnDate = calculateNextReturnDate(rider.returnDate);
         }
+        rider.returnDate = calculateNextReturnDate(rider.returnDate);
         rider.totalWeeks = (rider.totalWeeks || 0) + 1;
         rider.paymentStatus = 'paid';
         

@@ -1,7 +1,7 @@
 const twilio = require('twilio');
 const Rider = require('../models/Rider');
 const Customer = require('../models/customer');
-const { sendReengageMessage } = require('../utils/whatsapp');
+const { sendReengageMessage, sendCustomBroadcastMessage } = require('../utils/whatsapp');
 const { sendAutomatedPaymentLink } = require('../utils/paymentReminders');
 
 
@@ -59,6 +59,64 @@ exports.sendBulkReengage = async (req, res) => {
     for (const person of recipients) {
       try {
         await sendReengageMessage(person.phone, person.name, websiteLink);
+        results.push({ id: person.id, status: 'success', type: person.type });
+      } catch (err) {
+        console.error(`❌ Failed to send to ${person.name}:`, err.message);
+        results.push({ id: person.id, status: 'failed', error: err.message, type: person.type });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      count: results.length,
+      successCount: results.filter(r => r.status === 'success').length,
+      details: results
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * Sends a custom broadcast message to all active/inactive/returned riders or customers
+ * @POST /api/whatsapp/bulk-custom
+ */
+exports.sendBulkCustom = async (req, res) => {
+  try {
+    const { customText, targetAudience } = req.body; // targetAudience could be 'all', 'riders', 'leads'
+    const file = req.file;
+
+    if (!customText) {
+      return res.status(400).json({ success: false, message: 'Custom text is required' });
+    }
+
+    let headerImage = null;
+    if (file) {
+      const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+      headerImage = `${baseUrl}/assets/${file.filename}`;
+    }
+
+    // Determine recipients
+    let recipients = [];
+    if (targetAudience === 'riders' || targetAudience === 'all') {
+      const riders = await Rider.find();
+      recipients.push(...riders.map(r => ({ name: r.name, phone: r.whatsappNumber, id: r._id, type: 'rider' })));
+    }
+    if (targetAudience === 'leads' || targetAudience === 'all') {
+      const customers = await Customer.find({ leadStatus: { $ne: 'Converted' } });
+      recipients.push(...customers.map(c => ({ name: c.name, phone: c.phone, id: c._id, type: 'customer' })));
+    }
+
+    if (recipients.length === 0) {
+      return res.status(200).json({ success: true, message: 'No recipients found.' });
+    }
+
+    console.log(`🚀 Custom Bulk Broadcast: Sending to ${recipients.length} recipients...`);
+
+    const results = [];
+    for (const person of recipients) {
+      try {
+        await sendCustomBroadcastMessage(person.phone, person.name, customText, headerImage);
         results.push({ id: person.id, status: 'success', type: person.type });
       } catch (err) {
         console.error(`❌ Failed to send to ${person.name}:`, err.message);

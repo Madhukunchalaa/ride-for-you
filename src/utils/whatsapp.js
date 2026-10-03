@@ -183,5 +183,15 @@ const sendReengageMessage = async (to, name, link = 'https://rideforyouev.com') 
   });
 };
 
-module.exports = { sendPaymentReminder, sendReengageMessage };
+const sendCustomBroadcastMessage = async (to, name, customText, headerImage = null) => {
+  const templateName = headerImage ? 'custom_broadcast_media' : 'custom_broadcast';
+  return sendPaymentReminder(to, {
+    templateName: templateName,
+    language: 'en_GB', // Since it was approved in English (UK)
+    variables: { 1: name, 2: customText },
+    ...(headerImage && { headerImage })
+  });
+};
+
+module.exports = { sendPaymentReminder, sendReengageMessage, sendCustomBroadcastMessage };
 

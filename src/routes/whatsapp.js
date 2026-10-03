@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const whatsappController = require('../controllers/whatsappController');
+const upload = require('../middleware/upload');
 
 // Twilio Webhook Endpoint
 router.post('/webhook', express.urlencoded({ extended: false }), whatsappController.handleIncoming);
 router.post('/bulk-reengage', whatsappController.sendBulkReengage);
+router.post('/bulk-custom', upload.single('image'), whatsappController.sendBulkCustom);
 router.get('/logs', whatsappController.getReminderLogs);
 
 // ── Manual QR Reminder Routes (used while auto reminders are paused) ──────────

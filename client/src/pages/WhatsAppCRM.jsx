@@ -9,6 +9,12 @@ export default function WhatsAppCRM() {
   const [isSending, setIsSending] = useState(false);
   const [stats, setStats] = useState(null);
 
+  // Custom Broadcast States
+  const [customMessage, setCustomMessage] = useState('');
+  const [customImage, setCustomImage] = useState(null);
+  const [targetAudience, setTargetAudience] = useState('all');
+  const [isSendingCustom, setIsSendingCustom] = useState(false);
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -59,6 +65,41 @@ export default function WhatsAppCRM() {
       toast.error(err.response?.data?.message || 'Bulk messaging failed', { id: 'bulk-send' });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleCustomBroadcast = async (e) => {
+    e.preventDefault();
+    if (!customMessage.trim()) {
+      toast.error('Message is required');
+      return;
+    }
+    if (!confirm(`Are you sure you want to send this custom message to ${targetAudience}?`)) return;
+
+    try {
+      setIsSendingCustom(true);
+      toast.loading('Sending custom broadcast...', { id: 'custom-send' });
+
+      const formData = new FormData();
+      formData.append('customText', customMessage);
+      formData.append('targetAudience', targetAudience);
+      if (customImage) {
+        formData.append('image', customImage);
+      }
+
+      const response = await api.post('/whatsapp/bulk-custom', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setStats(response.data);
+      toast.success(`Successfully sent to ${response.data.successCount} contacts!`, { id: 'custom-send' });
+      setCustomMessage('');
+      setCustomImage(null);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to send broadcast', { id: 'custom-send' });
+    } finally {
+      setIsSendingCustom(false);
     }
   };
 
@@ -189,7 +230,68 @@ export default function WhatsAppCRM() {
           )}
         </div>
       </div>
-      
+
+      {/* Custom Broadcast Section */}
+      <div className="bg-white dark:bg-dark-100/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800/50 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden relative">
+        <h3 className="text-xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight mb-6 flex items-center gap-2">
+          <Send size={20} className="text-primary-500" />
+          Send Custom Broadcast
+        </h3>
+        
+        <form onSubmit={handleCustomBroadcast} className="space-y-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Target Audience</label>
+              <select 
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-dark-200/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+              >
+                <option value="all">All (Riders + Unconverted Leads)</option>
+                <option value="riders">All Riders Only</option>
+                <option value="leads">Unconverted Leads Only</option>
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Header Image (Optional)</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => setCustomImage(e.target.files[0])}
+                className="w-full bg-slate-50 dark:bg-dark-200/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-sm font-medium text-slate-700 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:uppercase file:bg-primary-500/10 file:text-primary-600 hover:file:bg-primary-500/20"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Custom Message</label>
+            <textarea 
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Type your message here... This will be inserted into the approved template."
+              rows={4}
+              className="w-full bg-slate-50 dark:bg-dark-200/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            disabled={isSendingCustom}
+            className="w-full md:w-auto px-8 h-14 bg-slate-900 dark:bg-primary-600 hover:bg-slate-800 dark:hover:bg-primary-700 text-white rounded-xl flex items-center justify-center gap-3 shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+          >
+            {isSendingCustom ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <>
+                <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                <span className="text-sm font-black uppercase tracking-[0.15em]">Broadcast Message</span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
       {/* Warning Alert */}
       <div className="bg-orange-500/10 border border-orange-500/20 p-6 rounded-3xl flex gap-4">
         <AlertTriangle className="text-orange-500 shrink-0" size={24} />

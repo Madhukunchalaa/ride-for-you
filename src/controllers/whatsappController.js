@@ -51,27 +51,31 @@ exports.sendBulkReengage = async (req, res) => {
       return res.status(200).json({ success: true, message: 'No recipients found to re-engage.' });
     }
 
-    console.log(`🚀 Bulk Re-engage: Sending to ${recipients.length} recipients...`);
+    console.log(`🚀 Bulk Re-engage: Started background job for ${recipients.length} recipients...`);
 
-    const results = [];
-    const websiteLink = process.env.FRONTEND_URL || 'https://rideforyouev.com';
-
-    for (const person of recipients) {
-      try {
-        await sendReengageMessage(person.phone, person.name, websiteLink);
-        results.push({ id: person.id, status: 'success', type: person.type });
-      } catch (err) {
-        console.error(`❌ Failed to send to ${person.name}:`, err.message);
-        results.push({ id: person.id, status: 'failed', error: err.message, type: person.type });
-      }
-    }
-
+    // Return immediately to prevent HTTP Timeout
     res.status(200).json({
       success: true,
-      count: results.length,
-      successCount: results.filter(r => r.status === 'success').length,
-      details: results
+      count: recipients.length,
+      message: `Broadcast successfully started for ${recipients.length} contacts.`
     });
+
+    const websiteLink = process.env.FRONTEND_URL || 'https://rideforyouev.com';
+
+    // Process in background
+    (async () => {
+      for (const person of recipients) {
+        try {
+          await sendReengageMessage(person.phone, person.name, websiteLink);
+        } catch (err) {
+          console.error(`❌ Failed to send to ${person.name}:`, err.message);
+        }
+        // Small delay to prevent API rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      console.log('✅ Bulk Re-engage background job completed.');
+    })();
+
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -111,25 +115,29 @@ exports.sendBulkCustom = async (req, res) => {
       return res.status(200).json({ success: true, message: 'No recipients found.' });
     }
 
-    console.log(`🚀 Custom Bulk Broadcast: Sending to ${recipients.length} recipients...`);
+    console.log(`🚀 Custom Bulk Broadcast: Started background job for ${recipients.length} recipients...`);
 
-    const results = [];
-    for (const person of recipients) {
-      try {
-        await sendCustomBroadcastMessage(person.phone, person.name, customText, headerImage);
-        results.push({ id: person.id, status: 'success', type: person.type });
-      } catch (err) {
-        console.error(`❌ Failed to send to ${person.name}:`, err.message);
-        results.push({ id: person.id, status: 'failed', error: err.message, type: person.type });
-      }
-    }
-
+    // Return immediately to prevent HTTP Timeout
     res.status(200).json({
       success: true,
-      count: results.length,
-      successCount: results.filter(r => r.status === 'success').length,
-      details: results
+      count: recipients.length,
+      message: `Broadcast successfully started for ${recipients.length} contacts.`
     });
+
+    // Process in background
+    (async () => {
+      for (const person of recipients) {
+        try {
+          await sendCustomBroadcastMessage(person.phone, person.name, customText, headerImage);
+        } catch (err) {
+          console.error(`❌ Failed to send to ${person.name}:`, err.message);
+        }
+        // Small delay to prevent API rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      console.log('✅ Custom Bulk Broadcast background job completed.');
+    })();
+
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

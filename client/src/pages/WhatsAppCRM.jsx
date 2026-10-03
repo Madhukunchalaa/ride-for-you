@@ -54,12 +54,11 @@ export default function WhatsAppCRM() {
 
     try {
       setIsSending(true);
-      toast.loading('Sending bulk messages...', { id: 'bulk-send' });
+      toast.loading('Starting bulk messaging...', { id: 'bulk-send' });
       
       const response = await api.post('/whatsapp/bulk-reengage');
       
-      setStats(response.data);
-      toast.success(`Successfully sent to ${response.data.successCount} contacts!`, { id: 'bulk-send' });
+      toast.success(response.data.message || `Started broadcast to ${response.data.count} contacts!`, { id: 'bulk-send' });
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Bulk messaging failed', { id: 'bulk-send' });
@@ -78,7 +77,7 @@ export default function WhatsAppCRM() {
 
     try {
       setIsSendingCustom(true);
-      toast.loading('Sending custom broadcast...', { id: 'custom-send' });
+      toast.loading('Starting custom broadcast...', { id: 'custom-send' });
 
       const formData = new FormData();
       formData.append('customText', customMessage);
@@ -91,8 +90,7 @@ export default function WhatsAppCRM() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setStats(response.data);
-      toast.success(`Successfully sent to ${response.data.successCount} contacts!`, { id: 'custom-send' });
+      toast.success(response.data.message || `Started broadcast to ${response.data.count} contacts!`, { id: 'custom-send' });
       setCustomMessage('');
       setCustomImage(null);
     } catch (err) {

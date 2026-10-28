@@ -9,6 +9,7 @@ const connectDB = require('./src/config/db');
 const { seedAdmin } = require('./src/utils/seedAdmin');
 const { initDailyJobs } = require('./src/utils/dailyJobs');
 const { initAutomatedReminders } = require('./src/services/automatedReminders');
+const { createSalesProxy } = require('./src/middleware/sales-proxy');
 
 const app = express();
 
@@ -23,6 +24,8 @@ connectDB().then(() => {
 app.use(helmet({
   contentSecurityPolicy: false,
 }));
+// Keep the independent sales workspace ahead of the rental JSON parser and SPA fallback.
+app.use('/sales', createSalesProxy());
 app.use(cors({ 
   origin: [
     process.env.FRONTEND_URL, 
